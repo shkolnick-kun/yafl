@@ -136,11 +136,11 @@ typedef struct {
 #define YAKF_ADAPTIVE_INITIALIZER(_f, _jf, _h, _jh, _zrf, _nx, _nz, _mem)  \
 {                                                                          \
     .base = YAKF_BASE_INITIALIZER(_f, _jf, _h, _jh, _zrf, _nx, _nz, _mem), \
-    .chi2 = 6.6348966                                                      \
+    .chi2 = 10.8275662                                                     \
 }
 /*
 Default value for chi2 is:
-  scipy.stats.chi2.ppf(0.99, 1)
+  scipy.stats.chi2.ppf(0.999, 1)
 */
 
 /*-----------------------------------------------------------------------------

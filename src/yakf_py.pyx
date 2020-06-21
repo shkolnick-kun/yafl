@@ -155,7 +155,7 @@ cdef class yakfBase:
                  fx, jfx, hx, jhx, residual_z = None):
 
         #Init chi2
-        self.c_self.base.chi2 = 6.6348966
+        self.c_self.base.chi2 = 10.8275662
 
         #Store dimensions
         self.c_self.base.base.Nx = dim_x
