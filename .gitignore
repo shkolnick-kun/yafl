@@ -57,6 +57,7 @@ Debug/
 Release/
 *.log
 .metadata/
+__pycache__/
 
 # Something else #
 ##################

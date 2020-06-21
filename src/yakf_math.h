@@ -41,12 +41,14 @@ res - result of operation
 x - multiplication
 
 sz - size of a vector or a square/triangular matrix
+
+WARNING: Only a few functions/macros may be used for in place processing!!!
 --------------------------------------------------------------------------------------------
-                        Function/Macro                                         NumPy expr
+         Function/Macro (May be used for in place processing)                  NumPy expr
 ------------------------------------------------------------------------------------------*/
-void yakfm_set_nv(yakfInt sz, yakfFloat *res, yakfFloat *v, yakfFloat n);   /* res  = n*v */
-void yakfm_add_nv(yakfInt sz, yakfFloat *res, yakfFloat *v, yakfFloat n);   /* res += n*v */
-void yakfm_sub_nv(yakfInt sz, yakfFloat *res, yakfFloat *v, yakfFloat n);   /* res -= n*v */
+void yakfm_set_vxn(yakfInt sz, yakfFloat *res, yakfFloat *v, yakfFloat n);  /* res  = n*v */
+void yakfm_add_vxn(yakfInt sz, yakfFloat *res, yakfFloat *v, yakfFloat n);  /* res += n*v */
+void yakfm_sub_vxn(yakfInt sz, yakfFloat *res, yakfFloat *v, yakfFloat n);  /* res -= n*v */
 
 void yakfm_set_vrn(yakfInt sz, yakfFloat *res, yakfFloat *v, yakfFloat n);  /* res  = v/n */
 void yakfm_add_vrn(yakfInt sz, yakfFloat *res, yakfFloat *v, yakfFloat n);  /* res += v/n */
@@ -76,11 +78,6 @@ void yakfm_sub_vrv(yakfInt sz, yakfFloat *res, yakfFloat *a, yakfFloat *b); /* r
 #define YAKFM_ADD_VTRD(sz, res, a, b) yakfm_add_vrv(sz, res, b, a)          /* res += v.T.dot(1/d)*/
 #define YAKFM_SUB_VTRD(sz, res, a, b) yakfm_sub_vrv(sz, res, b, a)          /* res += v.T.dot(1/d)*/
 
-yakfFloat yakfm_vtv(yakfInt sz, yakfFloat *a, yakfFloat *b);                /* a.T.dot(b) */
-
-void yakfm_set_vvt(yakfInt sz, yakfFloat *res, yakfFloat *a, yakfFloat *b); /* res  = outer(a, b) */
-void yakfm_add_vvt(yakfInt sz, yakfFloat *res, yakfFloat *a, yakfFloat *b); /* res += outer(a, b) */
-void yakfm_sub_vvt(yakfInt sz, yakfFloat *res, yakfFloat *a, yakfFloat *b); /* res -= outer(a, b) */
 /*
 m - rectangular matrix
 v - vector
@@ -90,6 +87,12 @@ nr - number of rows in a matrix
 ------------------------------------------------------------------------------------------------------------
                                    Function/Macro                                         NumPy expr
 ----------------------------------------------------------------------------------------------------------*/
+yakfFloat yakfm_vtv(yakfInt sz, yakfFloat *a, yakfFloat *b);                           /* a.T.dot(b) */
+
+void yakfm_set_vvt(yakfInt sz, yakfFloat *res, yakfFloat *a, yakfFloat *b);            /* res  = outer(a, b) */
+void yakfm_add_vvt(yakfInt sz, yakfFloat *res, yakfFloat *a, yakfFloat *b);            /* res += outer(a, b) */
+void yakfm_sub_vvt(yakfInt sz, yakfFloat *res, yakfFloat *a, yakfFloat *b);            /* res -= outer(a, b) */
+
 void yakfm_set_mv(yakfInt nr, yakfInt nc, yakfFloat *res, yakfFloat *a, yakfFloat *b); /* res  = a.dot(b) */
 void yakfm_add_mv(yakfInt nr, yakfInt nc, yakfFloat *res, yakfFloat *a, yakfFloat *b); /* res += a.dot(b) */
 void yakfm_sub_mv(yakfInt nr, yakfInt nc, yakfFloat *res, yakfFloat *a, yakfFloat *b); /* res -= a.dot(b) */

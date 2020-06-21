@@ -72,7 +72,7 @@ void yakf_base_predict(yakfBaseSt * self)
     /* Now W = (F|***) */
     YAKFM_BSET_BU(nx2, 0, nx, w, nx, nx, nx2, 0, 0, w, self->Up);
     /* Now W = (F|FUp) */
-    YAKFM_BSET_U(nx2, 0, 0, w, nx, self->Uq);
+    yakfm_bset_u(nx2, w, nx, self->Uq);
     /* Now W = (Uq|FUp) */
 
     /* D = concatenate([Dq, Dp]) */
@@ -159,6 +159,7 @@ static void _bierman_scalar_update(yakfBaseSt * self, yakfInt i)
     YAKF_ASSERT(self->Up);
     YAKF_ASSERT(self->Dp);
     YAKF_ASSERT(self->H);
+    YAKF_ASSERT(self->y);
     YAKF_ASSERT(self->Dr);
     YAKF_ASSERT(self->D);
 
@@ -171,9 +172,9 @@ static void _bierman_scalar_update(yakfBaseSt * self, yakfInt i)
 
     /* f = h.dot(Up) */
     f = self->D;
-    yakfm_set_vtu(nx, f, h, self->Up);
+    yakfm_set_vtu(nx, f, h, u);
 
-    /* v = Dp.dot(f) */
+    /* v = f.dot(Dp).T = Dp.dot(f.T).T */
 #define v h /*Don't need h any more, use it to store v*/
     YAKFM_SET_DV(nx, v, d, f);
 
@@ -220,11 +221,91 @@ static void _bierman_scalar_update(yakfBaseSt * self, yakfInt i)
     Finally we get:
     self.x += v * (y[i] / r)
     */
-    yakfm_add_nv(nx, self->x, v, self->y[i] / r);
+    yakfm_add_vxn(nx, self->x, v, self->y[i] / r);
 #undef v /*Don't nee v any more*/
 }
 
 void yakf_bierman_update(yakfBaseSt * self, yakfFloat * z)
 {
     yakf_base_update(self, z, _bierman_scalar_update);
+}
+
+/*=============================================================================
+                             Joseph filter
+=============================================================================*/
+static void _joseph_scalar_update(yakfBaseSt * self, yakfInt i)
+{
+    yakfInt nx;
+    yakfInt nx1;
+    yakfFloat * d;
+    yakfFloat * u;
+    yakfFloat * h;
+    yakfFloat * f;
+    yakfFloat * v;
+    yakfFloat * w;
+    yakfFloat r;
+    yakfFloat s;
+
+    YAKF_ASSERT(self);
+    YAKF_ASSERT(self->Nx > 1);
+    YAKF_ASSERT(self->Up);
+    YAKF_ASSERT(self->Dp);
+    YAKF_ASSERT(self->H);
+    YAKF_ASSERT(self->y);
+    YAKF_ASSERT(self->Dr);
+    YAKF_ASSERT(self->W);
+    YAKF_ASSERT(self->D);
+
+    nx = self->Nx;
+    nx1 = nx + 1;
+
+    d = self->Dp;
+    u = self->Up;
+
+    h = self->H + nx * i;
+
+    v = self->D;
+    f = v + nx;
+
+    w = self->W;
+
+    /* f = h.dot(Up) */
+    yakfm_set_vtu(nx, f, h, u);
+
+    /* v = f.dot(Dp).T = Dp.dot(f.T).T */
+    YAKFM_SET_DV(nx, v, d, f);
+
+    r = self->Dr[i];
+
+    /* s = r + f.dot(v)*/
+    s = r + yakfm_vtv(nx, f, v);
+
+    /*K = Up.dot(v/s) = Up.dot(v)/s*/
+#define K h /*Don't need h any more, use it to store K*/
+    yakfm_set_uv(nx, K, u, v);
+    yakfm_set_vrn(nx, K, K, s); /*May be used in place*/
+
+    /*Set W and D*/
+    yakfm_bset_vvt(nx1, w, nx, K, f);
+    yakfm_bsub_u(nx1, w, nx, u);
+
+    /* Now w is (Kf - Up|***) */
+    YAKFM_BSET_V(nx1, 0, nx, w, nx, K);
+    /* Now w is (Kf - Up|K) */
+#define D v
+    /* D = concatenate([Dp, np.array([r])]) */
+    memcpy((void *)D, (void *)d, nx * sizeof(yakfFloat));
+    D[nx] = r;
+
+    /* Up, Dp = MWGSU(W, D)*/
+    yakfm_mwgsu(nx, nx1, u, d, w, D);
+#undef D
+    /* self.x += K * y[i] */
+    yakfm_add_vxn(nx, self->x, K, self->y[i]);
+#undef K /*Don't nee K any more*/
+}
+
+void yakf_joseph_update(yakfBaseSt * self, yakfFloat * z)
+{
+    yakf_base_update(self, z, _joseph_scalar_update);
 }

@@ -62,7 +62,10 @@ cdef extern from "yakf.c":
 
     cdef void yakf_base_predict(yakfBaseSt * self)
     cdef void yakf_base_update(yakfBaseSt * self, yakfFloat * z, yakfScalarUpdateP scalar_update)
+    
     cdef void yakf_bierman_update(yakfBaseSt * self, yakfFloat * z)
+    
+    cdef void yakf_joseph_update(yakfBaseSt * self, yakfFloat * z)
     
 cdef extern from "yakf_math.c":
     cdef void yakfm_set_u(yakfInt sz, yakfFloat *res, yakfFloat *u)
@@ -427,3 +430,9 @@ cdef void yakf_py_zrf(yakfPySt * self, yakfFloat * zp):
 cdef class Bierman(yakfBase):
     def _update(self):
         yakf_bierman_update(&self.c_self.base, &self.v_z[0])
+
+#==============================================================================
+cdef class Joseph(yakfBase):
+    def _update(self):
+        yakf_joseph_update(&self.c_self.base, &self.v_z[0])
+

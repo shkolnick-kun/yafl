@@ -119,6 +119,7 @@ void jhx(yakfBaseSt * self)
 /*---------------------------------------------------------------------------*/
 typedef struct{
     YAKF_BASE_MEMORY_MIXIN(NX, NZ);
+    yakfFloat dummy[30];
 } kfMemorySt;
 
 #define DP (0.1)
@@ -175,8 +176,8 @@ int main (void)
     YAKF_ASSERT(mat.shape.dim.y == NZ);
     for (i=0; i<mat.shape.dim.x; i++)
     {
-        YAKF_BIERMAN_PREDICT(&kf);
-        yakf_bierman_update(&kf, mat.data + NZ*i);
+        yakf_base_predict(&kf);
+        yakf_joseph_update(&kf, mat.data + NZ*i);
         mat.data[NZ*i + 0] = kf.x[0];
         mat.data[NZ*i + 1] = kf.x[1];
     }

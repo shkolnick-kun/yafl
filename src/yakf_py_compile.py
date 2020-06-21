@@ -28,7 +28,8 @@ pyximport.install(
         }
     )
 
-import yakf_py
+#from yakf_py import Bierman as KF
+from yakf_py import Joseph as KF
 
 def _fx(x, dt, **fx_args):
     x = x.copy()
@@ -60,8 +61,8 @@ def _jhx(x, **hx_args):
 def _zrf(a,b):
     return a - b
 
-#kf = yakf_py.Bierman(4, 2, 1., _fx, _jfx, _hx, _jhx, residual_z=_zrf)
-kf = yakf_py.Bierman(4, 2, 1., _fx, _jfx, _hx, _jhx)
+#kf = FK(4, 2, 1., _fx, _jfx, _hx, _jhx, residual_z=_zrf)
+kf = KF(4, 2, 1., _fx, _jfx, _hx, _jhx)
 kf.x[0] = 0
 kf.x[1] = 10
 kf.Dp *= .1
@@ -98,5 +99,4 @@ plt.show()
 
 plt.plot(clean[:,0], clean[:,1], kf_out[:,0], kf_out[:,1])
 plt.show()
-#time.sleep(1)
 print('Done!')

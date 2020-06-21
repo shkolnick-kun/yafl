@@ -115,4 +115,9 @@ void yakf_base_update(yakfBaseSt * self, yakfFloat * z, yakfScalarUpdateP scalar
 #define YAKF_BIERMAN_PREDICT yakf_base_predict
 void yakf_bierman_update(yakfBaseSt * self, yakfFloat * z);
 
+/*-----------------------------------------------------------------------------
+                               Joseph filter
+-----------------------------------------------------------------------------*/
+#define YAKF_JOSEPH_PREDICT yakf_base_predict
+void yakf_joseph_update(yakfBaseSt * self, yakfFloat * z);
 #endif // YAKF_H

@@ -17,7 +17,7 @@
 
 #include "yakf_math.h"
 
-#define _DO_NV(name, op)                                         \
+#define _DO_VXN(name, op)                                         \
 void name(yakfInt sz, yakfFloat *res, yakfFloat *v, yakfFloat n) \
 {                                                                \
     yakfInt k;                                                   \
@@ -31,9 +31,9 @@ void name(yakfInt sz, yakfFloat *res, yakfFloat *v, yakfFloat n) \
     }                                                            \
 }
 
-_DO_NV(yakfm_set_nv,  =)
-_DO_NV(yakfm_add_nv, +=)
-_DO_NV(yakfm_sub_nv, -=)
+_DO_VXN(yakfm_set_vxn,  =)
+_DO_VXN(yakfm_add_vxn, +=)
+_DO_VXN(yakfm_sub_vxn, -=)
 
 #define _DO_VRN(name, op)                                        \
 void name(yakfInt sz, yakfFloat *res, yakfFloat *v, yakfFloat n) \
