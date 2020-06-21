@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="hdf5_test" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="bin/Debug/hdf5_test" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+			<Add option="-g" />
+			<Add directory="../src" />
+			<Add directory="../../src" />
+		</Compiler>
+		<Linker>
+			<Add library="/usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5.a" />
+			<Add library="pthread" />
+			<Add library="dl" />
+			<Add library="sz" />
+			<Add library="z" />
+			<Add directory="/home/anon/Documents/Projects/hdf5_test/" />
+		</Linker>
+		<Unit filename="../../src/yakf.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../src/yakf.h" />
+		<Unit filename="../../src/yakf_math.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../src/yakf_math.h" />
+		<Unit filename="../src/hdf5utils.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../src/hdf5utils.h" />
+		<Unit filename="../src/main.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../src/yakf_config.h" />
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger />
+			<lib_finder disable_auto="1" />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

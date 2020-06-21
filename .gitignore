@@ -1,52 +1,89 @@
-# Prerequisites
-*.d
-
-# Object files
+# Compiled Object files #
+#########################
+*.slo
+*.lo
 *.o
-*.ko
 *.obj
-*.elf
 
-# Linker output
-*.ilk
-*.map
-*.exp
-
-# Precompiled Headers
+# Precompiled Headers #
+#######################
 *.gch
 *.pch
 
-# Libraries
-*.lib
-*.a
-*.la
-*.lo
-
-# Shared objects (inc. Windows DLLs)
-*.dll
+# Compiled Dynamic libraries #
+##############################
 *.so
-*.so.*
 *.dylib
+*.dll
 
-# Executables
+# Fortran module files #
+########################
+*.mod
+
+# Compiled Static libraries #
+#############################
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables #
+###############
 *.exe
 *.out
 *.app
-*.i*86
-*.x86_64
+*.elf
 *.hex
 
-# Debug files
-*.dSYM/
-*.su
-*.idb
-*.pdb
+# IDE/Toolchain generated #
+###########################
+*.save
+*.map
+*.lss
+*.d
+*.depend
+*.layout
+*.elay
+*.cscope_file_list
+*.[Tt]mp
+*.[Tt]emp
+*.ebTemp
+obj/
+dist/
+build/
+*-bak/
+*bin*
+Debug/
+Release/
+*.log
+.metadata/
 
-# Kernel Module Compile Results
-*.mod*
-*.cmd
-.tmp_versions/
-modules.order
-Module.symvers
-Mkfile.old
-dkms.conf
+# Something else #
+##################
+*.py[ocd]
+*.rej
+
+# Backup files #
+################
+*~
+*.orig
+*.swp
+*.7z
+
+# Data files #
+*.h5
+
+# Directory files #
+###################
+*directory
+
+# Docs #
+########
+doc/doxygen/html/**
+
+# Specific files #
+##################
+
+# Makefiles #
+#############
+Makefile

@@ -1,0 +1,598 @@
+/************************************************************
+
+  This example shows how to read and write data to a compact
+  dataset.  The program first writes integers to a compact
+  dataset with dataspace dimensions of DIM0xDIM1, then
+  closes the file.  Next, it reopens the file, reads back
+  the data, and outputs it to the screen.
+
+  This file is intended for use with HDF5 Library version 1.8
+
+ ************************************************************/
+
+#include <hdf5/serial/hdf5.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "hdf5utils.h"
+#include "yakf.h"
+
+/*-----------------------------------------------------------------------------
+                            Kalman filter things
+-----------------------------------------------------------------------------*/
+#define NX 4
+#define NZ 2
+
+void fx(yakfBaseSt * self)
+{
+    yakfFloat * x;
+    YAKF_ASSERT(self);
+    YAKF_ASSERT(self->x);
+    YAKF_ASSERT(4 == self->Nx);
+
+    x = self->x;
+    x[0] += 0.1 * x[2];
+    x[1] += 0.1 * x[3];
+}
+
+void jfx(yakfBaseSt * self)
+{
+    yakfInt i;
+    yakfInt nx;
+    yakfInt nx2;
+    yakfFloat * w;
+
+    YAKF_ASSERT(self);
+    YAKF_ASSERT(self->W);
+    YAKF_ASSERT(4 == self->Nx);
+
+    w   = self->W;
+    nx  = self->Nx;
+    nx2 = nx * 2;
+
+    for (i = 0; i < nx; i++)
+    {
+        yakfInt j;
+        yakfInt nci;
+
+        nci = nx2 * i;
+        for (j = 0; j < nx; j++)
+        {
+            w[nci + j] = (i != j) ? 0.0 : 1.0;
+        }
+    }
+
+    w[nx2*0 + 2] = 0.1;
+    w[nx2*1 + 3] = 0.1;
+}
+
+void hx(yakfBaseSt * self)
+{
+    yakfFloat * x;
+    yakfFloat * y;
+    YAKF_ASSERT(self);
+    YAKF_ASSERT(self->x);
+    YAKF_ASSERT(2 == self->Nz);
+
+    x = self->x;
+    y = self->y;
+    y[0] = x[0];
+    y[1] = x[1];
+}
+
+void jhx(yakfBaseSt * self)
+{
+    yakfInt i;
+    yakfInt nx;
+    yakfInt nz;
+    yakfFloat * h;
+
+    YAKF_ASSERT(self);
+    YAKF_ASSERT(self->H);
+    YAKF_ASSERT(4 == self->Nx);
+    YAKF_ASSERT(2 == self->Nz);
+
+    nx = self->Nx;
+    nz = self->Nz;
+    h = self->H;
+
+    for (i = 0; i < nz; i++)
+    {
+        yakfInt j;
+        yakfInt nci;
+
+        nci = nx * i;
+        for (j = 0; j < nx; j++)
+        {
+            h[nci + j] = 0.0;
+        }
+    }
+
+    h[nx*0 + 0] = 1.0;
+    h[nx*1 + 1] = 1.0;
+}
+/*---------------------------------------------------------------------------*/
+typedef struct{
+    YAKF_BASE_MEMORY_MIXIN(NX, NZ);
+} kfMemorySt;
+
+#define DP (0.1)
+#define DX (1.0e-6)
+#define DZ (400)
+kfMemorySt kf_memory =
+{
+    .x = {
+        [0] = 50.0,
+        [2] = 10.0
+    },
+
+    .Up = {
+        0,
+        0,0,
+        0,0,0
+    },
+    .Dp = {DP, DP, DP, DP},
+
+    .Uq = {
+        0,
+        0,0,
+        0,0,0
+    },
+    .Dq = {DX, DX, DX, DX},
+
+    .Ur = {0},
+    .Dr = {DZ, DZ}
+};
+
+yakfBaseSt kf = YAKF_BASE_INITIALIZER(fx, jfx, hx, jhx, 0, NX, NZ, kf_memory);
+
+/*-----------------------------------------------------------------------------
+                                  Test data
+-----------------------------------------------------------------------------*/
+
+#define FILE            "data/input.h5"
+#define DATASET         "noisy"
+#define DIM0            5
+#define DIM1            6
+
+/*---------------------------------------------------------------------------*/
+int main (void)
+{
+    hid_t  file;    /* Handles */
+    herr_t status;
+    int    i;
+    //int    j;
+
+
+    /*Test read*/
+    file = H5Fopen(FILE, H5F_ACC_RDONLY, H5P_DEFAULT);
+    hdf5UtilsMatSt mat = hdf5_utils_read_array(file, DATASET);
+    status = H5Fclose(file);
+
+    YAKF_ASSERT(mat.shape.dim.y == NZ);
+    for (i=0; i<mat.shape.dim.x; i++)
+    {
+        YAKF_BIERMAN_PREDICT(&kf);
+        yakf_bierman_update(&kf, mat.data + NZ*i);
+        mat.data[NZ*i + 0] = kf.x[0];
+        mat.data[NZ*i + 1] = kf.x[1];
+    }
+
+    file = H5Fcreate("data/output.h5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+    hdf5_utils_write_array(file, "kf_out", &mat);
+    status = H5Fclose(file);
+
+    free(mat.data);
+//
+//    file = H5Fopen(FILE, H5F_ACC_RDONLY, H5P_DEFAULT);
+//    mat = hdf5_utils_read_array(file, DATASET);
+//    status = H5Fclose(file);
+//
+//    printf ("Matrix out %s:\n", DATASET);
+//    for (i=0; i<mat.shape.dim.x; i++) {
+//        printf (" [");
+//        for (j=0; j<mat.shape.dim.y; j++)
+//            printf (" %f", mat.data[mat.shape.dim.y*i+j]);
+//        printf ("]\n");
+//    }
+//    free(mat.data);
+//
+//    double a[] = {1, 2, 3};
+//    double b[] = {6, 5, 4};
+//    double c[] = {0, 0, 0};
+//
+//    printf("\nCheck *_nv\n");
+//
+//    yakfm_set_nv(3, c, a, 10);
+//    printf("10*a = [");
+//    for (i=0; i < 3; i++)
+//    {
+//        printf("%f ", c[i]);
+//    }
+//    printf("]\n");
+//
+//    yakfm_add_nv(3, c, a, 1);
+//    printf("11*a = [");
+//    for (i=0; i < 3; i++)
+//    {
+//        printf("%f ", c[i]);
+//    }
+//    printf("]\n");
+//
+//    yakfm_sub_nv(3, c, a, 1);
+//    printf("10*a = [");
+//    for (i=0; i < 3; i++)
+//    {
+//        printf("%f ", c[i]);
+//    }
+//    printf("]\n");
+//
+//
+//    printf("\nCheck *_vrn\n");
+//    yakfm_set_vrn(3, c, a, 10);
+//    printf("a/10 = [");
+//    for (i=0; i < 3; i++)
+//    {
+//        printf("%f ", c[i]);
+//    }
+//    printf("]\n");
+//
+//    yakfm_add_vrn(3, c, a, 1);
+//    printf("a*1.1 = [");
+//    for (i=0; i < 3; i++)
+//    {
+//        printf("%f ", c[i]);
+//    }
+//    printf("]\n");
+//
+//    yakfm_sub_vrn(3, c, a, 1);
+//    printf("a/10 = [");
+//    for (i=0; i < 3; i++)
+//    {
+//        printf("%f ", c[i]);
+//    }
+//    printf("]\n");
+//
+//    double m[3][3] =
+//    {
+//        {1,1,1},
+//        {0,1,2},
+//        {3,1,1}
+//    };
+//
+//    yakfm_set_mv(3, 3, c, m, a);
+//    printf("m*a = [");
+//    for (i=0; i < 3; i++)
+//    {
+//        printf("%f ", c[i]);
+//    }
+//    printf("]\n");
+//
+//    yakfm_set_vtm(3, 3, c, a, m);
+//    printf("a*m = [");
+//    for (i=0; i < 3; i++)
+//    {
+//        printf("%f ", c[i]);
+//    }
+//    printf("]\n");
+//
+//    yakfm_set_vvt(3, m, a, b);
+//
+//    printf("m = [\n");
+//    for (i=0; i<3; i++) {
+//        printf (" [");
+//        for (j=0; j<3; j++)
+//            printf (" %f", m[i][j]);
+//        printf ("]\n");
+//    }
+//    printf("]\n");
+//
+//    double d[3][3] =
+//    {
+//        {0.7,  3,  0.8},
+//        {0,  1.1,  2.5},
+//        {3,  1.7, 1.01}
+//    };
+//
+//    double r[3][3] =
+//    {
+//        {0,0,0},
+//        {0,0,0},
+//        {0,0,0}
+//    };
+//
+//    yakfm_set_mm(3, 3, 3, r, m, d);
+//
+//    printf("m*d = [\n");
+//    for (i=0; i<3; i++) {
+//        printf (" [");
+//        for (j=0; j<3; j++)
+//            printf (" %f", r[i][j]);
+//        printf ("]\n");
+//    }
+//    printf("]\n");
+//
+//    double v[5] = {1.0, 2.7, 3.0, 0.1, 0.2};
+//    double u[] =
+//        {3,
+//         0.8, 2.5,
+//         7.0, 0.3, 1.1,
+//        -1.0, 3.1, 7.7, 5.2};
+//
+//    double rvu[5] = {0};
+//
+//    yakfm_set_vtu(5, rvu, v, u);
+//    printf("v'u = [");
+//    for (i=0; i < 5; i++)
+//    {
+//        printf("%f ", rvu[i]);
+//    }
+//    printf("]\n");
+//
+//    yakfm_set_uv(5, rvu, u, v);
+//    printf("uv = [");
+//    for (i=0; i < 5; i++)
+//    {
+//        printf("%f ", rvu[i]);
+//    }
+//    printf("]\n");
+//
+//    yakfm_set_mu(3, 3, r, d, u);
+//
+//    printf("d.dot(u[:3,:3]) = [\n");
+//    for (i=0; i<3; i++) {
+//        printf (" [");
+//        for (j=0; j<3; j++)
+//            printf (" %f", r[i][j]);
+//        printf ("]\n");
+//    }
+//    printf("]\n");
+//
+//    yakfm_set_u(3, r, u);
+//
+//    printf("u[:3,:3] = [\n");
+//    for (i=0; i<3; i++) {
+//        printf (" [");
+//        for (j=0; j<3; j++)
+//            printf (" %f", r[i][j]);
+//        printf ("]\n");
+//    }
+//    printf("]\n");
+//
+//    yakfm_sub_u(3, r, u);
+//
+//    printf("u[:3,:3] = [\n");
+//    for (i=0; i<3; i++) {
+//        printf (" [");
+//        for (j=0; j<3; j++)
+//            printf (" %f", r[i][j]);
+//        printf ("]\n");
+//    }
+//    printf("]\n");
+//
+//    double bb[5][5] =
+//    {
+//        {0.7,  3,  0.8,  11,  12},
+//        {0,  1.1,  2.5, 0.1, 0.2},
+//        {3,  1.7, 1.01, 7,   0.5},
+//        {0,  1.1,  2.5, 0.1, 0.2},
+//        {3,  1.7, 1.01, 7,   0.5},
+//    };
+//
+//    YAKFM_BSET_U(5, 1, 1, bb, 3, u);
+//    printf("u[:3,:3] = [\n");
+//    for (i=0; i<5; i++) {
+//        printf (" [");
+//        for (j=0; j<5; j++)
+//            printf (" %f", bb[i][j]);
+//        printf ("]\n");
+//    }
+//    printf("]\n");
+//
+//    YAKFM_BSET_V(5, 0, 4, bb, 3, a);
+//    printf("u[:3,:3] = [\n");
+//    for (i=0; i<5; i++) {
+//        printf (" [");
+//        for (j=0; j<5; j++)
+//            printf (" %f", bb[i][j]);
+//        printf ("]\n");
+//    }
+//    printf("]\n");
+//
+//    YAKFM_BSET_VVT(5, 1, 1, bb, 3, a, b);
+//    printf("u[:3,:3] = [\n");
+//    for (i=0; i<5; i++) {
+//        printf (" [");
+//        for (j=0; j<5; j++)
+//            printf (" %f", bb[i][j]);
+//        printf ("]\n");
+//    }
+//    printf("]\n");
+//
+//    YAKFM_BSET_MU(5, 1, 1, bb, 3, 3, d, u);
+//    printf("u[:3,:3] = [\n");
+//    for (i=0; i<5; i++) {
+//        printf (" [");
+//        for (j=0; j<5; j++)
+//            printf (" %f", bb[i][j]);
+//        printf ("]\n");
+//    }
+//    printf("]\n");
+//
+//    yakfm_ruv(5, v, u);
+//    printf("linalg.inv(u).dot(v) = [");
+//    for (i=0; i < 5; i++)
+//    {
+//        printf("%f ", v[i]);
+//    }
+//    printf("]\n");
+//
+//    yakfm_rum(3, 3, d, u);
+//    printf("linalg.inv(u[:3,:3]).dot(d) = [\n");
+//    for (i=0; i<3; i++) {
+//        printf (" [");
+//        for (j=0; j<3; j++)
+//            printf (" %f", d[i][j]);
+//        printf ("]\n");
+//    }
+//    printf("]\n");
+//
+//    double uu[] = {
+//        1,
+//        1,1,
+//        1,1,1,
+//        1,1,1,1,
+//        1,1,1,1,1,
+//        1,1,1,1,1,1
+//    };
+//
+//    double dd[] = {0,0,0,0,0,0,0};
+//
+//    double www[7][5] = {
+//        {1.0, 3.0, 0.8,  7.0, -1.0},
+//        {0.0, 1.0, 2.5,  0.3,  3.1},
+//        {1.0, 3.0, 0.8,  7.0, -1.0},
+//        {0.0, 1.0, 2.5,  0.3,  3.1},
+//        {2.0, 0.0, 1.0,  1.1,  7.7},
+//        {0.3, 0.7, 0.3,  1.0,  5.2},
+//        {4.0, 0.0, 1.7,  0.5,  1.0}
+//    };
+//
+//    double ddd[5] = {5.0, 4.0, 5.0, 2.0, 3.0};
+//
+//    double uuu[7][7];
+//
+//    yakfm_mwgsu(7, 5, uu, dd, www, ddd);
+//    yakfm_set_u(7, uuu, uu);
+//
+//    printf("uu = [\n");
+//    for (i=0; i<7; i++) {
+//        printf (" [");
+//        for (j=0; j<7; j++)
+//            printf (" %f", uuu[i][j]);
+//        printf ("]\n");
+//    }
+//    printf("]\n");
+//
+//    printf("dd = [");
+//    for (i=0; i < 7; i++)
+//    {
+//        printf("%f ", dd[i]);
+//    }
+//    printf("]\n");
+//    /*===================================================================*/
+//    /*Test rank 1 update*/
+//    /*===================================================================*/
+//    double r1u_u[] = {
+//        -0.26266353,
+//        -4.41769372, -0.67235406,
+//         0.02001549,  0.59843321, 1.36003554,
+//         0.31444615,  0.31495661, 0.74221542, 0.25676365
+//    };
+//    double r1u_d[] = {51.0959219,  24.14873007,  4.23863142, 79.52239408, 97.95};
+//    double r1u_uview[5][5];
+//
+//    double r1u_v[] = {1., 2.7, 3, .1, .2};
+//
+//    yakfm_set_u(5, r1u_uview, r1u_u);
+//    printf("r1u_u = [\n");
+//    for (i=0; i<5; i++) {
+//        printf (" [");
+//        for (j=0; j<5; j++)
+//            printf (" %f", r1u_uview[i][j]);
+//        printf ("]\n");
+//    }
+//    printf("]\n");
+//
+//    printf("r1u_d = [");
+//    for (i=0; i < 5; i++)
+//    {
+//        printf("%f ", r1u_d[i]);
+//    }
+//    printf("]\n");
+//
+//    printf ("=============================================\n");
+//    yakfm_udu_up(5, r1u_u, r1u_d, .3, r1u_v);
+//    yakfm_set_u(5, r1u_uview, r1u_u);
+//    printf("r1u_u = [\n");
+//    for (i=0; i<5; i++) {
+//        printf (" [");
+//        for (j=0; j<5; j++)
+//            printf (" %f", r1u_uview[i][j]);
+//        printf ("]\n");
+//    }
+//
+//    printf("dd = [");
+//    for (i=0; i < 5; i++)
+//    {
+//        printf("%f ", r1u_d[i]);
+//    }
+//    printf("]\n");
+//
+//    double r1d_v1[] = {1., 2.7, 3, .1, .2};
+//
+//    printf ("=============================================\n");
+//    yakfm_udu_down(5, r1u_u, r1u_d, .3, r1d_v1);
+//    yakfm_set_u(5, r1u_uview, r1u_u);
+//    printf("r1u_u = [\n");
+//    for (i=0; i<5; i++) {
+//        printf (" [");
+//        for (j=0; j<5; j++)
+//            printf (" %f", r1u_uview[i][j]);
+//        printf ("]\n");
+//    }
+//
+//    printf("dd = [");
+//    for (i=0; i < 5; i++)
+//    {
+//        printf("%f ", r1u_d[i]);
+//    }
+//    printf("]\n");
+//
+//    double r1d_v2[] = {1., 2.7, 3, .1, .2};
+//
+//    printf ("=============================================\n");
+//    yakfm_udu_down(5, r1u_u, r1u_d, .3, r1d_v2);
+//    yakfm_set_u(5, r1u_uview, r1u_u);
+//    printf("r1u_u = [\n");
+//    for (i=0; i<5; i++) {
+//        printf (" [");
+//        for (j=0; j<5; j++)
+//            printf (" %f", r1u_uview[i][j]);
+//        printf ("]\n");
+//    }
+//
+//    printf("dd = [");
+//    for (i=0; i < 5; i++)
+//    {
+//        printf("%f ", r1u_d[i]);
+//    }
+//    printf("]\n");
+//    /*===================================================================*/
+//    /*Test BBU*/
+//    /*===================================================================*/
+//    double bbb[5][10] =
+//    {
+//        {0.7,  3,  0.8,  11,  12, 0, 0, 0, 0, 0},
+//        {0,  1.1,  2.5, 0.1, 0.2, 0, 0, 0, 0, 0},
+//        {3,  1.7, 1.01, 7,   0.5, 0, 0, 0, 0, 0},
+//        {0,  1.1,  2.5, 0.1, 0.2, 0, 0, 0, 0, 0},
+//        {3,  1.7, 1.01, 7,   0.5, 0, 0, 0, 0, 0},
+//    };
+//    double bbu[] =
+//    {3,
+//    0.8, 2.5,
+//    7.0, 0.3, 1.1,
+//    -1.0, 3.1, 7.7, 5.2};
+//
+//    YAKFM_BSET_BU(10, 0, 5, bbb, 5, 5, 10, 0, 0, bbb, bbu);
+//    printf("u[:3,:3] = [\n");
+//    for (i=0; i<5; i++) {
+//        printf (" [");
+//        for (j=5; j<10; j++)
+//            printf (" %f", bbb[i][j]);
+//        printf ("]\n");
+//    }
+//    printf("]\n");
+    return 0;
+}
