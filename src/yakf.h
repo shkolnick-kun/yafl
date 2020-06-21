@@ -21,6 +21,9 @@
 #include <yakf_config.h>
 #include "yakf_math.h"
 
+/*=============================================================================
+                    Basic UD-factorized EKF definitions
+=============================================================================*/
 typedef struct _yakfBaseSt yakfBaseSt;
 
 typedef void (* yakfFuncP)(yakfBaseSt *);
@@ -120,4 +123,35 @@ void yakf_bierman_update(yakfBaseSt * self, yakfFloat * z);
 -----------------------------------------------------------------------------*/
 #define YAKF_JOSEPH_PREDICT yakf_base_predict
 void yakf_joseph_update(yakfBaseSt * self, yakfFloat * z);
+
+/*=============================================================================
+                    Adaptive UD-factorized EKF definitions
+=============================================================================*/
+typedef struct {
+    yakfBaseSt base;
+    yakfFloat chi2; /*Divergence test threshold (chi-squared criteria)*/
+} yakfAdaptiveSt; /*Adaptive kKalman-Hinfinity filter structure*/
+
+/*---------------------------------------------------------------------------*/
+#define YAKF_ADAPTIVE_INITIALIZER(_f, _jf, _h, _jh, _zrf, _nx, _nz, _mem)  \
+{                                                                          \
+    .base = YAKF_BASE_INITIALIZER(_f, _jf, _h, _jh, _zrf, _nx, _nz, _mem), \
+    .chi2 = 6.6348966                                                      \
+}
+/*
+Default value for chi2 is:
+  scipy.stats.chi2.ppf(0.99, 1)
+*/
+
+/*-----------------------------------------------------------------------------
+                           Adaptive Bierman filter
+-----------------------------------------------------------------------------*/
+#define YAKF_ADAPTIVE_BIERAMN_PREDICT(self) yakf_base_predict((yakfBaseSt *)self);
+void yakf_adaptive_bierman_update(yakfAdaptiveSt * self, yakfFloat * z);
+
+/*-----------------------------------------------------------------------------
+                           Adaptive Joseph filter
+-----------------------------------------------------------------------------*/
+#define YAKF_ADAPTIVE_JOSEPH_PREDICT(self) yakf_base_predict((yakfBaseSt *)self);
+void yakf_adaptive_joseph_update(yakfAdaptiveSt * self, yakfFloat * z);
 #endif // YAKF_H

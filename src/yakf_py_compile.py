@@ -29,7 +29,9 @@ pyximport.install(
     )
 
 #from yakf_py import Bierman as KF
-from yakf_py import Joseph as KF
+#from yakf_py import Joseph as KF
+from yakf_py import AdaptiveBierman as KF
+#from yakf_py import AdaptiveJoseph as KF
 
 def _fx(x, dt, **fx_args):
     x = x.copy()
@@ -61,23 +63,25 @@ def _jhx(x, **hx_args):
 def _zrf(a,b):
     return a - b
 
+STD = 10
+
 #kf = FK(4, 2, 1., _fx, _jfx, _hx, _jhx, residual_z=_zrf)
 kf = KF(4, 2, 1., _fx, _jfx, _hx, _jhx)
 kf.x[0] = 0
-kf.x[1] = 10
-kf.Dp *= .1
-kf.Dq *= 1.0e-6
-kf.Dr *= 400
+kf.x[1] = 1
+kf.Dp *= .0001
+kf.Dq *= 1.0e-9
+kf.Dr *= STD*STD
 kf.Ur += 0.5
 
-N = 1000
+N = 200
 
 clean = np.zeros((N, 2))
 noisy = np.zeros((N, 2))
 t     = np.zeros((N,), dtype=np.float)
 for i in range(1, len(clean)):
     clean[i] = clean[i-1] + np.array([1.,1.])
-    noisy[i] = clean[i]   + np.random.normal(scale=20., size=2)
+    noisy[i] = clean[i]   + np.random.normal(scale=STD, size=2)
     t[i] = i
 
 kf_out = np.zeros((N, 2))
@@ -94,9 +98,22 @@ print(end - start)
 
 
 import matplotlib.pyplot as plt
+plt.plot(t, noisy - kf_out)
+plt.show()
+
 plt.plot(t, clean - kf_out)
 plt.show()
 
 plt.plot(clean[:,0], clean[:,1], kf_out[:,0], kf_out[:,1])
 plt.show()
+
+plt.plot(noisy[:,0], noisy[:,1], "x", kf_out[:,0], kf_out[:,1])
+plt.show()
+
+plt.plot(t, noisy[:,1], "x", t, kf_out[:,1], t, clean[:,1])
+plt.show()
+
+plt.plot(t, noisy[:,0], "x", t, kf_out[:,0], t, clean[:,0])
+plt.show()
+
 print('Done!')

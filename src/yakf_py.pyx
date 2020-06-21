@@ -59,13 +59,21 @@ cdef extern from "yakf.c":
 
         yakfInt   Nx     #
         yakfInt   Nz     #
-
+        
     cdef void yakf_base_predict(yakfBaseSt * self)
     cdef void yakf_base_update(yakfBaseSt * self, yakfFloat * z, yakfScalarUpdateP scalar_update)
     
     cdef void yakf_bierman_update(yakfBaseSt * self, yakfFloat * z)
     
     cdef void yakf_joseph_update(yakfBaseSt * self, yakfFloat * z)
+    
+    ctypedef struct yakfAdaptiveSt:
+        yakfBaseSt base
+        yakfFloat  chi2
+        
+    cdef void yakf_adaptive_bierman_update(yakfAdaptiveSt * self, yakfFloat * z)
+        
+    cdef void yakf_adaptive_joseph_update(yakfAdaptiveSt * self, yakfFloat * z)
     
 cdef extern from "yakf_math.c":
     cdef void yakfm_set_u(yakfInt sz, yakfFloat *res, yakfFloat *u)
@@ -80,7 +88,7 @@ import  numpy as np
 # Kalman filter C-structure with Python callback info
 ctypedef struct yakfPySt:
     # Kalman filter base structure
-    yakfBaseSt base
+    yakfAdaptiveSt base
 
     # Python/Cython self
     void * py_self
@@ -146,9 +154,12 @@ cdef class yakfBase:
     def __init__(self, int dim_x, int dim_z, yakfFloat dt, \
                  fx, jfx, hx, jhx, residual_z = None):
 
+        #Init chi2
+        self.c_self.base.chi2 = 6.6348966
+
         #Store dimensions
-        self.c_self.base.Nx = dim_x
-        self.c_self.base.Nz = dim_z
+        self.c_self.base.base.Nx = dim_x
+        self.c_self.base.base.Nz = dim_z
 
         #Setup callbacks
         self.c_self.py_self = <void *>self
@@ -159,31 +170,31 @@ cdef class yakfBase:
 
         if not callable(fx):
             raise ValueError('fx must be callable!')
-        self.c_self.base.f = <yakfFuncP> yakf_py_fx
+        self.c_self.base.base.f = <yakfFuncP> yakf_py_fx
         self._fx = fx
 
         if not callable(jfx):
             raise ValueError('jfx must be callable!')
-        self.c_self.base.jf = <yakfFuncP> yakf_py_jfx
+        self.c_self.base.base.jf = <yakfFuncP> yakf_py_jfx
         self._jfx = jfx
 
         if not callable(hx):
             raise ValueError('hx must be callable!')
-        self.c_self.base.h = <yakfFuncP> yakf_py_hx
+        self.c_self.base.base.h = <yakfFuncP> yakf_py_hx
         self._hx = hx
 
         if not callable(jhx):
             raise ValueError('jhx must be callable!')
-        self.c_self.base.jh = <yakfFuncP> yakf_py_jhx
+        self.c_self.base.base.jh = <yakfFuncP> yakf_py_jhx
         self._jhx = jhx
 
         if residual_z:   
             if not callable(residual_z):
                 raise ValueError('residual_z must be callable!')
-            self.c_self.base.zrf = <yakfResFuncP> yakf_py_zrf
+            self.c_self.base.base.zrf = <yakfResFuncP> yakf_py_zrf
             self._residual_z = residual_z
         else:
-            self.c_self.base.zrf = <yakfResFuncP> 0
+            self.c_self.base.base.zrf = <yakfResFuncP> 0
             self._residual_z = None
 
         # Allocate memories and setup the rest of c_self
@@ -192,47 +203,47 @@ cdef class yakfBase:
 
         self._x  = np.zeros((dim_x,), dtype=np.float64)
         self.v_x = self._x
-        self.c_self.base.x = &self.v_x[0]
+        self.c_self.base.base.x = &self.v_x[0]
 
         self._y  = np.zeros((dim_z,), dtype=np.float64)
         self.v_y = self._y
-        self.c_self.base.y = &self.v_y[0]
+        self.c_self.base.base.y = &self.v_y[0]
 
         self._H  = np.zeros((dim_z, dim_x), dtype=np.float64)
         self.v_H = self._H
-        self.c_self.base.H = &self.v_H[0, 0]
+        self.c_self.base.base.H = &self.v_H[0, 0]
 
         self._Up  = np.zeros((_U_sz(dim_x),), dtype=np.float64)
         self.v_Up = self._Up
-        self.c_self.base.Up = &self.v_Up[0]
+        self.c_self.base.base.Up = &self.v_Up[0]
 
         self._Dp  = np.ones((dim_x,), dtype=np.float64)
         self.v_Dp = self._Dp
-        self.c_self.base.Dp = &self.v_Dp[0]
+        self.c_self.base.base.Dp = &self.v_Dp[0]
 
         self._Uq  = np.zeros((_U_sz(dim_x),), dtype=np.float64)
         self.v_Uq = self._Uq
-        self.c_self.base.Uq = &self.v_Uq[0]
+        self.c_self.base.base.Uq = &self.v_Uq[0]
 
         self._Dq  = np.ones((dim_x,), dtype=np.float64)
         self.v_Dq = self._Dq
-        self.c_self.base.Dq = &self.v_Dq[0]
+        self.c_self.base.base.Dq = &self.v_Dq[0]
 
         self._Ur  = np.zeros((_U_sz(dim_z),), dtype=np.float64)
         self.v_Ur = self._Ur
-        self.c_self.base.Ur = &self.v_Ur[0]
+        self.c_self.base.base.Ur = &self.v_Ur[0]
 
         self._Dr  = np.ones((dim_z,), dtype=np.float64)
         self.v_Dr = self._Dr
-        self.c_self.base.Dr = &self.v_Dr[0]
+        self.c_self.base.base.Dr = &self.v_Dr[0]
 
         self._W  = np.zeros((dim_x, 2 * dim_x), dtype=np.float64)
         self.v_W = self._W
-        self.c_self.base.W = &self.v_W[0,0]
+        self.c_self.base.base.W = &self.v_W[0,0]
 
         self._D  = np.ones((2 * dim_x,), dtype=np.float64)
         self.v_D = self._D
-        self.c_self.base.D = &self.v_D[0]
+        self.c_self.base.base.D = &self.v_D[0]
 
     #==========================================================================
     #Decorators
@@ -302,7 +313,7 @@ cdef class yakfBase:
    
     #==========================================================================
     def _predict(self):
-        yakf_base_predict(&(self.c_self.base))
+        yakf_base_predict(&(self.c_self.base.base))
 
     def predict(self, dt=None, **fx_args):
         old_dt = self._dt
@@ -371,7 +382,7 @@ cdef void yakf_py_jfx(yakfPySt * self):
         raise ValueError('Invalid fx_args type (must be dict)!')
     
     #How about handling exceptions here???
-    py_self._W[:, :self.base.Nx] = jfx(py_self._x, dt, **fx_args)
+    py_self._W[:, :self.base.base.Nx] = jfx(py_self._x, dt, **fx_args)
 
 #==============================================================================
 # State transition function 
@@ -429,10 +440,19 @@ cdef void yakf_py_zrf(yakfPySt * self, yakfFloat * zp):
 #==============================================================================
 cdef class Bierman(yakfBase):
     def _update(self):
-        yakf_bierman_update(&self.c_self.base, &self.v_z[0])
+        yakf_bierman_update(&self.c_self.base.base, &self.v_z[0])
 
 #==============================================================================
 cdef class Joseph(yakfBase):
     def _update(self):
-        yakf_joseph_update(&self.c_self.base, &self.v_z[0])
+        yakf_joseph_update(&self.c_self.base.base, &self.v_z[0])
 
+#==============================================================================
+cdef class AdaptiveBierman(yakfBase):
+    def _update(self):
+        yakf_adaptive_bierman_update(&self.c_self.base, &self.v_z[0])
+
+#==============================================================================
+cdef class AdaptiveJoseph(yakfBase):
+    def _update(self):
+        yakf_adaptive_joseph_update(&self.c_self.base, &self.v_z[0])
