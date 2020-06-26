@@ -28,10 +28,11 @@ pyximport.install(
         }
     )
 
-from yakf_py import Bierman as KF
+#from yakf_py import Bierman as KF
 #from yakf_py import Joseph as KF
 #from yakf_py import AdaptiveBierman as KF
 #from yakf_py import AdaptiveJoseph as KF
+from yakf_py import DoNotUseThisFilter as KF
 
 def _fx(x, dt, **fx_args):
     x = x.copy()
@@ -63,14 +64,14 @@ def _jhx(x, **hx_args):
 def _zrf(a,b):
     return a - b
 
-STD = 10
+STD = 10.
 
 #kf = FK(4, 2, 1., _fx, _jfx, _hx, _jhx, residual_z=_zrf)
 kf = KF(4, 2, 1., _fx, _jfx, _hx, _jhx)
-kf.x[0] = 0
-kf.x[1] = 1
+kf.x[0] = 0.
+kf.x[1] = 0.3
 kf.Dp *= .0001
-kf.Dq *= 1.0e-9
+kf.Dq *= 1.0e-8
 kf.Dr *= STD*STD
 kf.Ur += 0.5
 

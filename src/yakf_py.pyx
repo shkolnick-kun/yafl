@@ -59,25 +59,28 @@ cdef extern from "yakf.c":
 
         yakfInt   Nx     #
         yakfInt   Nz     #
-        
+
     cdef void yakf_base_predict(yakfBaseSt * self)
     cdef void yakf_base_update(yakfBaseSt * self, yakfFloat * z, yakfScalarUpdateP scalar_update)
-    
+
     cdef void yakf_bierman_update(yakfBaseSt * self, yakfFloat * z)
-    
+
     cdef void yakf_joseph_update(yakfBaseSt * self, yakfFloat * z)
-    
+
     ctypedef struct yakfAdaptiveSt:
         yakfBaseSt base
         yakfFloat  chi2
-        
+
     cdef void yakf_adaptive_bierman_update(yakfAdaptiveSt * self, yakfFloat * z)
-        
+
     cdef void yakf_adaptive_joseph_update(yakfAdaptiveSt * self, yakfFloat * z)
-    
+
+    # For demonstration purposes only
+    cdef void yakf_do_not_use_this_update(yakfAdaptiveSt * self, yakfFloat * z)
+
 cdef extern from "yakf_math.c":
     cdef void yakfm_set_u(yakfInt sz, yakfFloat *res, yakfFloat *u)
-    
+
 #==============================================================================
 #Extension API
 #==============================================================================
@@ -456,3 +459,13 @@ cdef class AdaptiveBierman(yakfBase):
 cdef class AdaptiveJoseph(yakfBase):
     def _update(self):
         yakf_adaptive_joseph_update(&self.c_self.base, &self.v_z[0])
+
+#==============================================================================
+cdef class DoNotUseThisFilter(yakfBase):
+    """
+    WARNING!!!
+    DO NOT USE THIS variant of Adaptive Joseph filter !!!
+    It was implemented to show some flaws of the corresponding algorithm!
+    """
+    def _update(self):
+        yakf_do_not_use_this_update(&self.c_self.base, &self.v_z[0])

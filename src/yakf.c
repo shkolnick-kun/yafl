@@ -361,7 +361,7 @@ static void _adaptive_bierman_scalar_update(yakfBaseSt * self, yakfInt i)
     s = c + r;
 
     /* Divergence test */
-    ac = ((nu * nu) / ((yakfAdaptiveSt *)self)->chi2) - s;
+    ac = (nu * (nu / (((yakfAdaptiveSt *)self)->chi2))) - s;
     if (ac > 0.0)
     {
         /*Adaptive correction factor*/
@@ -483,7 +483,7 @@ static void _adaptive_joseph_scalar_update(yakfBaseSt * self, yakfInt i)
     s = c + r;
 
     /* Divergence test */
-    ac = ((nu * nu) / ((yakfAdaptiveSt *)self)->chi2) - s;
+    ac = (nu * (nu / (((yakfAdaptiveSt *)self)->chi2))) - s;
     if (ac > 0.0)
     {
         /*Adaptive correction factor*/
@@ -499,9 +499,9 @@ static void _adaptive_joseph_scalar_update(yakfBaseSt * self, yakfInt i)
 
     /* K = Up.dot(v * ac / s) = Up.dot(v) * (ac / s) */
 #define K h /*Don't need h any more, use it to store K*/
+#define D v
     yakfm_set_vxn(nx, v, v, ac / s); /*May be used in place*/
     yakfm_set_uv(nx, K, u, v);
-
 
     /*Set W and D*/
     yakfm_bset_vvt(nx1, w, nx, K, f);
@@ -510,16 +510,17 @@ static void _adaptive_joseph_scalar_update(yakfBaseSt * self, yakfInt i)
     /* Now w is (Kf - Up|***) */
     YAKFM_BSET_V(nx1, 0, nx, w, nx, K);
     /* Now w is (Kf - Up|K) */
-#define D v
+
     /* D = concatenate([ac * Dp, np.array([r])]) */
     yakfm_set_vxn(nx, D, d, ac);
     D[nx] = r;
 
     /* Up, Dp = MWGSU(W, D)*/
     yakfm_mwgsu(nx, nx1, u, d, w, D);
-#undef D
+
     /* self.x += K * nu */
     yakfm_add_vxn(nx, self->x, K, nu);
+#undef D /*Don't nee D any more*/
 #undef K /*Don't nee K any more*/
 }
 
@@ -528,3 +529,113 @@ void yakf_adaptive_joseph_update(yakfAdaptiveSt * self, yakfFloat * z)
     yakf_base_update((yakfBaseSt *)self, z, _adaptive_joseph_scalar_update);
 }
 
+/*=============================================================================
+                                 WARNING!!!
+
+             DO NOT USE THIS variant of Adaptive Joseph filter !!!
+
+    It was implemented to show some flaws of the corresponding algorithm!
+=============================================================================*/
+static void _do_not_use_this_update(yakfBaseSt * self, yakfInt i)
+{
+    yakfInt nx;
+    yakfInt nx1;
+    yakfFloat * d;
+    yakfFloat * u;
+    yakfFloat * h;
+    yakfFloat * f;
+    yakfFloat * v;
+    yakfFloat * w;
+    yakfFloat nu;
+    yakfFloat r;
+    yakfFloat c;
+    yakfFloat s;
+    yakfFloat ac;
+
+    YAKF_ASSERT(self);
+
+    nx = self->Nx;
+    YAKF_ASSERT(nx > 1);
+    YAKF_ASSERT(self->Up);
+    YAKF_ASSERT(self->Dp);
+    YAKF_ASSERT(self->H);
+    YAKF_ASSERT(self->y);
+    YAKF_ASSERT(self->Dr);
+    YAKF_ASSERT(self->W);
+    YAKF_ASSERT(self->D);
+
+    nx1 = nx + 1;
+
+    d = self->Dp;
+    u = self->Up;
+
+    h = self->H + nx * i;
+
+    v = self->D;
+    f = v + nx;
+
+    w = self->W;
+
+    nu = self->y[i];
+    r  = self->Dr[i];
+
+    /* f = h.dot(Up) */
+    yakfm_set_vtu(nx, f, h, u);
+
+    /* v = f.dot(Dp).T = Dp.dot(f.T).T */
+    YAKFM_SET_DV(nx, v, d, f);
+
+    /* s = r + f.dot(v)*/
+    c = yakfm_vtv(nx, f, v);
+    s = c + r;
+
+    /* Divergence test */
+    ac = (nu * (nu / (((yakfAdaptiveSt *)self)->chi2))) - s;
+    if (ac > 0.0)
+    {
+        /*Adaptive correction with no limitations approach*/
+        yakfm_set_uv(nx, f, u, v);
+        yakfm_udu_up(nx, u, d, (ac / c) / c, f);
+
+        /*Recompute f,v,s*/
+        /* f = h.dot(Up) */
+        yakfm_set_vtu(nx, f, h, u);
+
+        /* v = f.dot(Dp).T = Dp.dot(f.T).T */
+        YAKFM_SET_DV(nx, v, d, f);
+
+        /* s = r + f.dot(v)*/
+        s  = r + yakfm_vtv(nx, f, v);;
+    }
+
+    /* K = Up.dot(v * ac / s) = Up.dot(v) * (ac / s) */
+#define K h /*Don't need h any more, use it to store K*/
+#define D v
+    yakfm_set_uv(nx, K, u, v);
+    yakfm_set_vrn(nx, K, K, s); /*May be used in place*/
+
+    /*Set W and D*/
+    yakfm_bset_vvt(nx1, w, nx, K, f);
+    yakfm_bsub_u(nx1, w, nx, u);
+
+    /* Now w is (Kf - Up|***) */
+    YAKFM_BSET_V(nx1, 0, nx, w, nx, K);
+    /* Now w is (Kf - Up|K) */
+
+    /* D = concatenate([Dp, np.array([r])]) */
+    memcpy((void *)D, (void *)d, nx * sizeof(yakfFloat));
+    D[nx] = r;
+
+    /* Up, Dp = MWGSU(W, D)*/
+    yakfm_mwgsu(nx, nx1, u, d, w, D);
+
+    /* self.x += K * nu */
+    yakfm_add_vxn(nx, self->x, K, nu);
+#undef D /*Don't nee D any more*/
+#undef K /*Don't nee K any more*/
+}
+
+void yakf_do_not_use_this_update(yakfAdaptiveSt * self, yakfFloat * z)
+{
+    yakf_base_update((yakfBaseSt *)self, z, _do_not_use_this_update);
+}

@@ -154,4 +154,13 @@ void yakf_adaptive_bierman_update(yakfAdaptiveSt * self, yakfFloat * z);
 -----------------------------------------------------------------------------*/
 #define YAKF_ADAPTIVE_JOSEPH_PREDICT(self) yakf_base_predict((yakfBaseSt *)self);
 void yakf_adaptive_joseph_update(yakfAdaptiveSt * self, yakfFloat * z);
+
+/*-----------------------------------------------------------------------------
+                                 WARNING!!!
+
+             DO NOT USE THIS variant of Adaptive Joseph filter !!!
+
+     It was implemented to show some flaws of the corresponding algorithm!
+-----------------------------------------------------------------------------*/
+void yakf_do_not_use_this_update(yakfAdaptiveSt * self, yakfFloat * z);
 #endif // YAKF_H
