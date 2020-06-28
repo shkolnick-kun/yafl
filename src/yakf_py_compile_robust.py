@@ -28,11 +28,10 @@ pyximport.install(
         }
     )
 
-#from yakf_py import Bierman as KF
-#from yakf_py import Joseph as KF
-#from yakf_py import AdaptiveBierman as KF
-from yakf_py import AdaptiveJoseph as KF
-#from yakf_py import DoNotUseThisFilter as KF
+#from yakf_py import RobustJoseph as KF
+#from yakf_py import RobustBierman as KF
+#from yakf_py import AdaptiveRobustJoseph as KF
+from yakf_py import AdaptiveRobustBierman as KF
 
 def _fx(x, dt, **fx_args):
     x = x.copy()
@@ -61,21 +60,52 @@ def _jhx(x, **hx_args):
         ])
     return H
 
+#Default noice model is Normal with Poisson outliers
+def _gz(beta):
+    # +- 3*sigma
+    if 3.0 >= np.abs(beta):
+        return float(beta)
+    
+    # # +- 6*sigma - uncertain measurements
+    # if 6.0 >= np.abs(beta):
+    #     return float(beta/3.0)
+    
+    # outliers
+    return float(np.sign(beta))
+    
+def _gdotz(beta):
+    # +- 3*sigma
+    if 3.0 >= np.abs(beta):
+        return 1.0
+    
+    # # +- 6*sigma - uncertain measurements
+    # if 6.0 >= np.abs(beta):
+    #     return 1.0/3.0
+    
+    # outliers
+    return 0.0
+
+
+
+
 def _zrf(a,b):
     return a - b
 
 STD = 10.
 
 #kf = KF(4, 2, 1., _fx, _jfx, _hx, _jhx, residual_z=_zrf)
-kf = KF(4, 2, 1., _fx, _jfx, _hx, _jhx)
+kf = KF(4, 2, 1., _fx, _jfx, _hx, _jhx, gz=_gz, gdotz=_gdotz)
+#kf = KF(4, 2, 1., _fx, _jfx, _hx, _jhx)
 kf.x[0] = 0.
 kf.x[1] = 0.3
-kf.Dp *= .0001
+kf.Dp *= .001
 kf.Dq *= 1.0e-8
-kf.Dr *= STD*STD
+#This is robust filter, so no square here
+kf.Dr *= STD
+
 kf.Ur += 0.5
 
-N = 2000
+N = 20000
 
 clean = np.zeros((N, 2))
 noisy = np.zeros((N, 2))

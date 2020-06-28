@@ -282,6 +282,7 @@ static void _joseph_scalar_update(yakfBaseSt * self, yakfInt i)
 
     /*K = Up.dot(v/s) = Up.dot(v)/s*/
 #define K h /*Don't need h any more, use it to store K*/
+#define D v
     yakfm_set_uv(nx, K, u, v);
     yakfm_set_vrn(nx, K, K, s); /*May be used in place*/
 
@@ -292,16 +293,17 @@ static void _joseph_scalar_update(yakfBaseSt * self, yakfInt i)
     /* Now w is (Kf - Up|***) */
     YAKFM_BSET_V(nx1, 0, nx, w, nx, K);
     /* Now w is (Kf - Up|K) */
-#define D v
+
     /* D = concatenate([Dp, np.array([r])]) */
     memcpy((void *)D, (void *)d, nx * sizeof(yakfFloat));
     D[nx] = r;
 
     /* Up, Dp = MWGSU(W, D)*/
     yakfm_mwgsu(nx, nx1, u, d, w, D);
-#undef D
+
     /* self.x += K * y[i] */
     yakfm_add_vxn(nx, self->x, K, self->y[i]);
+#undef D /*Don't nee D any more*/
 #undef K /*Don't nee K any more*/
 }
 
@@ -638,4 +640,495 @@ static void _do_not_use_this_update(yakfBaseSt * self, yakfInt i)
 void yakf_do_not_use_this_update(yakfAdaptiveSt * self, yakfFloat * z)
 {
     yakf_base_update((yakfBaseSt *)self, z, _do_not_use_this_update);
+}
+
+/*=============================================================================
+                            Robust Bierman filter
+=============================================================================*/
+static void _robust_bierman_scalar_update(yakfBaseSt * self, yakfInt i)
+{
+    yakfInt j;
+    yakfInt k;
+    yakfInt nx;
+    yakfInt nxk;
+    yakfFloat * d;
+    yakfFloat * u;
+    yakfFloat * h;
+    yakfFloat * f;
+    yakfFloat r05;
+    yakfFloat gdot;
+    yakfFloat y;
+    yakfRobFuncP g;
+
+    YAKF_ASSERT(self);
+
+    nx = self->Nx;
+    YAKF_ASSERT(nx > 1);
+    YAKF_ASSERT(self->Up);
+    YAKF_ASSERT(self->Dp);
+    YAKF_ASSERT(self->H);
+    YAKF_ASSERT(self->y);
+    YAKF_ASSERT(self->Dr);
+    YAKF_ASSERT(self->D);
+
+    r05 = self->Dr[i]; /* alpha = r**0.5 is stored in Dr*/
+    y   = self->y[i];
+    g   = ((yakfRobustSt *)self)->g;
+    if (g)
+    {
+        gdot = y / r05; /*Use gdot as temp variable*/
+        y = r05 * g(self, gdot);
+
+        g = ((yakfRobustSt *)self)->gdot;
+        YAKF_ASSERT(g);
+
+        gdot = g(self, gdot);
+    }
+    else
+    {
+        gdot = 1.0;
+    }
+
+    r05 *= r05;
+#define a2 r05 /*Now it is r = alpha**2 */
+
+    u = self->Up;
+    d = self->Dp;
+
+    h = self->H + nx * i;
+
+    /* f = h.dot(Up) */
+    f = self->D;
+    yakfm_set_vtu(nx, f, h, u);
+
+    /* v = f.dot(Dp).T = Dp.dot(f.T).T */
+#define v h /*Don't need h any more, use it to store v*/
+    YAKFM_SET_DV(nx, v, d, f);
+
+    for (k = 0, nxk = 0; k < nx; nxk += k++)
+    {
+        yakfFloat a;
+        yakfFloat fk;
+        yakfFloat vk;
+
+        fk = f[k];
+        vk = v[k];
+        a = a2 + gdot * fk * vk;
+        d[k] *= a2 / a;
+#define p fk /*No need for separate p variable*/
+        p = - fk / a2;
+        for (j = 0; j < k; j++)
+        {
+            yakfFloat ujk;
+            yakfFloat vj;
+
+            ujk = u[j + nxk];
+            vj  = v[j];
+
+            u[j + nxk] = ujk +   p * vj;
+            v[j]       = vj  + ujk * vk;
+        }
+#undef  p /*Don't need p any more...*/
+        a2 = a;
+    }
+    /*
+    Now we must do:
+    y = alpha * g(y[i] / alpha)
+    self.x += K * y
+
+    Since:
+    a2 == a
+
+    then we have:
+    K == v / a == v / a2
+
+    and so:
+    K * nu == (v / a2) * y == v / a2 * y == v * (y / a2)
+
+    Finally we get:
+    self.x += v * (y / a2)
+    */
+    yakfm_add_vxn(nx, self->x, v, y / a2);
+#undef v  /*Don't nee v any more*/
+#undef a2 /*Don't nee a2 any more*/
+}
+
+void yakf_robust_bierman_update(yakfRobustSt * self, yakfFloat * z)
+{
+    yakf_base_update((yakfBaseSt *)self, z, _robust_bierman_scalar_update);
+}
+
+/*=============================================================================
+                            Robust Joseph filter
+=============================================================================*/
+static void _robust_joseph_scalar_update(yakfBaseSt * self, yakfInt i)
+{
+    yakfInt nx;
+    yakfInt nx1;
+    yakfFloat * d;
+    yakfFloat * u;
+    yakfFloat * h;
+    yakfFloat * f;
+    yakfFloat * v;
+    yakfFloat * w;
+    yakfFloat r05;
+    yakfFloat gdot;
+    yakfFloat s;
+    yakfFloat y;
+    yakfRobFuncP g;
+
+    YAKF_ASSERT(self);
+
+    nx = self->Nx;
+    YAKF_ASSERT(nx > 1);
+    YAKF_ASSERT(self->Up);
+    YAKF_ASSERT(self->Dp);
+    YAKF_ASSERT(self->H);
+    YAKF_ASSERT(self->y);
+    YAKF_ASSERT(self->Dr);
+    YAKF_ASSERT(self->W);
+    YAKF_ASSERT(self->D);
+
+    r05 = self->Dr[i]; /* alpha = r**0.5 is stored in Dr*/
+    y   = self->y[i];
+    g   = ((yakfRobustSt *)self)->g;
+    if (g)
+    {
+        s = y / r05;
+        y = r05 * g(self, s);
+
+        g = ((yakfRobustSt *)self)->gdot;
+        YAKF_ASSERT(g);
+
+        gdot = g(self, s);
+    }
+    else
+    {
+        gdot = 1.0;
+    }
+
+    r05 *= r05;
+#define a2 r05 /*Now it is r = alpha**2 */
+
+    nx1 = nx + 1;
+
+    d = self->Dp;
+    u = self->Up;
+
+    h = self->H + nx * i;
+
+    v = self->D;
+    f = v + nx;
+
+    w = self->W;
+
+    /* f = h.dot(Up) */
+    yakfm_set_vtu(nx, f, h, u);
+
+    /* v = f.dot(Dp).T = Dp.dot(f.T).T */
+    YAKFM_SET_DV(nx, v, d, f);
+
+    /* s = alpha**2 + gdot * f.dot(v)*/
+    s = a2 + gdot * yakfm_vtv(nx, f, v);
+
+    /*K = Up.dot(v/s) = Up.dot(v)/s*/
+#define K h /*Don't need h any more, use it to store K*/
+#define D v
+    yakfm_set_uv(nx, K, u, v);
+    yakfm_set_vrn(nx, K, K, s); /*May be used in place*/
+
+    /*Set W and D*/
+    yakfm_set_vxn(nx, f, f, gdot); /*May be used in place*/
+    yakfm_bset_vvt(nx1, w, nx, K, f); /*How about yakfm_bset_vvtxn ?*/
+    yakfm_bsub_u(nx1, w, nx, u);
+
+    /* Now w is (gdot*Kf - Up|***) */
+    YAKFM_BSET_V(nx1, 0, nx, w, nx, K);
+    /* Now w is (gdot*Kf - Up|K) */
+
+    /* D = concatenate([Dp, np.array([gdot * alpha**2])]) */
+    memcpy((void *)D, (void *)d, nx * sizeof(yakfFloat));
+    D[nx] = gdot * a2;
+
+    /* Up, Dp = MWGSU(W, D)*/
+    yakfm_mwgsu(nx, nx1, u, d, w, D);
+
+    /* self.x += K * alpha * g(y[i] / alpha) */
+    yakfm_add_vxn(nx, self->x, K, y);
+#undef D  /*Don't nee D any more*/
+#undef K  /*Don't nee K any more*/
+#undef a2 /*Don't nee a2 any more*/
+}
+
+void yakf_robust_joseph_update(yakfRobustSt * self, yakfFloat * z)
+{
+    yakf_base_update((yakfBaseSt *)self, z, _robust_joseph_scalar_update);
+}
+
+/*=============================================================================
+                        Adaptive robust Bierman filter
+=============================================================================*/
+static void _ada_rob_bierman_scalar_update(yakfBaseSt * self, yakfInt i)
+{
+    yakfInt j;
+    yakfInt k;
+    yakfInt nx;
+    yakfInt nxk;
+    yakfFloat * d;
+    yakfFloat * u;
+    yakfFloat * h;
+    yakfFloat * f;
+    yakfFloat r05;
+    yakfFloat gdot;
+    yakfFloat nu;
+    yakfFloat c;
+    yakfFloat s;
+    yakfFloat ac;
+    yakfRobFuncP g;
+
+    YAKF_ASSERT(self);
+
+    nx = self->Nx;
+    YAKF_ASSERT(nx > 1);
+    YAKF_ASSERT(self->Up);
+    YAKF_ASSERT(self->Dp);
+    YAKF_ASSERT(self->H);
+    YAKF_ASSERT(self->y);
+    YAKF_ASSERT(self->Dr);
+    YAKF_ASSERT(self->D);
+
+    r05 = self->Dr[i]; /* alpha = r**0.5 is stored in Dr*/
+    nu   = self->y[i];
+    g   = ((yakfRobustSt *)self)->g;
+    if (g)
+    {
+        gdot = nu / r05; /*Use gdot as temp variable*/
+        nu = r05 * g(self, gdot);
+
+        g = ((yakfRobustSt *)self)->gdot;
+        YAKF_ASSERT(g);
+
+        gdot = g(self, gdot);
+    }
+    else
+    {
+        gdot = 1.0;
+    }
+
+    r05 *= r05;
+#define a2 r05 /*Now it is r = alpha**2 */
+
+    u = self->Up;
+    d = self->Dp;
+
+    h = self->H + nx * i;
+
+    /* f = h.dot(Up) */
+    f = self->D;
+    yakfm_set_vtu(nx, f, h, u);
+
+    /* v = f.dot(Dp).T = Dp.dot(f.T).T */
+#define v h /*Don't need h any more, use it to store v*/
+    YAKFM_SET_DV(nx, v, d, f);
+
+    /* s = alpha**2 + gdot * f.dot(v)*/
+    c = gdot * yakfm_vtv(nx, f, v);
+    s = a2 + c;
+
+    /* Divergence test */
+    ac = (nu * (nu / (((yakfAdaptiveRobustSt *)self)->chi2))) - s;
+    if (ac > 0.0)
+    {
+        /*Adaptive correction factor*/
+        ac = ac / c + 1.0;
+
+        /*Corrected s*/
+        s  = a2 + ac * c;
+    }
+    else
+    {
+        ac = 1.0;
+    }
+
+    for (k = 0, nxk = 0; k < nx; nxk += k++)
+    {
+        yakfFloat a;
+        yakfFloat fk;
+        yakfFloat vk;
+
+        fk = f[k];
+        /*Correct v in place*/
+        vk = ac * v[k];
+        v[k] = vk;
+        a = a2 + gdot * fk * vk;
+        /*Correct d in place*/
+        d[k] *= ac * a2 / a;
+
+
+#define p fk /*No need for separate p variable*/
+        p = - fk / a2;
+        for (j = 0; j < k; j++)
+        {
+            yakfFloat ujk;
+            yakfFloat vj;
+
+            ujk = u[j + nxk];
+            vj  = v[j];
+
+            u[j + nxk] = ujk +   p * vj;
+            v[j]       = vj  + ujk * vk;
+        }
+#undef  p /*Don't need p any more...*/
+        a2 = a;
+    }
+    /*
+    Now we must do:
+    nu = alpha * g(y[i] / alpha)
+    self.x += K * nu
+
+    Since:
+    a2 == a
+
+    then we have:
+    K == v / a == v / a2
+
+    and so:
+    K * nu == (v / a2) * nu == v / a2 * nu == v * (nu / a2)
+
+    Finally we get:
+    self.x += v * (nu / a2)
+    */
+    yakfm_add_vxn(nx, self->x, v, nu / a2);
+#undef v  /*Don't nee v any more*/
+#undef a2 /*Don't nee a2 any more*/
+}
+
+void yakf_adaptive_robust_bierman_update(yakfAdaptiveRobustSt * self, yakfFloat * z)
+{
+    yakf_base_update((yakfBaseSt *)self, z, _ada_rob_bierman_scalar_update);
+}
+
+/*=============================================================================
+                        Adaptive robust Joseph filter
+=============================================================================*/
+static void _ada_rob_joseph_scalar_update(yakfBaseSt * self, yakfInt i)
+{
+    yakfInt nx;
+    yakfInt nx1;
+    yakfFloat * d;
+    yakfFloat * u;
+    yakfFloat * h;
+    yakfFloat * f;
+    yakfFloat * v;
+    yakfFloat * w;
+    yakfFloat r05;
+    yakfFloat gdot;
+    yakfFloat ac;
+    yakfFloat c;
+    yakfFloat s;
+    yakfFloat nu;
+    yakfRobFuncP g;
+
+    YAKF_ASSERT(self);
+
+    nx = self->Nx;
+    YAKF_ASSERT(nx > 1);
+    YAKF_ASSERT(self->Up);
+    YAKF_ASSERT(self->Dp);
+    YAKF_ASSERT(self->H);
+    YAKF_ASSERT(self->y);
+    YAKF_ASSERT(self->Dr);
+    YAKF_ASSERT(self->W);
+    YAKF_ASSERT(self->D);
+
+    r05 = self->Dr[i]; /* alpha = r**0.5 is stored in Dr*/
+    nu  = self->y[i];
+    g   = ((yakfRobustSt *)self)->g;
+    if (g)
+    {
+        s  = nu / r05;
+        nu = r05 * g(self, s); /*nu = alpha * g(y[i] / alpha)*/
+
+        g = ((yakfRobustSt *)self)->gdot;
+        YAKF_ASSERT(g);
+
+        gdot = g(self, s);
+    }
+    else
+    {
+        gdot = 1.0;
+    }
+
+    r05 *= r05;
+#define a2 r05 /*Now it is r = alpha**2 */
+
+    nx1 = nx + 1;
+
+    d = self->Dp;
+    u = self->Up;
+
+    h = self->H + nx * i;
+
+    v = self->D;
+    f = v + nx;
+
+    w = self->W;
+
+    /* f = h.dot(Up) */
+    yakfm_set_vtu(nx, f, h, u);
+
+    /* v = f.dot(Dp).T = Dp.dot(f.T).T */
+    YAKFM_SET_DV(nx, v, d, f);
+
+    /* s = alpha**2 + gdot * f.dot(v)*/
+    c = gdot * yakfm_vtv(nx, f, v);
+    s = a2 + c;
+
+    /* Divergence test */
+    ac = (nu * (nu / (((yakfAdaptiveRobustSt *)self)->chi2))) - s;
+    if (ac > 0.0)
+    {
+        /*Adaptive correction factor*/
+        ac = ac / c + 1.0;
+
+        /*Corrected s*/
+        s  = a2 + ac * c;
+    }
+    else
+    {
+        ac = 1.0;
+    }
+
+    /* K = Up.dot(v * ac / s) = Up.dot(v) * (ac / s) */
+#define K h /*Don't need h any more, use it to store K*/
+#define D v
+    yakfm_set_vxn(nx, v, v, ac / s); /*May be used in place*/
+    yakfm_set_uv(nx, K, u, v);
+
+    /*Set W and D*/
+    yakfm_set_vxn(nx, f, f, gdot); /*May be used in place*/
+    yakfm_bset_vvt(nx1, w, nx, K, f); /*How about yakfm_bset_vvtxn ?*/
+    yakfm_bsub_u(nx1, w, nx, u);
+
+    /* Now w is (gdot*Kf - Up|***) */
+    YAKFM_BSET_V(nx1, 0, nx, w, nx, K);
+    /* Now w is (gdot*Kf - Up|K) */
+
+    /* D = concatenate([ac * Dp, np.array([gdot * alpha**2])]) */
+    yakfm_set_vxn(nx, D, d, ac);
+    D[nx] = gdot * a2;
+
+    /* Up, Dp = MWGSU(W, D)*/
+    yakfm_mwgsu(nx, nx1, u, d, w, D);
+
+    /* self.x += K * nu */
+    yakfm_add_vxn(nx, self->x, K, nu);
+#undef D  /*Don't nee D any more*/
+#undef K  /*Don't nee K any more*/
+#undef a2 /*Don't nee a2 any more*/
+}
+
+void yakf_adaptive_robust_joseph_update(yakfAdaptiveRobustSt * self, yakfFloat * z)
+{
+    yakf_base_update((yakfBaseSt *)self, z, _ada_rob_joseph_scalar_update);
 }

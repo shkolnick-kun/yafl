@@ -146,13 +146,13 @@ Default value for chi2 is:
 /*-----------------------------------------------------------------------------
                            Adaptive Bierman filter
 -----------------------------------------------------------------------------*/
-#define YAKF_ADAPTIVE_BIERAMN_PREDICT(self) yakf_base_predict((yakfBaseSt *)self);
+#define YAKF_ADAPTIVE_BIERAMN_PREDICT(self) yakf_base_predict((yakfBaseSt *)self)
 void yakf_adaptive_bierman_update(yakfAdaptiveSt * self, yakfFloat * z);
 
 /*-----------------------------------------------------------------------------
                            Adaptive Joseph filter
 -----------------------------------------------------------------------------*/
-#define YAKF_ADAPTIVE_JOSEPH_PREDICT(self) yakf_base_predict((yakfBaseSt *)self);
+#define YAKF_ADAPTIVE_JOSEPH_PREDICT(self) yakf_base_predict((yakfBaseSt *)self)
 void yakf_adaptive_joseph_update(yakfAdaptiveSt * self, yakfFloat * z);
 
 /*-----------------------------------------------------------------------------
@@ -163,4 +163,78 @@ void yakf_adaptive_joseph_update(yakfAdaptiveSt * self, yakfFloat * z);
      It was implemented to show some flaws of the corresponding algorithm!
 -----------------------------------------------------------------------------*/
 void yakf_do_not_use_this_update(yakfAdaptiveSt * self, yakfFloat * z);
+
+/*=============================================================================
+                    Robust UD-factorized EKF definitions
+=============================================================================*/
+/*
+Based on:
+1. West M., "Robust Sequential Approximate Bayesian Estimation",
+   J. R. Statist. Soc. B (1981), 43, No. 2, pp. 157-166
+
+2. Gaver, Donald Paul; Jacobs, Patricia A., "Robustifying the Kalman filter",
+   Naval Postgraduate School technical report. 1987
+   http://hdl.handle.net/10945/30147
+*/
+typedef yakfFloat (* yakfRobFuncP)(yakfBaseSt *, yakfFloat);
+
+typedef struct {
+    yakfBaseSt base;
+    yakfRobFuncP g;    /* g = -d(ln(pdf(y))) / dy */
+    yakfRobFuncP gdot; /* gdot = G = d(g) / dy */
+} yakfRobustSt; /*Robust EKF*/
+
+/*---------------------------------------------------------------------------*/
+#define YAKF_ROBUST_INITIALIZER(_f, _jf, _h, _jh, _zrf, _nx, _nz, _mem)    \
+{                                                                          \
+    .base = YAKF_BASE_INITIALIZER(_f, _jf, _h, _jh, _zrf, _nx, _nz, _mem), \
+    .g    = (yakfRobFuncP)0,                                               \
+    .gdot = (yakfRobFuncP)0                                                \
+}
+
+/*-----------------------------------------------------------------------------
+                           Adaptive Bierman filter
+-----------------------------------------------------------------------------*/
+#define YAKF_ROBUST_BIERAMN_PREDICT(self) yakf_base_predict((yakfBaseSt *)self)
+void yakf_robust_bierman_update(yakfRobustSt * self, yakfFloat * z);
+
+/*-----------------------------------------------------------------------------
+                           Adaptive Joseph filter
+-----------------------------------------------------------------------------*/
+#define YAKF_ROBUST_JOSEPH_PREDICT(self) yakf_base_predict((yakfBaseSt *)self)
+void yakf_robust_joseph_update(yakfRobustSt * self, yakfFloat * z);
+
+/*=============================================================================
+                 Adaptive robust UD-factorized EKF definitions
+=============================================================================*/
+typedef struct {
+    yakfRobustSt base;
+    yakfFloat chi2; /*Divergence test threshold (chi-squared criteria)*/
+} yakfAdaptiveRobustSt; /*Robust EKF*/
+
+/*---------------------------------------------------------------------------*/
+#define YAKF_ADAPTIVE_ROBUST_INITIALIZER(_f, _jf, _h, _jh, _zrf, _nx, _nz, _mem) \
+{                                                                                \
+    .base = YAKF_ROBUST_INITIALIZER(_f, _jf, _h, _jh, _zrf, _nx, _nz, _mem),     \
+    .chi2 = 10.8275662                                                           \
+}
+
+/*-----------------------------------------------------------------------------
+                           Adaptive Bierman filter
+-----------------------------------------------------------------------------*/
+#define YAKF_ADAPTIVE_ROBUST_BIERAMN_PREDICT(self) \
+    yakf_base_predict((yakfBaseSt *)self)
+
+void yakf_adaptive_robust_bierman_update(yakfAdaptiveRobustSt * self, \
+                                         yakfFloat * z);
+
+/*-----------------------------------------------------------------------------
+                           Adaptive Joseph filter
+-----------------------------------------------------------------------------*/
+#define YAKF_ADAPTIVE_ROBUST_JOSEPH_PREDICT(self) \
+    yakf_base_predict((yakfBaseSt *)self)
+
+void yakf_adaptive_robust_joseph_update(yakfAdaptiveRobustSt * self, \
+                                        yakfFloat * z);
+
 #endif // YAKF_H

@@ -21,10 +21,12 @@
 # distutils: language = c
 from libc cimport stdint
 
+#------------------------------------------------------------------------------
 cdef extern from "yakf_config.h":
     ctypedef double         yakfFloat
     ctypedef stdint.int32_t yakfInt
 
+#------------------------------------------------------------------------------
 cdef extern from "yakf.c":
 
     ctypedef _yakfBaseSt yakfBaseSt
@@ -61,12 +63,14 @@ cdef extern from "yakf.c":
         yakfInt   Nz     #
 
     cdef void yakf_base_predict(yakfBaseSt * self)
-    cdef void yakf_base_update(yakfBaseSt * self, yakfFloat * z, yakfScalarUpdateP scalar_update)
+    cdef void yakf_base_update(yakfBaseSt * self, yakfFloat * z, \
+                               yakfScalarUpdateP scalar_update)
 
     cdef void yakf_bierman_update(yakfBaseSt * self, yakfFloat * z)
 
     cdef void yakf_joseph_update(yakfBaseSt * self, yakfFloat * z)
 
+    #--------------------------------------------------------------------------
     ctypedef struct yakfAdaptiveSt:
         yakfBaseSt base
         yakfFloat  chi2
@@ -78,6 +82,29 @@ cdef extern from "yakf.c":
     # For demonstration purposes only
     cdef void yakf_do_not_use_this_update(yakfAdaptiveSt * self, yakfFloat * z)
 
+    #--------------------------------------------------------------------------
+    ctypedef yakfFloat (* yakfRobFuncP)(yakfBaseSt *, yakfFloat)
+
+    ctypedef struct yakfRobustSt:
+        yakfBaseSt   base
+        yakfRobFuncP g
+        yakfRobFuncP gdot
+
+    cdef void yakf_robust_bierman_update(yakfRobustSt * self, yakfFloat * z)
+
+    cdef void yakf_robust_joseph_update(yakfRobustSt * self, yakfFloat * z)
+    #--------------------------------------------------------------------------
+    ctypedef struct yakfAdaptiveRobustSt:
+        yakfRobustSt base
+        yakfFloat  chi2
+
+    cdef void yakf_adaptive_robust_bierman_update(yakfAdaptiveRobustSt * self,\
+                                                  yakfFloat * z)
+
+    cdef void yakf_adaptive_robust_joseph_update(yakfAdaptiveRobustSt * self, \
+                                                 yakfFloat * z)
+
+#------------------------------------------------------------------------------
 cdef extern from "yakf_math.c":
     cdef void yakfm_set_u(yakfInt sz, yakfFloat *res, yakfFloat *u)
 
@@ -88,17 +115,32 @@ cdef extern from "yakf_math.c":
 cimport numpy as np
 import  numpy as np
 
+#------------------------------------------------------------------------------
+#                       Kalman filter basic union
+#------------------------------------------------------------------------------
+ctypedef union yakfPyBaseSt:
+    yakfBaseSt           base
+    yakfAdaptiveSt       adaptive
+    yakfRobustSt         robust
+    yakfAdaptiveRobustSt ada_rob
+
+#------------------------------------------------------------------------------
 # Kalman filter C-structure with Python callback info
+#------------------------------------------------------------------------------
 ctypedef struct yakfPySt:
-    # Kalman filter base structure
-    yakfAdaptiveSt base
+    # Kalman filter base union
+    yakfPyBaseSt base
 
     # Python/Cython self
     void * py_self
 
+#------------------------------------------------------------------------------
 cdef int _U_sz(int dim_u):
     return max(1, (dim_u * (dim_u - 1))//2)
 
+#------------------------------------------------------------------------------
+#                             Basic Filter class
+#------------------------------------------------------------------------------
 # Bierman filter class
 cdef class yakfBase:
     # Kalman filter C-self
@@ -156,9 +198,6 @@ cdef class yakfBase:
 
     def __init__(self, int dim_x, int dim_z, yakfFloat dt, \
                  fx, jfx, hx, jhx, residual_z = None):
-
-        #Init chi2
-        self.c_self.base.chi2 = 10.8275662
 
         #Store dimensions
         self.c_self.base.base.Nx = dim_x
@@ -342,6 +381,8 @@ cdef class yakfBase:
         self._update()
         
 #==============================================================================
+#                             Basic C-callbacks
+#==============================================================================
 # State transition function 
 cdef void yakf_py_fx(yakfPySt * self):
     
@@ -364,7 +405,7 @@ cdef void yakf_py_fx(yakfPySt * self):
     #How about handling exceptions here???
     py_self._x[:] = fx(py_self._x, dt, **fx_args)
 
-#==============================================================================
+#------------------------------------------------------------------------------
 # State transition function Jacobian
 cdef void yakf_py_jfx(yakfPySt * self):
     
@@ -387,7 +428,7 @@ cdef void yakf_py_jfx(yakfPySt * self):
     #How about handling exceptions here???
     py_self._W[:, :self.base.base.Nx] = jfx(py_self._x, dt, **fx_args)
 
-#==============================================================================
+#------------------------------------------------------------------------------
 # State transition function 
 cdef void yakf_py_hx(yakfPySt * self):
     
@@ -406,7 +447,7 @@ cdef void yakf_py_hx(yakfPySt * self):
     #How about handling exceptions here???
     py_self._y[:] = hx(py_self._x, **hx_args)
 
-#==============================================================================
+#------------------------------------------------------------------------------
 # State transition function Jacobian
 cdef void yakf_py_jhx(yakfPySt * self):
     
@@ -425,7 +466,7 @@ cdef void yakf_py_jhx(yakfPySt * self):
     #How about handling exceptions here???
     py_self._H[:,:] = jhx(py_self._x, **hx_args)
 
-#==============================================================================    
+#------------------------------------------------------------------------------
 # Measurement residual function
 cdef void yakf_py_zrf(yakfPySt * self, yakfFloat * zp):
     
@@ -445,27 +486,171 @@ cdef class Bierman(yakfBase):
     def _update(self):
         yakf_bierman_update(&self.c_self.base.base, &self.v_z[0])
 
-#==============================================================================
+#------------------------------------------------------------------------------
 cdef class Joseph(yakfBase):
     def _update(self):
         yakf_joseph_update(&self.c_self.base.base, &self.v_z[0])
 
 #==============================================================================
-cdef class AdaptiveBierman(yakfBase):
-    def _update(self):
-        yakf_adaptive_bierman_update(&self.c_self.base, &self.v_z[0])
-
+#                        Adaptive filter basic class
 #==============================================================================
-cdef class AdaptiveJoseph(yakfBase):
-    def _update(self):
-        yakf_adaptive_joseph_update(&self.c_self.base, &self.v_z[0])
+cdef class yakfAdaptiveBase(yakfBase):
+    def __init__(self, int dim_x, int dim_z, yakfFloat dt, \
+                 fx, jfx, hx, jhx, **kwargs):
+        
+        super().__init__(dim_x, dim_z, dt, fx, jfx, hx, jhx, **kwargs)
+        
+        #Init chi2 with scipy.stats.chi2.ppf(0.999, 1) 
+        self.c_self.base.adaptive.chi2 = 10.8275662
+    #==========================================================================
+    #Decorators
+    @property
+    def chi2(self):
+        return self.c_self.base.adaptive.chi2
 
+    @chi2.setter
+    def chi2(self, value):
+        self.c_self.base.adaptive.chi2 = <yakfFloat>value
 #==============================================================================
-cdef class DoNotUseThisFilter(yakfBase):
+cdef class AdaptiveBierman(yakfAdaptiveBase):
+    def _update(self):
+        yakf_adaptive_bierman_update(&self.c_self.base.adaptive, &self.v_z[0])
+
+#------------------------------------------------------------------------------
+cdef class AdaptiveJoseph(yakfAdaptiveBase):
+    def _update(self):
+        yakf_adaptive_joseph_update(&self.c_self.base.adaptive, &self.v_z[0])
+
+#------------------------------------------------------------------------------
+cdef class DoNotUseThisFilter(yakfAdaptiveBase):
     """
     WARNING!!!
     DO NOT USE THIS variant of Adaptive Joseph filter !!!
     It was implemented to show some flaws of the corresponding algorithm!
     """
     def _update(self):
-        yakf_do_not_use_this_update(&self.c_self.base, &self.v_z[0])
+        yakf_do_not_use_this_update(&self.c_self.base.adaptive, &self.v_z[0])
+
+#==============================================================================
+#                        Robust filter basic class
+#==============================================================================
+cdef class yakfRobustBase(yakfBase):
+    
+    cdef object _gz
+    cdef object _gdotz
+    
+    def __init__(self, int dim_x, int dim_z, yakfFloat dt, \
+                 fx, jfx, hx, jhx, gz=None, gdotz=None, **kwargs):
+        
+        super().__init__(dim_x, dim_z, dt, fx, jfx, hx, jhx, **kwargs)
+        
+        if gz:
+            if not callable(gz):
+                raise ValueError('gz must be callable!')
+                
+            if not gdotz:
+                raise ValueError('gdotz must be passed!')
+                
+            if not callable(gdotz):
+                raise ValueError('gdotz must be callable!')
+        
+            self._gz = gz
+            self._gdotz = gz
+            
+            self.c_self.base.robust.g    = <yakfRobFuncP>yakf_py_gz
+            self.c_self.base.robust.gdot = <yakfRobFuncP>yakf_py_gdotz
+            
+        else:
+            self.c_self.base.robust.g    = <yakfRobFuncP>0
+            self.c_self.base.robust.gdot = <yakfRobFuncP>0
+
+#------------------------------------------------------------------------------
+# State transition function 
+cdef yakfFloat yakf_py_gz(yakfPySt * self, yakfFloat nu):
+
+    py_self = <yakfRobustBase>(self.py_self)
+    if not isinstance(py_self, yakfBase):
+        raise ValueError('Invalid py_self type (must be subclass of yakfBase)!')
+
+    gz = py_self._gz
+    if not callable(gz):
+        raise ValueError('gz must be callable!')
+
+    hx_args = py_self._hx_args
+    if not isinstance(hx_args, dict):
+        raise ValueError('Invalid hx_args type (must be dict)!')
+
+    #How about handling exceptions here???
+    ret = gz(nu, **hx_args)
+    if type(ret) != float:
+        raise ValueError('gz must return float!')
+
+    return <yakfFloat>ret
+
+#------------------------------------------------------------------------------
+# State transition function Jacobian
+cdef yakfFloat yakf_py_gdotz(yakfPySt * self, yakfFloat nu):
+
+    py_self = <yakfRobustBase>(self.py_self)
+    if not isinstance(py_self, yakfBase):
+        raise ValueError('Invalid py_self type (must be subclass of yakfBase)!')
+
+    gdotz = py_self._gdotz
+    if not callable(gdotz):
+        raise ValueError('gdotz must be callable!')
+
+    hx_args = py_self._hx_args
+    if not isinstance(hx_args, dict):
+        raise ValueError('Invalid hx_args type (must be dict)!')
+
+    #How about handling exceptions here???
+    ret = gdotz(nu, **hx_args)
+    if type(ret) != float:
+        raise ValueError('gdotz must return float!')
+
+    return <yakfFloat>ret
+
+#==============================================================================
+cdef class RobustBierman(yakfRobustBase):
+    def _update(self):
+        yakf_robust_bierman_update(&self.c_self.base.robust, &self.v_z[0])
+
+#------------------------------------------------------------------------------
+cdef class RobustJoseph(yakfRobustBase):
+    def _update(self):
+        yakf_robust_joseph_update(&self.c_self.base.robust, &self.v_z[0])
+
+#==============================================================================
+#                        Robust filter basic class
+#==============================================================================
+cdef class yakfAdaptiveRobustBase(yakfRobustBase):
+
+    def __init__(self, int dim_x, int dim_z, yakfFloat dt, \
+                 fx, jfx, hx, jhx, **kwargs):
+        
+        super().__init__(dim_x, dim_z, dt, fx, jfx, hx, jhx, **kwargs)
+        
+        #Init chi2 with scipy.stats.chi2.ppf(0.999, 1) 
+        self.c_self.base.ada_rob.chi2 = 10.8275662
+        
+    #==========================================================================
+    #Decorators
+    @property
+    def chi2(self):
+        return self.c_self.base.ada_rob.chi2
+
+    @chi2.setter
+    def chi2(self, value):
+        self.c_self.base.ada_rob.chi2 = <yakfFloat>value
+
+#==============================================================================
+cdef class AdaptiveRobustBierman(yakfAdaptiveRobustBase):
+    def _update(self):
+        yakf_adaptive_robust_bierman_update(&self.c_self.base.ada_rob, \
+                                            &self.v_z[0])
+
+#------------------------------------------------------------------------------
+cdef class AdaptiveRobustJoseph(yakfAdaptiveRobustBase):
+    def _update(self):
+        yakf_adaptive_robust_joseph_update(&self.c_self.base.ada_rob, \
+                                           &self.v_z[0])
