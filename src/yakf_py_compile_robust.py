@@ -66,9 +66,9 @@ def _gz(beta):
     if 3.0 >= np.abs(beta):
         return float(beta)
     
-    # # +- 6*sigma - uncertain measurements
-    # if 6.0 >= np.abs(beta):
-    #     return float(beta/3.0)
+    # +- 6*sigma - uncertain measurements
+    if 6.0 >= np.abs(beta):
+        return float(beta/3.0)
     
     # outliers
     return float(np.sign(beta))
@@ -78,34 +78,31 @@ def _gdotz(beta):
     if 3.0 >= np.abs(beta):
         return 1.0
     
-    # # +- 6*sigma - uncertain measurements
-    # if 6.0 >= np.abs(beta):
-    #     return 1.0/3.0
+    # +- 6*sigma - uncertain measurements
+    if 6.0 >= np.abs(beta):
+        return 1.0/3.0
     
     # outliers
     return 0.0
 
-
-
-
 def _zrf(a,b):
     return a - b
 
-STD = 10.
+STD = 100.
 
 #kf = KF(4, 2, 1., _fx, _jfx, _hx, _jhx, residual_z=_zrf)
 kf = KF(4, 2, 1., _fx, _jfx, _hx, _jhx, gz=_gz, gdotz=_gdotz)
 #kf = KF(4, 2, 1., _fx, _jfx, _hx, _jhx)
-kf.x[0] = 0.
-kf.x[1] = 0.3
-kf.Dp *= .001
+kf.x[0] = 1000.
+kf.x[1] = -0.5
+kf.Dp *= .00001
 kf.Dq *= 1.0e-8
 #This is robust filter, so no square here
 kf.Dr *= STD
-
+kf.Dr[0] *= .87
 kf.Ur += 0.5
 
-N = 20000
+N = 6000
 
 clean = np.zeros((N, 2))
 noisy = np.zeros((N, 2))

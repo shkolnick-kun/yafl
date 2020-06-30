@@ -936,7 +936,7 @@ static void _ada_rob_bierman_scalar_update(yakfBaseSt * self, yakfInt i)
     s = a2 + c;
 
     /* Divergence test */
-    ac = (nu * (nu / (((yakfAdaptiveRobustSt *)self)->chi2))) - s;
+    ac = gdot * (nu * (nu / (((yakfAdaptiveRobustSt *)self)->chi2))) - s;
     if (ac > 0.0)
     {
         /*Adaptive correction factor*/
@@ -1083,7 +1083,7 @@ static void _ada_rob_joseph_scalar_update(yakfBaseSt * self, yakfInt i)
     s = a2 + c;
 
     /* Divergence test */
-    ac = (nu * (nu / (((yakfAdaptiveRobustSt *)self)->chi2))) - s;
+    ac = gdot * (nu * (nu / (((yakfAdaptiveRobustSt *)self)->chi2))) - s;
     if (ac > 0.0)
     {
         /*Adaptive correction factor*/

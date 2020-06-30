@@ -216,9 +216,12 @@ typedef struct {
 #define YAKF_ADAPTIVE_ROBUST_INITIALIZER(_f, _jf, _h, _jh, _zrf, _nx, _nz, _mem) \
 {                                                                                \
     .base = YAKF_ROBUST_INITIALIZER(_f, _jf, _h, _jh, _zrf, _nx, _nz, _mem),     \
-    .chi2 = 10.8275662                                                           \
+    .chi2 = 8.8074684                                                            \
 }
-
+/*
+Default value for chi2 is:
+  scipy.stats.chi2.ppf(0.997, 1)
+*/
 /*-----------------------------------------------------------------------------
                            Adaptive Bierman filter
 -----------------------------------------------------------------------------*/

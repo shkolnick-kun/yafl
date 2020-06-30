@@ -555,7 +555,7 @@ cdef class yakfRobustBase(yakfBase):
                 raise ValueError('gdotz must be callable!')
         
             self._gz = gz
-            self._gdotz = gz
+            self._gdotz = gdotz
             
             self.c_self.base.robust.g    = <yakfRobFuncP>yakf_py_gz
             self.c_self.base.robust.gdot = <yakfRobFuncP>yakf_py_gdotz
@@ -630,8 +630,8 @@ cdef class yakfAdaptiveRobustBase(yakfRobustBase):
         
         super().__init__(dim_x, dim_z, dt, fx, jfx, hx, jhx, **kwargs)
         
-        #Init chi2 with scipy.stats.chi2.ppf(0.999, 1) 
-        self.c_self.base.ada_rob.chi2 = 10.8275662
+        #Init chi2 with scipy.stats.chi2.ppf(0.997, 1)
+        self.c_self.base.ada_rob.chi2 = 8.807468393511947
         
     #==========================================================================
     #Decorators

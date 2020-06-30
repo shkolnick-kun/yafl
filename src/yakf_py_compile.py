@@ -30,8 +30,8 @@ pyximport.install(
 
 #from yakf_py import Bierman as KF
 #from yakf_py import Joseph as KF
-#from yakf_py import AdaptiveBierman as KF
-from yakf_py import AdaptiveJoseph as KF
+from yakf_py import AdaptiveBierman as KF
+#from yakf_py import AdaptiveJoseph as KF
 #from yakf_py import DoNotUseThisFilter as KF
 
 def _fx(x, dt, **fx_args):
@@ -64,18 +64,20 @@ def _jhx(x, **hx_args):
 def _zrf(a,b):
     return a - b
 
-STD = 10.
+STD = 100.
 
 #kf = KF(4, 2, 1., _fx, _jfx, _hx, _jhx, residual_z=_zrf)
 kf = KF(4, 2, 1., _fx, _jfx, _hx, _jhx)
 kf.x[0] = 0.
 kf.x[1] = 0.3
-kf.Dp *= .0001
+kf.Dp *= .00001
 kf.Dq *= 1.0e-8
+#This is robust filter, so no square here
 kf.Dr *= STD*STD
+kf.Dr[0] *= .75
 kf.Ur += 0.5
 
-N = 2000
+N = 6000
 
 clean = np.zeros((N, 2))
 noisy = np.zeros((N, 2))
