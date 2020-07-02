@@ -711,12 +711,12 @@ static void _robust_bierman_scalar_update(yakfBaseSt * self, yakfInt i)
         yakfFloat fk;
         yakfFloat vk;
 
-        fk = f[k];
+        fk = gdot * f[k];
         vk = v[k];
-        a = a2 + gdot * fk * vk;
+        a = a2 + fk * vk;
         d[k] *= a2 / a;
 #define p fk /*No need for separate p variable*/
-        p = - gdot * fk / a2;
+        p = - fk / a2;
         for (j = 0; j < k; j++)
         {
             yakfFloat ujk;
@@ -956,15 +956,15 @@ static void _ada_rob_bierman_scalar_update(yakfBaseSt * self, yakfInt i)
         yakfFloat fk;
         yakfFloat vk;
 
-        fk = f[k];
+        fk = gdot * f[k];
         /*Correct v in place*/
         vk = ac * v[k];
         v[k] = vk;
-        a = a2 + gdot * fk * vk;
+        a = a2 + fk * vk;
         /*Correct d in place*/
         d[k] *= ac * a2 / a;
 #define p fk /*No need for separate p variable*/
-        p = - gdot * fk / a2;
+        p = - fk / a2;
         for (j = 0; j < k; j++)
         {
             yakfFloat ujk;
