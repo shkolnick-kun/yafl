@@ -84,14 +84,28 @@ v - vector
 
 nc - number of columns in a matrix
 nr - number of rows in a matrix
+-----------------------------------------------------------------------------------------------------------------------------------
+                                   Function/Macro                                                               NumPy expr
+---------------------------------------------------------------------------------------------------------------------------------*/
+yakfFloat yakfm_vtv(yakfInt sz, yakfFloat *a, yakfFloat *b);                                           /* a.T.dot(b)             */
+
+void yakfm_set_vvt(yakfInt nr, yakfInt nc, yakfFloat *res, yakfFloat *a, yakfFloat *b);                /* res  = outer(a, b)     */
+void yakfm_add_vvt(yakfInt nr, yakfInt nc, yakfFloat *res, yakfFloat *a, yakfFloat *b);                /* res += outer(a, b)     */
+void yakfm_sub_vvt(yakfInt nr, yakfInt nc, yakfFloat *res, yakfFloat *a, yakfFloat *b);                /* res -= outer(a, b)     */
+
+void yakfm_set_vvtxn(yakfInt nr, yakfInt nc, yakfFloat *res, yakfFloat *a, yakfFloat *b, yakfFloat n); /* res  = outer(a, b) * n */
+void yakfm_add_vvtxn(yakfInt nr, yakfInt nc, yakfFloat *res, yakfFloat *a, yakfFloat *b, yakfFloat n); /* res += outer(a, b) * n */
+void yakfm_sub_vvtxn(yakfInt nr, yakfInt nc, yakfFloat *res, yakfFloat *a, yakfFloat *b, yakfFloat n); /* res -= outer(a, b) * n */
+
+/*
+m - rectangular matrix
+v - vector
+
+nc - number of columns in a matrix
+nr - number of rows in a matrix
 ------------------------------------------------------------------------------------------------------------
                                    Function/Macro                                         NumPy expr
 ----------------------------------------------------------------------------------------------------------*/
-yakfFloat yakfm_vtv(yakfInt sz, yakfFloat *a, yakfFloat *b);                           /* a.T.dot(b) */
-
-void yakfm_set_vvt(yakfInt sz, yakfFloat *res, yakfFloat *a, yakfFloat *b);            /* res  = outer(a, b) */
-void yakfm_add_vvt(yakfInt sz, yakfFloat *res, yakfFloat *a, yakfFloat *b);            /* res += outer(a, b) */
-void yakfm_sub_vvt(yakfInt sz, yakfFloat *res, yakfFloat *a, yakfFloat *b);            /* res -= outer(a, b) */
 
 void yakfm_set_mv(yakfInt nr, yakfInt nc, yakfFloat *res, yakfFloat *a, yakfFloat *b); /* res  = a.dot(b) */
 void yakfm_add_mv(yakfInt nr, yakfInt nc, yakfFloat *res, yakfFloat *a, yakfFloat *b); /* res += a.dot(b) */

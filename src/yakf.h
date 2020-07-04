@@ -240,4 +240,99 @@ void yakf_adaptive_robust_bierman_update(yakfAdaptiveRobustSt * self, \
 void yakf_adaptive_robust_joseph_update(yakfAdaptiveRobustSt * self, \
                                         yakfFloat * z);
 
+/*=============================================================================
+                    Basic UD-factorized UKF definitions
+=============================================================================*/
+/*
+Used to add delta vectors to initial point in sigma point generation.
+Parameters:
+yakfFloat * x0
+yakfFloat * delta_x
+yakfFloat factor
+
+Does:
+delta_x = x0 + factor * delta_x
+*/
+typedef void (* yakfSigmaAddP)(yakfFloat *, yakfFloat *, yakfFloat);
+
+/*Sigma points base type*/
+typedef struct _yakfSigmaSt {
+    yakfInt     np;     /* The number of sigma points          */
+    yakfFloat * wm;     /* Weights for mean calculations       */
+    yakfFloat * wc;     /* Weights for covariance calculations */
+    yakfSigmaAddP addf; /* Sigma point addition function       */
+} yakfSigmaSt;
+
+typedef struct _yakfUnscentedSt yakfUnscentedSt;          /* The UKF base type */
+
+typedef void (* yakfSigmaGenWeigthsP)(yakfUnscentedSt *); /* Computes sigma points weights */
+typedef void (* yakfSigmaGenSigmasP)(yakfUnscentedSt *);  /* Generates sigma points        */
+
+typedef struct _yakfSigmaMethodsSt {
+    yakfSigmaGenWeigthsP   wf; /* Weight function                */
+    yakfSigmaGenSigmasP  spgf; /* Sigma point generator function */
+} yakfSigmaMethodsSt;
+
+typedef void (* yakfUnscentedFuncP)(yakfUnscentedSt *, yakfFloat *, yakfFloat *);
+typedef void (* yakfUnscentedResFuncP)(yakfUnscentedSt *, yakfFloat *, yakfFloat *, yakfFloat *);
+
+struct _yakfUnscentedSt {
+    yakfSigmaSt           * points; /* A pointer to the sigma point generator structure */
+    const yakfSigmaMethodsSt * spm; /* A sigma point generator method table pointer     */
+
+    yakfUnscentedFuncP      f; /* A state transition function      */
+    yakfUnscentedFuncP    xmf; /* State mean function              */
+    yakfUnscentedResFuncP xrf; /* State residual function function */
+
+    yakfUnscentedFuncP      h; /* A measurement function                */
+    yakfUnscentedFuncP    zmf; /* Measurement mean function function    */
+    yakfUnscentedResFuncP zrf; /* Measurement residual function function*/
+
+    yakfFloat * x;  /* State vector                 */
+    yakfFloat * zp; /* Predicted measurement vector */
+
+    yakfFloat * Up;  /* Upper triangular part of P  */
+    yakfFloat * Dp;  /* Diagonal part of P          */
+
+    yakfFloat * Us;  /* Upper triangular part of S  */
+    yakfFloat * Ds;  /* Diagonal part of S          */
+
+    yakfFloat * Pzx; /* Pzx cross covariance matrix */
+
+    yakfFloat * Uq;  /* Upper triangular part of Q   */
+    yakfFloat * Dq;  /* Diagonal part of Q           */
+
+    yakfFloat * Ur;  /* Upper triangular part of R   */
+    yakfFloat * Dr;  /* Diagonal part of R           */
+
+    yakfFloat * sigmas_x; /* State sigma points       */
+    yakfFloat * sigmas_z; /* Measurement sigma points */
+
+    /*Scratchpad memory*/
+    yakfFloat * Sx;       /* State       */
+    yakfFloat * Sz;       /* Measurement */
+
+    yakfInt   Nx; /* State vector size       */
+    yakfInt   Nz; /* Measurement vector size */
+};
+
+static inline void yakf_unscented_post_init(yakfUnscentedSt * self)
+{
+    YAKF_ASSERT(self);
+    YAKF_ASSERT(self->spm);
+    YAKF_ASSERT(self->spm->wf);
+    self->spm->wf(self); /*Need to compute weights before start*/
+}
+
+static inline void yakf_unscented_gen_sigmas(yakfUnscentedSt * self)
+{
+    YAKF_ASSERT(self);
+    YAKF_ASSERT(self->spm);
+    YAKF_ASSERT(self->spm->spgf);
+    self->spm->spgf(self);
+}
+
+void yakf_unscented_predict(yakfUnscentedSt * self);
+void yakf_unscented_update(yakfUnscentedSt * self, yakfFloat * z);
+
 #endif // YAKF_H

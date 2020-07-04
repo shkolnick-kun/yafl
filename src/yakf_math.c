@@ -108,34 +108,63 @@ yakfFloat yakfm_vtv(yakfInt sz, yakfFloat *a, yakfFloat *b)
     return res;
 }
 
-#define _DO_VVT(name, op)                                         \
-void name(yakfInt sz, yakfFloat *res, yakfFloat *a, yakfFloat *b) \
-{                                                                 \
-    yakfInt j;                                                    \
-                                                                  \
-    YAKF_ASSERT(res);                                             \
-    YAKF_ASSERT(a);                                               \
-    YAKF_ASSERT(b);                                               \
-                                                                  \
-    for (j = 0; j < sz; j++)                                      \
-    {                                                             \
-        yakfInt k;                                                \
-        yakfInt szj;                                              \
-        yakfFloat aj;                                             \
-                                                                  \
-        szj = sz * j;                                             \
-        aj  = a[j];                                               \
-                                                                  \
-        for (k = 0; k < sz; k++)                                  \
-        {                                                         \
-            res[szj + k] op aj * b[k];                            \
-        }                                                         \
-    }                                                             \
+#define _DO_VVT(name, op)                                                     \
+void name(yakfInt nr, yakfInt nc, yakfFloat *res, yakfFloat *a, yakfFloat *b) \
+{                                                                             \
+    yakfInt j;                                                                \
+                                                                              \
+    YAKF_ASSERT(res);                                                         \
+    YAKF_ASSERT(a);                                                           \
+    YAKF_ASSERT(b);                                                           \
+                                                                              \
+    for (j = 0; j < nr; j++)                                                  \
+    {                                                                         \
+        yakfInt k;                                                            \
+        yakfInt ncj;                                                          \
+        yakfFloat aj;                                                         \
+                                                                              \
+        ncj = nc * j;                                                         \
+        aj  = a[j];                                                           \
+                                                                              \
+        for (k = 0; k < nc; k++)                                              \
+        {                                                                     \
+            res[ncj + k] op aj * b[k];                                        \
+        }                                                                     \
+    }                                                                         \
 }
 
 _DO_VVT(yakfm_set_vvt,  =)
 _DO_VVT(yakfm_add_vvt, +=)
 _DO_VVT(yakfm_sub_vvt, -=)
+
+#define _DO_VVTXN(name, op)                                                                \
+void name(yakfInt nr, yakfInt nc, yakfFloat *res, yakfFloat *a, yakfFloat *b, yakfFloat n) \
+{                                                                                          \
+    yakfInt j;                                                                             \
+                                                                                           \
+    YAKF_ASSERT(res);                                                                      \
+    YAKF_ASSERT(a);                                                                        \
+    YAKF_ASSERT(b);                                                                        \
+                                                                                           \
+    for (j = 0; j < nr; j++)                                                               \
+    {                                                                                      \
+        yakfInt k;                                                                         \
+        yakfInt ncj;                                                                       \
+        yakfFloat aj;                                                                      \
+                                                                                           \
+        ncj = nc * j;                                                                      \
+        aj  = a[j] * n;                                                                    \
+                                                                                           \
+        for (k = 0; k < nc; k++)                                                           \
+        {                                                                                  \
+            res[ncj + k] op aj * b[k];                                                     \
+        }                                                                                  \
+    }                                                                                      \
+}
+
+_DO_VVTXN(yakfm_set_vvtxn,  =)
+_DO_VVTXN(yakfm_add_vvtxn, +=)
+_DO_VVTXN(yakfm_sub_vvtxn, -=)
 
 #define _DO_MV(name, op1, op2)                                               \
 void name(yakfInt nr, yakfInt nc, yakfFloat *res, yakfFloat *a, yakfFloat *b)\
