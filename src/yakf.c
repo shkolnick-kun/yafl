@@ -1419,3 +1419,123 @@ void yakf_unscented_update(yakfUnscentedSt * self, yakfFloat * z)
     }
 #undef Y
 }
+/*=============================================================================
+                    Van der Merwe sigma points generator
+=============================================================================*/
+static void _merwe_compute_weights(yakfUnscentedSt * self)
+{
+    yakfInt np;
+    yakfInt nx;
+    yakfInt i;
+    yakfFloat * wc;
+    yakfFloat * wm;
+    yakfSigmaSt * points;
+    yakfFloat lambda;
+    yakfFloat alpha;
+    yakfFloat c;
+    yakfFloat d;
+
+    YAKF_ASSERT(self);
+    YAKF_ASSERT(self->Nx);
+    nx = self->Nx;
+
+    YAKF_ASSERT(self->points);
+    points = self->points;
+
+    YAKF_ASSERT(points->np);
+    np = points->np - 1;    /*Achtung!!!*/
+
+    YAKF_ASSERT(points->wm);
+    wm = points->wm;
+
+    YAKF_ASSERT(points->wc);
+    wc = points->wc;
+
+    alpha = ((yakfMerweSt *)points)->alpha;
+    alpha *= alpha;
+#define ALPHA2 alpha
+
+    lambda = ALPHA2 * (nx + ((yakfMerweSt *)points)->kappa) - nx;
+
+    d = lambda / (nx + lambda);
+    wm[np] = d;
+    wc[np] = d + (1.0 - ALPHA2 + ((yakfMerweSt *)points)->beta);
+
+    c = 0.5 / (nx + lambda);
+    for (i = np - 1; i >= 0; i--)
+    {
+        wm[i] = c;
+        wc[i] = c;
+    }
+#undef ALPHA2
+}
+
+static inline void _add_delta(yakfUnscentedSt * self, yakfSigmaAddP addf, yakfInt sz, \
+                              yakfFloat * delta, yakfFloat * pivot,  yakfFloat mult)
+{
+    if (addf)
+    {
+        /* addf must be aware of self internal structure*/
+        addf(self, delta, pivot, mult); /* delta = self.addf(delta, pivot, mult) */
+    }
+    else
+    {
+        yakfInt j;
+        for (j = 0; j < sz; j++)
+        {
+            delta[j] = pivot[j] + mult * delta[j];
+        }
+    }
+}
+
+static void _merwe_generate_points(yakfUnscentedSt * self)
+{
+    yakfInt nx;
+    yakfInt i;
+    yakfFloat * x;
+    yakfFloat * sigmas_x;
+    yakfFloat * dp;
+    yakfSigmaSt * points;
+    yakfSigmaAddP addf;
+    yakfFloat lambda_p_n;
+    yakfFloat alpha;
+
+    YAKF_ASSERT(self);
+    YAKF_ASSERT(self->Nx);
+    nx = self->Nx;
+
+    YAKF_ASSERT(self->x);
+    x = self->x;
+
+    YAKF_ASSERT(self->Up);
+    YAKF_ASSERT(self->Dp);
+    dp = self->Dp;
+
+    YAKF_ASSERT(self->sigmas_x);
+    sigmas_x = self->sigmas_x;
+
+    YAKF_ASSERT(self->points);
+    points = self->points;
+
+    alpha = ((yakfMerweSt *)points)->alpha;
+    lambda_p_n = alpha * alpha * (nx + ((yakfMerweSt *)points)->kappa);
+
+    yakfm_bset_ut(nx, sigmas_x, nx, self->Up);
+    memcpy((void *)(sigmas_x + nx * nx), (void *)sigmas_x, \
+           nx * nx * sizeof(yakfFloat));
+
+    addf = points->addf;
+    for (i = 0; i < nx; i++)
+    {
+        yakfFloat mult;
+        mult = YAKF_SQRT(dp[i]) * lambda_p_n;
+        _add_delta(self, addf, nx, sigmas_x + nx * i       , x,   mult);
+        _add_delta(self, addf, nx, sigmas_x + nx * (nx + i), x, - mult);
+    }
+    memcpy((void *)(sigmas_x + 2 * nx * nx), (void *)x, nx * sizeof(yakfFloat));
+}
+
+const yakfSigmaMethodsSt yakf_merwe_spm = {
+    .wf   = _merwe_compute_weights,
+    .spgf = _merwe_generate_points
+};

@@ -19,6 +19,7 @@
 #define YAKF_CONFIG_H
 
 #include <assert.h>
+#include <math.h>
 #include <stdint.h>
 
 #define YAKF_ASSERT assert
@@ -28,5 +29,7 @@ typedef int32_t yakfInt;
 
 /*TODO: уточнить*/
 #define YAKF_UDU_EPS  (1.0e-15)
+
+#define YAKF_SQRT sqrt
 
 #endif // YAKF_CONFIG_H

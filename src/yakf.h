@@ -243,6 +243,7 @@ void yakf_adaptive_robust_joseph_update(yakfAdaptiveRobustSt * self, \
 /*=============================================================================
                     Basic UD-factorized UKF definitions
 =============================================================================*/
+typedef struct _yakfUnscentedSt yakfUnscentedSt;        /* The UKF base type */
 /*
 Used to add delta vectors to initial point in sigma point generation.
 Parameters:
@@ -253,7 +254,7 @@ yakfFloat factor
 Does:
 delta_x = x0 + factor * delta_x
 */
-typedef void (* yakfSigmaAddP)(yakfFloat *, yakfFloat *, yakfFloat);
+typedef void (* yakfSigmaAddP)(yakfUnscentedSt *, yakfFloat *, yakfFloat *, yakfFloat);
 
 /*Sigma points base type*/
 typedef struct _yakfSigmaSt {
@@ -273,8 +274,6 @@ typedef struct _yakfSigmaSt {
 }
 
 /*---------------------------------------------------------------------------*/
-typedef struct _yakfUnscentedSt yakfUnscentedSt;        /* The UKF base type */
-
 /* Computes sigma points weights */
 typedef void (* yakfSigmaGenWeigthsP)(yakfUnscentedSt *);
 
