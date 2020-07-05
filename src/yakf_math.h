@@ -162,6 +162,14 @@ void yakfm_bsub_u(yakfInt nc, yakfFloat *res, yakfInt sz, yakfFloat *u);        
 #define YAKFM_BADD_U(nc, r, c, m, sz, u) yakfm_badd_u(YAKF_BLK(m,nc,r,c), sz, u)    /* m[r:r+sz, c:c+sz] += u */
 #define YAKFM_BSUB_U(nc, r, c, m, sz, u) yakfm_bsub_u(YAKF_BLK(m,nc,r,c), sz, u)    /* m[r:r+sz, c:c+sz] -= u */
 
+void yakfm_bset_ut(yakfInt nc, yakfFloat *res, yakfInt sz, yakfFloat *u);            /* res[:sz, :sz]  = u.T   */
+void yakfm_badd_ut(yakfInt nc, yakfFloat *res, yakfInt sz, yakfFloat *u);            /* res[:sz, :sz] += u.T   */
+void yakfm_bsub_ut(yakfInt nc, yakfFloat *res, yakfInt sz, yakfFloat *u);            /* res[:sz, :sz] -= u.T   */
+
+#define YAKFM_BSET_UT(nc, r, c, m, sz, u) yakfm_bset_u(YAKF_BLK(m,nc,r,c), sz, u)    /* m[r:r+sz, c:c+sz]  = u.T */
+#define YAKFM_BADD_UT(nc, r, c, m, sz, u) yakfm_badd_u(YAKF_BLK(m,nc,r,c), sz, u)    /* m[r:r+sz, c:c+sz] += u.T */
+#define YAKFM_BSUB_UT(nc, r, c, m, sz, u) yakfm_bsub_u(YAKF_BLK(m,nc,r,c), sz, u)    /* m[r:r+sz, c:c+sz] -= u.T */
+
 void yakfm_bset_v(yakfInt nc, yakfFloat *res, yakfInt sz, yakfFloat *v);            /* res[:sz, 0]  = v    */
 void yakfm_badd_v(yakfInt nc, yakfFloat *res, yakfInt sz, yakfFloat *v);            /* res[:sz, 0] += v    */
 void yakfm_bsub_v(yakfInt nc, yakfFloat *res, yakfInt sz, yakfFloat *v);            /* res[:sz, 0] -= v    */

@@ -489,6 +489,61 @@ void name(yakfInt nc, yakfFloat *res, yakfInt sz, yakfFloat *u) \
 _DO_BU(yakfm_badd_u, +=)
 _DO_BU(yakfm_bsub_u, -=)
 
+void yakfm_bset_ut(yakfInt nc, yakfFloat *res, yakfInt sz, yakfFloat *u)
+{
+    yakfInt i;
+    yakfInt szi;
+
+    YAKF_ASSERT(res);
+    YAKF_ASSERT(u);
+
+    for (szi = 0, i = 1; i < sz; szi += i++)
+    {
+        yakfInt nci;
+        yakfInt j;
+
+        nci = nc * i;
+        for (j = 0; j < i; j++)
+        {
+            res[nci + j] = u[j + szi];
+        }
+
+        res[nci + j] = 1.0;
+
+        for (j++; j < sz; j++)
+        {
+            res[nci + j] = 0.0;
+        }
+    }
+}
+
+#define _DO_BUT(name, op)                                       \
+void name(yakfInt nc, yakfFloat *res, yakfInt sz, yakfFloat *u) \
+{                                                               \
+    yakfInt i;                                                  \
+    yakfInt szi;                                                \
+                                                                \
+    YAKF_ASSERT(res);                                           \
+    YAKF_ASSERT(u);                                             \
+                                                                \
+    for (szi = 0, i = 1; i < sz; szi += i++)                    \
+    {                                                           \
+        yakfInt nci;                                            \
+        yakfInt j;                                              \
+                                                                \
+        nci = nc * i;                                           \
+        for (j = 0; j < i; j++)                                 \
+        {                                                       \
+            res[nci + j] op u[j + szi];                         \
+        }                                                       \
+                                                                \
+        res[nci + j] op 1.0;                                    \
+    }                                                           \
+}
+
+_DO_BUT(yakfm_badd_ut, +=)
+_DO_BUT(yakfm_bsub_ut, -=)
+
 #define _DO_BV(name, op)                                        \
 void name(yakfInt nc, yakfFloat *res, yakfInt sz, yakfFloat *v) \
 {                                                               \

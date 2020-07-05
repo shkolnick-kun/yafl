@@ -1387,7 +1387,7 @@ void yakf_unscented_update(yakfUnscentedSt * self, yakfFloat * z)
     }
 
     /*Compute innovation*/
-#define Y spx
+#define Y spz
     _compute_res(self, nz, zrf, z, zp, Y);
 
     /* Decorrelate measurements*/

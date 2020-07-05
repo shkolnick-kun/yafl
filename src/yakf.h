@@ -263,22 +263,40 @@ typedef struct _yakfSigmaSt {
     yakfSigmaAddP addf; /* Sigma point addition function       */
 } yakfSigmaSt;
 
-typedef struct _yakfUnscentedSt yakfUnscentedSt;          /* The UKF base type */
+/*---------------------------------------------------------------------------*/
+#define YAKF_SIGMA_BASE_INITIALIZER(_np, _addf, _mem) \
+{                                                     \
+    .np   = (yakfInt)_np,                             \
+    .addf = (yakfSigmaAddP)_addf,                     \
+    .wm   = _mem.wm,                                  \
+    .wc   = _mem.wc                                   \
+}
 
-typedef void (* yakfSigmaGenWeigthsP)(yakfUnscentedSt *); /* Computes sigma points weights */
-typedef void (* yakfSigmaGenSigmasP)(yakfUnscentedSt *);  /* Generates sigma points        */
+/*---------------------------------------------------------------------------*/
+typedef struct _yakfUnscentedSt yakfUnscentedSt;        /* The UKF base type */
+
+/* Computes sigma points weights */
+typedef void (* yakfSigmaGenWeigthsP)(yakfUnscentedSt *);
+
+/* Generates sigma points */
+typedef void (* yakfSigmaGenSigmasP)(yakfUnscentedSt *);
 
 typedef struct _yakfSigmaMethodsSt {
     yakfSigmaGenWeigthsP   wf; /* Weight function                */
     yakfSigmaGenSigmasP  spgf; /* Sigma point generator function */
 } yakfSigmaMethodsSt;
 
+/*---------------------------------------------------------------------------*/
 typedef void (* yakfUnscentedFuncP)(yakfUnscentedSt *, yakfFloat *, yakfFloat *);
-typedef void (* yakfUnscentedResFuncP)(yakfUnscentedSt *, yakfFloat *, yakfFloat *, yakfFloat *);
+
+typedef void (* yakfUnscentedResFuncP)(yakfUnscentedSt *, yakfFloat *, \
+                                       yakfFloat *, yakfFloat *);
 
 struct _yakfUnscentedSt {
-    yakfSigmaSt           * points; /* A pointer to the sigma point generator structure */
-    const yakfSigmaMethodsSt * spm; /* A sigma point generator method table pointer     */
+    /* A pointer to the sigma point generator structure */
+    yakfSigmaSt           * points;
+    /* A sigma point generator method table pointer     */
+    const yakfSigmaMethodsSt * spm;
 
     yakfUnscentedFuncP      f; /* A state transition function      */
     yakfUnscentedFuncP    xmf; /* State mean function              */
@@ -316,6 +334,72 @@ struct _yakfUnscentedSt {
     yakfInt   Nz; /* Measurement vector size */
 };
 
+/*---------------------------------------------------------------------------*/
+/*
+Warning: sigmas_x and _sigmas_z aren't defined in this mixin, see
+         sigma points generators mixins!!!
+*/
+#define YAKF_UNSCENTED_MEMORY_MIXIN(nx, nz) \
+    yakfFloat x[nx];                        \
+    yakfFloat zp[nz];                       \
+                                            \
+    yakfFloat Up[((nx - 1) * nx)/2];        \
+    yakfFloat Dp[nx];                       \
+                                            \
+    yakfFloat Us[((nz - 1) * nz)/2];        \
+    yakfFloat Ds[nz];                       \
+                                            \
+    yakfFloat Pzx[nz * nx];                 \
+                                            \
+    yakfFloat Uq[((nx - 1) * nx)/2];        \
+    yakfFloat Dq[nx];                       \
+                                            \
+    yakfFloat Ur[((nz - 1) * nz)/2];        \
+    yakfFloat Dr[nz];                       \
+                                            \
+    yakfFloat Sx[nx];                       \
+    yakfFloat Sz[nz];
+
+/*---------------------------------------------------------------------------*/
+#define YAKF_UNSCENTED_INITIALIZER(_p, _pm, _f, _xmf, _xrf, _h, _zmf,         \
+                                   _zrf, _nx, _nz, _mem)                      \
+{                                                                             \
+    .f   = (yakfUnscentedFuncP)_f,                                            \
+    .xmf = (yakfUnscentedFuncP)_xmf,                                          \
+    .xrf = (yakfUnscentedResFuncP)_xrf,                                       \
+                                                                              \
+    .h   = (yakfUnscentedFuncP)_h,                                            \
+    .xmf = (yakfUnscentedFuncP)_xmf,                                          \
+    .xrf = (yakfUnscentedResFuncP)_xrf,                                       \
+                                                                              \
+    .x   = _mem.x,                                                            \
+    .zp  = _mem.zp,                                                           \
+                                                                              \
+    .Up  = _mem.Up,                                                           \
+    .Dp  = _mem.Dp,                                                           \
+                                                                              \
+    .Us  = _mem.Us,                                                           \
+    .Ds  = _mem.Ds,                                                           \
+                                                                              \
+    .Pzx = _mem.Pzx,                                                          \
+                                                                              \
+    .Uq  = _mem.Uq,                                                           \
+    .Dq  = _mem.Dq,                                                           \
+                                                                              \
+    .Ur  = _mem.Ur,                                                           \
+    .Dr  = _mem.Dr,                                                           \
+                                                                              \
+    .sigmas_x  = _mem.sigmas_x,                                               \
+    .sigmas_z  = _mem.sigmas_z,                                               \
+                                                                              \
+    .Sx  = _mem.Sx,                                                           \
+    .Sz  = _mem.Sz,                                                           \
+                                                                              \
+    .Nx  = _nx,                                                               \
+    .Nz  = _nz                                                                \
+}
+
+/*---------------------------------------------------------------------------*/
 static inline void yakf_unscented_post_init(yakfUnscentedSt * self)
 {
     YAKF_ASSERT(self);
@@ -334,5 +418,34 @@ static inline void yakf_unscented_gen_sigmas(yakfUnscentedSt * self)
 
 void yakf_unscented_predict(yakfUnscentedSt * self);
 void yakf_unscented_update(yakfUnscentedSt * self, yakfFloat * z);
+
+/*-----------------------------------------------------------------------------
+                     Van der Merwe sigma point generator
+-----------------------------------------------------------------------------*/
+typedef struct _yakfMerweSt {
+    yakfSigmaSt base;
+    yakfFloat alpha;
+    yakfFloat beta;
+    yakfFloat kappa;
+} yakfMerweSt;
+
+/*---------------------------------------------------------------------------*/
+#define YAKF_MERWE_MEMORY_MIXIN(nx, nz)    \
+    yakfFloat wm[2 * nx + 1];              \
+    yakfFloat wc[2 * nx + 1];              \
+    yakfFloat sigmas_x[(2 * nx + 1) * nx]; \
+    yakfFloat sigmas_z[(2 * nx + 1) * nz];
+
+/*---------------------------------------------------------------------------*/
+#define YAKF_MERWE_INITIALIZER(_nx, _addf, _alpha, _beta, _kappa, _mem) \
+{                                                                       \
+    .base  = YAKF_SIGMA_BASE_INITIALIZER((2 * _nx + 1), _addf, _mem),   \
+    .alpha = _alpha,                                                    \
+    .beta  = _beta,                                                     \
+    .kappa = _kappa                                                     \
+}
+
+/*---------------------------------------------------------------------------*/
+const yakfSigmaMethodsSt yakf_merwe_spm;
 
 #endif // YAKF_H
