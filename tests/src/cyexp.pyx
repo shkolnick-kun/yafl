@@ -6,8 +6,9 @@ Created on Sat Jun 13 19:49:19 2020
 """
 
 #from cython.view cimport array as cvarray
-cimport numpy as np
+
 import  numpy as np
+cimport numpy as np
 
 cdef extern from "cyexp_c.c":
     
@@ -64,7 +65,7 @@ def set_view(m):
 def print_view(int i, int j):
     global view_static
     print('view_static:', view_static[i,j])
-    
+
 cdef class Fail:
     cdef double * _zp;
     cdef double [:, ::1] _v
@@ -89,3 +90,11 @@ cdef class Fail:
         
     def print_zp(self, i):
         print(self._zp[i])
+
+cdef void print_as_array(np.float64_t * x, int a, int b):
+    print(np.asarray(<np.float64_t[:a, :b]> x))
+    print(np.asarray(<np.float64_t[:a*b]> x))
+
+def print_view_static():
+    print('view_static:\n')
+    print_as_array(&view_static[0, 0], view_static.shape[0], view_static.shape[1])

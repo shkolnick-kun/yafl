@@ -5,7 +5,7 @@ Created on Sat Jun 13 19:49:39 2020
 
 @author: anon
 """
-
+import numpy as np
 import pyximport
 
 pyximport.install(
@@ -22,7 +22,7 @@ import cyexp
 
 cyexp.hello()
 
-import numpy as np
+
 
 a = np.array([[1,2,3],[4,5,6.0]])
 cyexp.cprint_mat(a)
@@ -43,9 +43,11 @@ a[0,1] = 7
 
 cyexp.print_view(0,1)
 
-a[0,1] = 33
+a[0,1] = 34
 
 cyexp.print_view(0,1)
 cyexp.print_view(0,2)
 
 f = cyexp.Fail(3)
+
+cyexp.print_view_static()

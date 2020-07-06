@@ -1142,7 +1142,7 @@ static inline void _compute_res(yakfUnscentedSt * self, yakfInt sz,          \
     if (rf)
     {
         /*rf must be aware of sp and the current transform*/
-        rf(self, res, sigma, pivot); /* sp = self.rf(sigmas[i], res_v) */
+        rf(self, res, sigma, pivot); /* res = self.rf(sigma, pivot) */
     }
     else
     {
