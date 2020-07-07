@@ -31,7 +31,11 @@ pyximport.install(
 #from yakf_py import RobustJoseph as KF
 #from yakf_py import RobustBierman as KF
 #from yakf_py import AdaptiveRobustJoseph as KF
-from yakf_py import AdaptiveRobustBierman as KF
+#from yakf_py import AdaptiveRobustBierman as KF
+
+from yakf_py import MerweSigmaPoints as SP
+from yakf_py import Unscented as KF
+
 
 def _fx(x, dt, **fx_args):
     x = x.copy()
@@ -60,47 +64,26 @@ def _jhx(x, **hx_args):
         ])
     return H
 
-#Default noice model is Normal with Poisson outliers
-def _gz(beta):
-    # +- 3*sigma
-    if 3.0 >= np.abs(beta):
-        return float(beta)
-    
-    # +- 6*sigma - uncertain measurements
-    if 6.0 >= np.abs(beta):
-        return float(beta/3.0)
-    
-    # outliers
-    return float(np.sign(beta))
-    
-def _gdotz(beta):
-    # +- 3*sigma
-    if 3.0 >= np.abs(beta):
-        return 1.0
-    
-    # +- 6*sigma - uncertain measurements
-    if 6.0 >= np.abs(beta):
-        return 1.0/3.0
-    
-    # outliers
-    return 0.0
-
 def _zrf(a,b):
+    #print(a - b)
     return a - b
 
 STD = 100.
 
-kf = KF(4, 2, 1., _fx, _jfx, _hx, _jhx, residual_z=_zrf)
-#kf = KF(4, 2, 1., _fx, _jfx, _hx, _jhx, gz=_gz, gdotz=_gdotz)
-#kf = KF(4, 2, 1., _fx, _jfx, _hx, _jhx)
-kf.x[0] = 1000.
-kf.x[1] = -0.5
-kf.Dp *= .00001
-kf.Dq *= 1.0e-8
+sp = SP(4, 2, 0.0001, 2., 0)
+kf = KF(4, 2, 1., _hx, _fx, sp)
+#kf = KF(4, 2, 1., _hx, _fx, sp, residual_z=_zrf)
+
+kf.x[0] = 0.
+kf.x[1] = 0.
+kf.Dp *= .0000001
+kf.Dq *= 1.0e-10
 #This is robust filter, so no square here
-kf.Dr *= STD
-kf.Dr[0] *= .87
+kf.Dr *= STD*STD
+kf.Dr[0] *= .75
 kf.Ur += 0.5
+
+print(kf.x)
 
 N = 6000
 
@@ -113,7 +96,7 @@ for i in range(1, len(clean)//2):
     t[i] = i
 
 for i in range(i, len(clean)):
-    clean[i] = clean[i-1] + np.array([1.,10.])
+    clean[i] = clean[i-1] + np.array([1.,1.])
     noisy[i] = clean[i]   + np.random.normal(scale=STD, size=2)
     t[i] = i
 

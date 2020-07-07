@@ -1528,7 +1528,7 @@ static void _merwe_generate_points(yakfUnscentedSt * self)
     for (i = 0; i < nx; i++)
     {
         yakfFloat mult;
-        mult = YAKF_SQRT(dp[i]) * lambda_p_n;
+        mult = YAKF_SQRT(dp[i] * lambda_p_n);
         _add_delta(self, addf, nx, sigmas_x + nx * i       , x,   mult);
         _add_delta(self, addf, nx, sigmas_x + nx * (nx + i), x, - mult);
     }

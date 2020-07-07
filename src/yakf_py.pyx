@@ -210,7 +210,7 @@ import  numpy as np
 #------------------------------------------------------------------------------
 #                       Kalman filter basic union
 #------------------------------------------------------------------------------
-ctypedef union yakfPyBaseUn:
+ctypedef union yakfPyEkfBaseUn:
     yakfBaseSt           base
     yakfAdaptiveSt       adaptive
     yakfRobustSt         robust
@@ -219,9 +219,9 @@ ctypedef union yakfPyBaseUn:
 #------------------------------------------------------------------------------
 # Kalman filter C-structure with Python callback info
 #------------------------------------------------------------------------------
-ctypedef struct yakfPySt:
+ctypedef struct yakfPyBaseEkfSt:
     # Kalman filter base union
-    yakfPyBaseUn base
+    yakfPyEkfBaseUn base
 
     # Python/Cython self
     void * py_self
@@ -233,9 +233,9 @@ cdef int _U_sz(int dim_u):
 #------------------------------------------------------------------------------
 #                             Basic Filter class
 #------------------------------------------------------------------------------
-cdef class yakfBase:
+cdef class yakfExtendedBase:
     # Kalman filter C-self
-    cdef yakfPySt c_self
+    cdef yakfPyBaseEkfSt c_self
     
     # Kalman filter memory views
     cdef yakfFloat [::1]    v_x
@@ -303,28 +303,28 @@ cdef class yakfBase:
 
         if not callable(fx):
             raise ValueError('fx must be callable!')
-        self.c_self.base.base.f = <yakfFuncP> yakf_py_fx
+        self.c_self.base.base.f = <yakfFuncP> yakf_py_ekf_fx
         self._fx = fx
 
         if not callable(jfx):
             raise ValueError('jfx must be callable!')
-        self.c_self.base.base.jf = <yakfFuncP> yakf_py_jfx
+        self.c_self.base.base.jf = <yakfFuncP> yakf_py_ekf_jfx
         self._jfx = jfx
 
         if not callable(hx):
             raise ValueError('hx must be callable!')
-        self.c_self.base.base.h = <yakfFuncP> yakf_py_hx
+        self.c_self.base.base.h = <yakfFuncP> yakf_py_ekf_hx
         self._hx = hx
 
         if not callable(jhx):
             raise ValueError('jhx must be callable!')
-        self.c_self.base.base.jh = <yakfFuncP> yakf_py_jhx
+        self.c_self.base.base.jh = <yakfFuncP> yakf_py_ekf_jhx
         self._jhx = jhx
 
         if residual_z:   
             if not callable(residual_z):
                 raise ValueError('residual_z must be callable!')
-            self.c_self.base.base.zrf = <yakfResFuncP> yakf_py_zrf
+            self.c_self.base.base.zrf = <yakfResFuncP> yakf_py_ekf_zrf
             self._residual_z = residual_z
         else:
             self.c_self.base.base.zrf = <yakfResFuncP> 0
@@ -394,7 +394,7 @@ cdef class yakfBase:
 
     @y.setter
     def y(self, value):
-        raise AttributeError('yakfBase does not support this!')
+        raise AttributeError('yakfExtendedBase does not support this!')
     #--------------------------------------------------------------------------
     @property
     def Up(self):
@@ -463,7 +463,7 @@ cdef class yakfBase:
     
     #==========================================================================
     def _update(self):
-        raise NotImplementedError('yakfBase is the base class!')
+        raise NotImplementedError('yakfExtendedBase is the base class!')
     
     def update(self, z, **hx_args):
 
@@ -475,11 +475,11 @@ cdef class yakfBase:
 #                             Basic C-callbacks
 #==============================================================================
 # State transition function 
-cdef void yakf_py_fx(yakfPySt * self):
+cdef void yakf_py_ekf_fx(yakfPyBaseEkfSt * self):
     
-    py_self = <yakfBase>(self.py_self)
-    if not isinstance(py_self, yakfBase):
-        raise ValueError('Invalid py_self type (must be subclass of yakfBase)!')
+    py_self = <yakfExtendedBase>(self.py_self)
+    if not isinstance(py_self, yakfExtendedBase):
+        raise ValueError('Invalid py_self type (must be subclass of yakfExtendedBase)!')
     
     fx = py_self._fx
     if not callable(fx):
@@ -498,11 +498,11 @@ cdef void yakf_py_fx(yakfPySt * self):
 
 #------------------------------------------------------------------------------
 # State transition function Jacobian
-cdef void yakf_py_jfx(yakfPySt * self):
+cdef void yakf_py_ekf_jfx(yakfPyBaseEkfSt * self):
     
-    py_self = <yakfBase>(self.py_self)
-    if not isinstance(py_self, yakfBase):
-        raise ValueError('Invalid py_self type (must be subclass of yakfBase)!')
+    py_self = <yakfExtendedBase>(self.py_self)
+    if not isinstance(py_self, yakfExtendedBase):
+        raise ValueError('Invalid py_self type (must be subclass of yakfExtendedBase)!')
        
     jfx = py_self._jfx
     if not callable(jfx):
@@ -521,11 +521,11 @@ cdef void yakf_py_jfx(yakfPySt * self):
 
 #------------------------------------------------------------------------------
 # State transition function 
-cdef void yakf_py_hx(yakfPySt * self):
+cdef void yakf_py_ekf_hx(yakfPyBaseEkfSt * self):
     
-    py_self = <yakfBase>(self.py_self)
-    if not isinstance(py_self, yakfBase):
-        raise ValueError('Invalid py_self type (must be subclass of yakfBase)!')
+    py_self = <yakfExtendedBase>(self.py_self)
+    if not isinstance(py_self, yakfExtendedBase):
+        raise ValueError('Invalid py_self type (must be subclass of yakfExtendedBase)!')
     
     hx = py_self._hx
     if not callable(hx):
@@ -540,11 +540,11 @@ cdef void yakf_py_hx(yakfPySt * self):
 
 #------------------------------------------------------------------------------
 # State transition function Jacobian
-cdef void yakf_py_jhx(yakfPySt * self):
+cdef void yakf_py_ekf_jhx(yakfPyBaseEkfSt * self):
     
-    py_self = <yakfBase>(self.py_self)
-    if not isinstance(py_self, yakfBase):
-        raise ValueError('Invalid py_self type (must be subclass of yakfBase)!')
+    py_self = <yakfExtendedBase>(self.py_self)
+    if not isinstance(py_self, yakfExtendedBase):
+        raise ValueError('Invalid py_self type (must be subclass of yakfExtendedBase)!')
     
     jhx = py_self._jhx
     if not callable(jhx):
@@ -559,11 +559,11 @@ cdef void yakf_py_jhx(yakfPySt * self):
 
 #------------------------------------------------------------------------------
 # Measurement residual function
-cdef void yakf_py_zrf(yakfPySt * self, yakfFloat * zp):
+cdef void yakf_py_ekf_zrf(yakfPyBaseEkfSt * self, yakfFloat * zp):
     
-    py_self = <yakfBase>(self.py_self)
-    if not isinstance(py_self, yakfBase):
-        raise ValueError('Invalid py_self type (must be subclass of yakfBase)!')
+    py_self = <yakfExtendedBase>(self.py_self)
+    if not isinstance(py_self, yakfExtendedBase):
+        raise ValueError('Invalid py_self type (must be subclass of yakfExtendedBase)!')
     
     zrf = py_self._residual_z
     if not callable(zrf):
@@ -573,19 +573,19 @@ cdef void yakf_py_zrf(yakfPySt * self, yakfFloat * zp):
     py_self._y[:] = zrf(py_self._z, py_self._y)
     
 #==============================================================================
-cdef class Bierman(yakfBase):
+cdef class Bierman(yakfExtendedBase):
     def _update(self):
         yakf_bierman_update(&self.c_self.base.base, &self.v_z[0])
 
 #------------------------------------------------------------------------------
-cdef class Joseph(yakfBase):
+cdef class Joseph(yakfExtendedBase):
     def _update(self):
         yakf_joseph_update(&self.c_self.base.base, &self.v_z[0])
 
 #==============================================================================
 #                        Adaptive filter basic class
 #==============================================================================
-cdef class yakfAdaptiveBase(yakfBase):
+cdef class yakfAdaptiveBase(yakfExtendedBase):
     def __init__(self, int dim_x, int dim_z, yakfFloat dt, \
                  fx, jfx, hx, jhx, **kwargs):
         
@@ -625,7 +625,7 @@ cdef class DoNotUseThisFilter(yakfAdaptiveBase):
 #==============================================================================
 #                        Robust filter basic class
 #==============================================================================
-cdef class yakfRobustBase(yakfBase):
+cdef class yakfRobustBase(yakfExtendedBase):
     
     cdef object _gz
     cdef object _gdotz
@@ -648,8 +648,8 @@ cdef class yakfRobustBase(yakfBase):
             self._gz = gz
             self._gdotz = gdotz
             
-            self.c_self.base.robust.g    = <yakfRobFuncP>yakf_py_gz
-            self.c_self.base.robust.gdot = <yakfRobFuncP>yakf_py_gdotz
+            self.c_self.base.robust.g    = <yakfRobFuncP>yakf_py_ekf_rob_gz
+            self.c_self.base.robust.gdot = <yakfRobFuncP>yakf_py_ekf_rob_gdotz
             
         else:
             self.c_self.base.robust.g    = <yakfRobFuncP>0
@@ -657,11 +657,11 @@ cdef class yakfRobustBase(yakfBase):
 
 #------------------------------------------------------------------------------
 # State transition function 
-cdef yakfFloat yakf_py_gz(yakfPySt * self, yakfFloat nu):
+cdef yakfFloat yakf_py_ekf_rob_gz(yakfPyBaseEkfSt * self, yakfFloat nu):
 
     py_self = <yakfRobustBase>(self.py_self)
-    if not isinstance(py_self, yakfBase):
-        raise ValueError('Invalid py_self type (must be subclass of yakfBase)!')
+    if not isinstance(py_self, yakfExtendedBase):
+        raise ValueError('Invalid py_self type (must be subclass of yakfExtendedBase)!')
 
     gz = py_self._gz
     if not callable(gz):
@@ -680,11 +680,11 @@ cdef yakfFloat yakf_py_gz(yakfPySt * self, yakfFloat nu):
 
 #------------------------------------------------------------------------------
 # State transition function Jacobian
-cdef yakfFloat yakf_py_gdotz(yakfPySt * self, yakfFloat nu):
+cdef yakfFloat yakf_py_ekf_rob_gdotz(yakfPyBaseEkfSt * self, yakfFloat nu):
 
     py_self = <yakfRobustBase>(self.py_self)
-    if not isinstance(py_self, yakfBase):
-        raise ValueError('Invalid py_self type (must be subclass of yakfBase)!')
+    if not isinstance(py_self, yakfExtendedBase):
+        raise ValueError('Invalid py_self type (must be subclass of yakfExtendedBase)!')
 
     gdotz = py_self._gdotz
     if not callable(gdotz):
@@ -799,30 +799,47 @@ cdef class yakfSigmaBase:
         else:
             self.c_self.base.base.addf = <yakfSigmaAddP>0
 
-        np = self.get_np()
+        pnum = self.get_np(dim_x)
 
-        self.c_self.base.base.np = np
+        self.c_self.base.base.np = pnum
 
-        self._wc  = np.zeros((np,), dtype=np.float64)
+        self._wc  = np.zeros((pnum,), dtype=np.float64)
         self.v_wc = self._wc
         self.c_self.base.base.wc = &self.v_wc[0]
 
-        self._wm  = np.zeros((np,), dtype=np.float64)
+        self._wm  = np.zeros((pnum,), dtype=np.float64)
         self.v_wm = self._wm
         self.c_self.base.base.wm = &self.v_wm[0]
 
-        self._sigmas_x  = np.zeros((np, dim_x), dtype=np.float64)
+        self._sigmas_x  = np.zeros((pnum, dim_x), dtype=np.float64)
         self.v_sigmas_x = self._sigmas_x
 
-        self._sigmas_z  = np.zeros((np, dim_z), dtype=np.float64)
-        self.v_sigmas_z = self._sigmas_x
+        self._sigmas_z  = np.zeros((pnum, dim_z), dtype=np.float64)
+        self.v_sigmas_z = self._sigmas_z
 
-    def get_np(self, int dim_x):
+    cdef yakfInt get_np(self, int dim_x):
         raise NotImplementedError('yakfSigmaBase is the base class!')
 
     cdef const yakfSigmaMethodsSt * get_spm(self):
         raise NotImplementedError('yakfSigmaBase is the base class!')
+        
+    #==========================================================================
+    #Decorators
+    @property
+    def sigmas_x(self):
+        return self._sigmas_x
 
+    @property
+    def sigmas_z(self):
+        return self._sigmas_z
+    
+    @property
+    def wc(self):
+        return self._wc
+    
+    @property
+    def wm(self):
+        return self._wm
 #------------------------------------------------------------------------------
 #                         UD-factorized UKF definitions
 #------------------------------------------------------------------------------
@@ -838,7 +855,7 @@ ctypedef struct yakfPyUnscentedSt:
     void * py_self
 
 #------------------------------------------------------------------------------
-cdef class yakfUnscented:
+cdef class yakfUnscentedBase:
     # Kalman filter C-self
     cdef yakfPyUnscentedSt c_self
 
@@ -976,7 +993,7 @@ cdef class yakfUnscented:
 
         self._zp  = np.zeros((dim_z,), dtype=np.float64)
         self.v_zp = self._zp
-        self.c_self.base.base.zp = &self.v_x[0]
+        self.c_self.base.base.zp = &self.v_zp[0]
 
         self._Up  = np.zeros((_U_sz(dim_x),), dtype=np.float64)
         self.v_Up = self._Up
@@ -1040,20 +1057,36 @@ cdef class yakfUnscented:
     #==========================================================================
     #Decorators
     @property
+    def dim_x(self):
+        return self.c_self.base.base.Nx
+
+    @property
+    def dim_z(self):
+        return self.c_self.base.base.Nz
+        
+    @property
     def x(self):
         return self._x
 
     @x.setter
     def x(self, value):
         self._x[:] = value
+        
+    @property
+    def Pzx(self):
+        return self._Pzx
+    
+    @property
+    def zp(self):
+        return self._zp
     #--------------------------------------------------------------------------
-    # @property
-    # def y(self):
-    #     return self._y
+    @property
+    def y(self):
+        return self._Sz
 
-    # @y.setter
-    # def y(self, value):
-    #     raise AttributeError('yakfBase does not support this!')
+    @y.setter
+    def y(self, value):
+        raise AttributeError('yakfBase does not support this!')
     #--------------------------------------------------------------------------
     @property
     def Up(self):
@@ -1122,7 +1155,7 @@ cdef class yakfUnscented:
 
     #==========================================================================
     def _update(self):
-        yakf_unscented_update(&self.c_self.base.base, &self.v_z[0])
+        raise NotImplementedError('yakfUnscentedBase is the base class!')
 
     def update(self, z, **hx_args):
 
@@ -1134,9 +1167,9 @@ cdef class yakfUnscented:
 cdef void yakf_py_sigma_addf(yakfPyUnscentedSt * self, yakfFloat * delta, \
                              yakfFloat * pivot, yakfFloat mult):
 
-    py_self = <yakfUnscented>(self.py_self)
-    if not isinstance(py_self, yakfUnscented):
-        raise ValueError('Invalid py_self type (must be subclass of yakfUnscented)!')
+    py_self = <yakfUnscentedBase>(self.py_self)
+    if not isinstance(py_self, yakfUnscentedBase):
+        raise ValueError('Invalid py_self type (must be subclass of yakfUnscentedBase)!')
 
     _addf = py_self._points._addf
     if not callable(_addf):
@@ -1155,9 +1188,9 @@ cdef void yakf_py_sigma_addf(yakfPyUnscentedSt * self, yakfFloat * delta, \
 cdef void yakf_py_ukf_fx(yakfPyUnscentedSt * self, \
                          yakfFloat * new_x, yakfFloat * old_x):
 
-    py_self = <yakfUnscented>(self.py_self)
-    if not isinstance(py_self, yakfUnscented):
-        raise ValueError('Invalid py_self type (must be subclass of yakfUnscented)!')
+    py_self = <yakfUnscentedBase>(self.py_self)
+    if not isinstance(py_self, yakfUnscentedBase):
+        raise ValueError('Invalid py_self type (must be subclass of yakfUnscentedBase)!')
 
     fx = py_self._fx
     if not callable(fx):
@@ -1184,9 +1217,9 @@ cdef void yakf_py_ukf_fx(yakfPyUnscentedSt * self, \
 cdef void yakf_py_ukf_xmf(yakfPyUnscentedSt * self, \
                           yakfFloat * res, yakfFloat * sigmas):
 
-    py_self = <yakfUnscented>(self.py_self)
-    if not isinstance(py_self, yakfUnscented):
-        raise ValueError('Invalid py_self type (must be subclass of yakfUnscented)!')
+    py_self = <yakfUnscentedBase>(self.py_self)
+    if not isinstance(py_self, yakfUnscentedBase):
+        raise ValueError('Invalid py_self type (must be subclass of yakfUnscentedBase)!')
 
     mean_x = py_self._mean_x
     if not callable(mean_x):
@@ -1200,12 +1233,12 @@ cdef void yakf_py_ukf_xmf(yakfPyUnscentedSt * self, \
     if not isinstance(py_self, yakfSigmaBase):
         raise ValueError('Invalid _points type (must be subclass of yakfSigmaBase)!')
 
-    np = _points.base.base.np
-    if np <= 0:
-        raise ValueError('np must be > 0!')
+    pnum = _points.base.base.np
+    if pnum <= 0:
+        raise ValueError('pnum must be > 0!')
 
-    _sigmas = np.asarray(<yakfFloat[:np, :nx]> sigmas) #np.float64_t
-    _res    = np.asarray(<yakfFloat[:nx]> res)         #np.float64_t
+    _sigmas = np.asarray(<yakfFloat[:pnum, :nx]> sigmas) #np.float64_t
+    _res    = np.asarray(<yakfFloat[:nx]> res)           #np.float64_t
 
     _res[:] = mean_x(_sigmas, _points._wm)
 
@@ -1213,9 +1246,9 @@ cdef void yakf_py_ukf_xmf(yakfPyUnscentedSt * self, \
 cdef void yakf_py_ukf_xrf(yakfPyUnscentedSt * self, yakfFloat * res, \
                              yakfFloat * sigma, yakfFloat * pivot):
 
-    py_self = <yakfUnscented>(self.py_self)
-    if not isinstance(py_self, yakfUnscented):
-        raise ValueError('Invalid py_self type (must be subclass of yakfUnscented)!')
+    py_self = <yakfUnscentedBase>(self.py_self)
+    if not isinstance(py_self, yakfUnscentedBase):
+        raise ValueError('Invalid py_self type (must be subclass of yakfUnscentedBase)!')
 
     residual_x = py_self._residual_x
     if not callable(residual_x):
@@ -1235,9 +1268,9 @@ cdef void yakf_py_ukf_xrf(yakfPyUnscentedSt * self, yakfFloat * res, \
 cdef void yakf_py_ukf_hx(yakfPyUnscentedSt * self, \
                          yakfFloat * z, yakfFloat * x):
 
-    py_self = <yakfUnscented>(self.py_self)
-    if not isinstance(py_self, yakfUnscented):
-        raise ValueError('Invalid py_self type (must be subclass of yakfUnscented)!')
+    py_self = <yakfUnscentedBase>(self.py_self)
+    if not isinstance(py_self, yakfUnscentedBase):
+        raise ValueError('Invalid py_self type (must be subclass of yakfUnscentedBase)!')
 
     hx = py_self._hx
     if not callable(hx):
@@ -1257,6 +1290,8 @@ cdef void yakf_py_ukf_hx(yakfPyUnscentedSt * self, \
 
     _x = np.asarray(<yakfFloat[:nx]> x) #np.float64_t
     _z = np.asarray(<yakfFloat[:nz]> z) #np.float64_t
+    #print(<np.int64_t>x - <np.int64_t>self.base.base.sigmas_x)
+    #print(<np.int64_t>z - <np.int64_t>self.base.base.sigmas_z)
 
     _z[:] = hx(_x, **hx_args)
 
@@ -1264,9 +1299,9 @@ cdef void yakf_py_ukf_hx(yakfPyUnscentedSt * self, \
 cdef void yakf_py_ukf_zmf(yakfPyUnscentedSt * self, \
                           yakfFloat * res, yakfFloat * sigmas):
 
-    py_self = <yakfUnscented>(self.py_self)
-    if not isinstance(py_self, yakfUnscented):
-        raise ValueError('Invalid py_self type (must be subclass of yakfUnscented)!')
+    py_self = <yakfUnscentedBase>(self.py_self)
+    if not isinstance(py_self, yakfUnscentedBase):
+        raise ValueError('Invalid py_self type (must be subclass of yakfUnscentedBase)!')
 
     mean_z = py_self._mean_z
     if not callable(mean_z):
@@ -1280,12 +1315,12 @@ cdef void yakf_py_ukf_zmf(yakfPyUnscentedSt * self, \
     if not isinstance(py_self, yakfSigmaBase):
         raise ValueError('Invalid _points type (must be subclass of yakfSigmaBase)!')
 
-    np = _points.base.base.np
-    if np <= 0:
-        raise ValueError('np must be > 0!')
+    pnum = _points.base.base.np
+    if pnum <= 0:
+        raise ValueError('pnum must be > 0!')
 
-    _sigmas = np.asarray(<yakfFloat[:np, :nz]> sigmas) #np.float64_t
-    _res    = np.asarray(<yakfFloat[:nz]> res)         #np.float64_t
+    _sigmas = np.asarray(<yakfFloat[:pnum, :nz]> sigmas) #np.float64_t
+    _res    = np.asarray(<yakfFloat[:nz]> res)           #np.float64_t
 
     _res[:] = mean_z(_sigmas, _points._wm)
 
@@ -1293,9 +1328,9 @@ cdef void yakf_py_ukf_zmf(yakfPyUnscentedSt * self, \
 cdef void yakf_py_ukf_zrf(yakfPyUnscentedSt * self, yakfFloat * res, \
                              yakfFloat * sigma, yakfFloat * pivot):
 
-    py_self = <yakfUnscented>(self.py_self)
-    if not isinstance(py_self, yakfUnscented):
-        raise ValueError('Invalid py_self type (must be subclass of yakfUnscented)!')
+    py_self = <yakfUnscentedBase>(self.py_self)
+    if not isinstance(py_self, yakfUnscentedBase):
+        raise ValueError('Invalid py_self type (must be subclass of yakfUnscentedBase)!')
 
     residual_z = py_self._residual_z
     if not callable(residual_z):
@@ -1312,3 +1347,42 @@ cdef void yakf_py_ukf_zrf(yakfPyUnscentedSt * self, yakfFloat * res, \
     _res[:] = residual_z(_sigma, _pivot)
 
 #==============================================================================
+cdef class Unscented(yakfUnscentedBase):
+    """
+    UD-factorized UKF implementation
+    """
+    def _update(self):
+        yakf_unscented_update(&self.c_self.base.base, &self.v_z[0])
+
+#------------------------------------------------------------------------------
+cdef class MerweSigmaPoints(yakfSigmaBase):
+    """
+    Van der Merwe sigma point generator implementation
+    """
+    def __init__(self, yakfInt dim_x, yakfInt dim_z, \
+                 yakfFloat alpha, yakfFloat beta, yakfFloat kappa=0.0, **kwargs):
+        super().__init__(dim_x, dim_z, **kwargs)
+        self.c_self.base.merwe.alpha = alpha
+        self.c_self.base.merwe.beta  = beta
+        self.c_self.base.merwe.kappa = kappa
+        
+        
+    cdef yakfInt get_np(self, int dim_x):
+        return (2 * dim_x + 1)
+        
+    cdef const yakfSigmaMethodsSt * get_spm(self):
+        return &yakf_merwe_spm
+
+    #==========================================================================
+    #Decorators
+    @property
+    def alpha(self):
+        return self.c_self.base.merwe.alpha
+
+    @property
+    def beta(self):
+        return self.c_self.base.merwe.beta
+    
+    @property
+    def kappa(self):
+        return self.c_self.base.merwe.kappa

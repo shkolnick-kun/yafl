@@ -82,8 +82,13 @@ N = 6000
 clean = np.zeros((N, 2))
 noisy = np.zeros((N, 2))
 t     = np.zeros((N,), dtype=np.float)
-for i in range(1, len(clean)):
-    clean[i] = clean[i-1] + np.array([1.,1.])
+for i in range(1, len(clean)//2):
+    clean[i] = clean[i-1] + np.array([1.5,1.])
+    noisy[i] = clean[i]   + np.random.normal(scale=STD, size=2)
+    t[i] = i
+
+for i in range(i, len(clean)):
+    clean[i] = clean[i-1] + np.array([1.,10.])
     noisy[i] = clean[i]   + np.random.normal(scale=STD, size=2)
     t[i] = i
 
