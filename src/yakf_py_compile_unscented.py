@@ -15,9 +15,12 @@
 
     See the License for the specific language governing permissions
 """
+import time
 import numpy as np
-import pyximport
+import matplotlib.pyplot as plt
+from filterpy.kalman import UnscentedKalmanFilter, MerweScaledSigmaPoints
 
+import pyximport
 pyximport.install(
     build_dir='../tests/projects/obj', 
     pyimport=True,
@@ -27,11 +30,6 @@ pyximport.install(
         'include_dirs': ['./', '../tests/src'],
         }
     )
-
-#from yakf_py import RobustJoseph as KF
-#from yakf_py import RobustBierman as KF
-#from yakf_py import AdaptiveRobustJoseph as KF
-#from yakf_py import AdaptiveRobustBierman as KF
 
 from yakf_py import MerweSigmaPoints as SP
 from yakf_py import Unscented as KF
@@ -43,26 +41,12 @@ def _fx(x, dt, **fx_args):
     x[2] += x[3] * dt
     return x
 
-def _jfx(x, dt, **fx_args):
-    F = np.array([
-        [1., dt, 0., 0.],
-        [0., 1., 0., 0.],
-        [0., 0., 1., dt],
-        [0., 0., 0., 1.],
-        ])
-    return F
 
 def _hx(x, **hx_args):
     if hx_args:
         print(hx_args)
     return np.array([x[0], x[2]])
 
-def _jhx(x, **hx_args):
-    H = np.array([
-        [1., 0., 0., 0.],
-        [0., 0., 1., 0.],
-        ])
-    return H
 
 def _zrf(a,b):
     #print(a - b)
@@ -70,18 +54,26 @@ def _zrf(a,b):
 
 STD = 100.
 
-sp = SP(4, 2, 0.0001, 2., 0)
+sp = SP(4, 2, 0.1, 2., 0)
 kf = KF(4, 2, 1., _hx, _fx, sp)
 #kf = KF(4, 2, 1., _hx, _fx, sp, residual_z=_zrf)
 
 kf.x[0] = 0.
-kf.x[1] = 0.
-kf.Dp *= .0000001
-kf.Dq *= 1.0e-10
+kf.x[1] = 0.3
+kf.Dp *= .00001
+kf.Dq *= 1.0e-8
 #This is robust filter, so no square here
 kf.Dr *= STD*STD
 kf.Dr[0] *= .75
-kf.Ur += 0.5
+kf.Ur += .5
+
+# sp = MerweScaledSigmaPoints(4, alpha=.1, beta=2., kappa=0)
+# kf = UnscentedKalmanFilter(4, 2, dt=1., fx=_fx, hx=_hx, points=sp)
+
+# kf.P *= .1
+# kf.Q *= 1e-8
+# kf.R *= STD*STD
+
 
 print(kf.x)
 
@@ -90,19 +82,24 @@ N = 6000
 clean = np.zeros((N, 2))
 noisy = np.zeros((N, 2))
 t     = np.zeros((N,), dtype=np.float)
-for i in range(1, len(clean)//2):
-    clean[i] = clean[i-1] + np.array([1.5,1.])
-    noisy[i] = clean[i]   + np.random.normal(scale=STD, size=2)
-    t[i] = i
+# for i in range(1, len(clean)//2):
+#     clean[i] = clean[i-1] + np.array([1.5,1.])
+#     noisy[i] = clean[i]   + np.random.normal(scale=STD, size=2)
+#     t[i] = i
 
-for i in range(i, len(clean)):
+# for i in range(i, len(clean)):
+#     clean[i] = clean[i-1] + np.array([1.,1.5])
+#     noisy[i] = clean[i]   + np.random.normal(scale=STD, size=2)
+#     t[i] = i
+
+for i in range(1, len(clean)):
     clean[i] = clean[i-1] + np.array([1.,1.])
     noisy[i] = clean[i]   + np.random.normal(scale=STD, size=2)
     t[i] = i
 
 kf_out = np.zeros((N, 2))
 
-import time
+
 
 start = time.time()
 for i, z in enumerate(noisy):
@@ -113,7 +110,7 @@ end = time.time()
 print(end - start)
 
 
-import matplotlib.pyplot as plt
+
 plt.plot(t, noisy - kf_out)
 plt.show()
 
@@ -123,13 +120,14 @@ plt.show()
 plt.plot(clean[:,0], clean[:,1], kf_out[:,0], kf_out[:,1])
 plt.show()
 
-plt.plot(noisy[:,0], noisy[:,1], "x", kf_out[:,0], kf_out[:,1])
+plt.plot(noisy[:,0], noisy[:,1], kf_out[:,0], kf_out[:,1])
 plt.show()
 
-plt.plot(t, noisy[:,1], "x", t, kf_out[:,1], t, clean[:,1])
+plt.plot(t, noisy[:,1], t, kf_out[:,1], t, clean[:,1])
 plt.show()
 
-plt.plot(t, noisy[:,0], "x", t, kf_out[:,0], t, clean[:,0])
+plt.plot(t, noisy[:,0], t, kf_out[:,0], t, clean[:,0])
 plt.show()
+
 
 print('Done!')

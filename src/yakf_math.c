@@ -497,7 +497,7 @@ void yakfm_bset_ut(yakfInt nc, yakfFloat *res, yakfInt sz, yakfFloat *u)
     YAKF_ASSERT(res);
     YAKF_ASSERT(u);
 
-    for (szi = 0, i = 1; i < sz; szi += i++)
+    for (szi = 0, i = 0; i < sz; szi += i++)
     {
         yakfInt nci;
         yakfInt j;
