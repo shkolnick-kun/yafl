@@ -54,7 +54,7 @@ def _zrf(a,b):
 
 STD = 100.
 
-sp = SP(4, 2, 0.1, 2., 0)
+sp = SP(4, 0.1, 2., 0)
 kf = KF(4, 2, 1., _hx, _fx, sp)
 #kf = KF(4, 2, 1., _hx, _fx, sp, residual_z=_zrf)
 

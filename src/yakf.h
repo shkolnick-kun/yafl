@@ -256,11 +256,9 @@ delta_x = x0 + factor * delta_x
 */
 typedef void (* yakfSigmaAddP)(yakfUnscentedSt *, yakfFloat *, yakfFloat *, yakfFloat);
 
-/*Sigma points base type*/
+/*Sigma point generator info base type*/
 typedef struct _yakfSigmaSt {
-    yakfInt     np;     /* The number of sigma points          */
-    yakfFloat * wm;     /* Weights for mean calculations       */
-    yakfFloat * wc;     /* Weights for covariance calculations */
+    yakfInt         np; /* The number of sigma points          */
     yakfSigmaAddP addf; /* Sigma point addition function       */
 } yakfSigmaSt;
 
@@ -269,8 +267,6 @@ typedef struct _yakfSigmaSt {
 {                                                     \
     .np   = (yakfInt)_np,                             \
     .addf = (yakfSigmaAddP)_addf,                     \
-    .wm   = _mem.wm,                                  \
-    .wc   = _mem.wc                                   \
 }
 
 /*---------------------------------------------------------------------------*/
@@ -293,9 +289,9 @@ typedef void (* yakfUnscentedResFuncP)(yakfUnscentedSt *, yakfFloat *, \
 
 struct _yakfUnscentedSt {
     /* A pointer to the sigma point generator structure */
-    yakfSigmaSt           * points;
+    yakfSigmaSt               * sp_info;
     /* A sigma point generator method table pointer     */
-    const yakfSigmaMethodsSt * spm;
+    const yakfSigmaMethodsSt  * sp_meth;
 
     yakfUnscentedFuncP      f; /* A state transition function      */
     yakfUnscentedFuncP    xmf; /* State mean function              */
@@ -307,6 +303,7 @@ struct _yakfUnscentedSt {
 
     yakfFloat * x;  /* State vector                 */
     yakfFloat * zp; /* Predicted measurement vector */
+    yakfFloat * y;  /* Innovation */
 
     yakfFloat * Up;  /* Upper triangular part of P  */
     yakfFloat * Dp;  /* Diagonal part of P          */
@@ -324,10 +321,12 @@ struct _yakfUnscentedSt {
 
     yakfFloat * sigmas_x; /* State sigma points       */
     yakfFloat * sigmas_z; /* Measurement sigma points */
+    yakfFloat * wm;       /* Weights for mean calculations       */
+    yakfFloat * wc;       /* Weights for covariance calculations */
 
     /*Scratchpad memory*/
     yakfFloat * Sx;       /* State       */
-    yakfFloat * Sz;       /* Measurement */
+
 
     yakfInt   Nx; /* State vector size       */
     yakfInt   Nz; /* Measurement vector size */
@@ -341,6 +340,7 @@ Warning: sigmas_x and _sigmas_z aren't defined in this mixin, see
 #define YAKF_UNSCENTED_MEMORY_MIXIN(nx, nz) \
     yakfFloat x[nx];                        \
     yakfFloat zp[nz];                       \
+    yakfFloat y[nz];                        \
                                             \
     yakfFloat Up[((nx - 1) * nx)/2];        \
     yakfFloat Dp[nx];                       \
@@ -356,13 +356,15 @@ Warning: sigmas_x and _sigmas_z aren't defined in this mixin, see
     yakfFloat Ur[((nz - 1) * nz)/2];        \
     yakfFloat Dr[nz];                       \
                                             \
-    yakfFloat Sx[nx];                       \
-    yakfFloat Sz[nz];
+    yakfFloat Sx[nx];
 
 /*---------------------------------------------------------------------------*/
 #define YAKF_UNSCENTED_INITIALIZER(_p, _pm, _f, _xmf, _xrf, _h, _zmf,         \
                                    _zrf, _nx, _nz, _mem)                      \
 {                                                                             \
+    .sp_info = _p,                                                            \
+    .sp_meth = _pm,                                                           \
+                                                                              \
     .f   = (yakfUnscentedFuncP)_f,                                            \
     .xmf = (yakfUnscentedFuncP)_xmf,                                          \
     .xrf = (yakfUnscentedResFuncP)_xrf,                                       \
@@ -373,6 +375,7 @@ Warning: sigmas_x and _sigmas_z aren't defined in this mixin, see
                                                                               \
     .x   = _mem.x,                                                            \
     .zp  = _mem.zp,                                                           \
+    .y   = _mem.y,                                                            \
                                                                               \
     .Up  = _mem.Up,                                                           \
     .Dp  = _mem.Dp,                                                           \
@@ -391,8 +394,10 @@ Warning: sigmas_x and _sigmas_z aren't defined in this mixin, see
     .sigmas_x  = _mem.sigmas_x,                                               \
     .sigmas_z  = _mem.sigmas_z,                                               \
                                                                               \
+    .wm   = _mem.wm,                                                          \
+    .wc   = _mem.wc                                                           \
+                                                                              \
     .Sx  = _mem.Sx,                                                           \
-    .Sz  = _mem.Sz,                                                           \
                                                                               \
     .Nx  = _nx,                                                               \
     .Nz  = _nz                                                                \
@@ -402,17 +407,17 @@ Warning: sigmas_x and _sigmas_z aren't defined in this mixin, see
 static inline void yakf_unscented_post_init(yakfUnscentedSt * self)
 {
     YAKF_ASSERT(self);
-    YAKF_ASSERT(self->spm);
-    YAKF_ASSERT(self->spm->wf);
-    self->spm->wf(self); /*Need to compute weights before start*/
+    YAKF_ASSERT(self->sp_meth);
+    YAKF_ASSERT(self->sp_meth->wf);
+    self->sp_meth->wf(self); /*Need to compute weights before start*/
 }
 
 static inline void yakf_unscented_gen_sigmas(yakfUnscentedSt * self)
 {
     YAKF_ASSERT(self);
-    YAKF_ASSERT(self->spm);
-    YAKF_ASSERT(self->spm->spgf);
-    self->spm->spgf(self);
+    YAKF_ASSERT(self->sp_meth);
+    YAKF_ASSERT(self->sp_meth->spgf);
+    self->sp_meth->spgf(self);
 }
 
 void yakf_unscented_predict(yakfUnscentedSt * self);

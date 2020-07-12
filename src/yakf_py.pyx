@@ -116,8 +116,6 @@ cdef extern from "yakf.c":
 
     ctypedef struct yakfSigmaSt:
         yakfInt     np
-        yakfFloat * wm
-        yakfFloat * wc
         yakfSigmaAddP addf
 
     #--------------------------------------------------------------------------
@@ -136,8 +134,8 @@ cdef extern from "yakf.c":
                                             yakfFloat *, yakfFloat *)
 
     ctypedef struct _yakfUnscentedSt:
-        yakfSigmaSt           * points
-        const yakfSigmaMethodsSt * spm
+        yakfSigmaSt              * sp_info
+        const yakfSigmaMethodsSt * sp_meth
 
         yakfUnscentedFuncP      f
         yakfUnscentedFuncP    xmf
@@ -149,6 +147,7 @@ cdef extern from "yakf.c":
 
         yakfFloat * x
         yakfFloat * zp
+        yakfFloat * y
 
         yakfFloat * Up
         yakfFloat * Dp
@@ -166,9 +165,10 @@ cdef extern from "yakf.c":
 
         yakfFloat * sigmas_x
         yakfFloat * sigmas_z
+        yakfFloat * wm
+        yakfFloat * wc
 
         yakfFloat * Sx
-        yakfFloat * Sz
 
         yakfInt   Nx
         yakfInt   Nz
@@ -769,25 +769,13 @@ cdef class yakfSigmaBase:
     # Sigma point generator C-self
     cdef yakfPySigmaSt c_self
 
-    # Kalman filter memory views
-    cdef yakfFloat [::1]    v_wc
-    cdef yakfFloat [::1]    v_wm
-    cdef yakfFloat [:, ::1] v_sigmas_x
-    cdef yakfFloat [:, ::1] v_sigmas_z
-
-    # Kalman filter numpy arrays
-    cdef np.ndarray  _wc
-    cdef np.ndarray  _wm
-    cdef np.ndarray  _sigmas_x
-    cdef np.ndarray  _sigmas_z
-
     # Callback info
     cdef object _addf
 
     #The object will be Extensible
     cdef dict __dict__
 
-    def __init__(self, yakfInt dim_x, yakfInt dim_z, addf=None):
+    def __init__(self, yakfInt dim_x, addf=None):
         #Setup callbacks
         self.c_self.py_self = <void *>self
 
@@ -803,43 +791,19 @@ cdef class yakfSigmaBase:
 
         self.c_self.base.base.np = pnum
 
-        self._wc  = np.zeros((pnum,), dtype=np.float64)
-        self.v_wc = self._wc
-        self.c_self.base.base.wc = &self.v_wc[0]
-
-        self._wm  = np.zeros((pnum,), dtype=np.float64)
-        self.v_wm = self._wm
-        self.c_self.base.base.wm = &self.v_wm[0]
-
-        self._sigmas_x  = np.zeros((pnum, dim_x), dtype=np.float64)
-        self.v_sigmas_x = self._sigmas_x
-
-        self._sigmas_z  = np.zeros((pnum, dim_z), dtype=np.float64)
-        self.v_sigmas_z = self._sigmas_z
-
     cdef yakfInt get_np(self, int dim_x):
         raise NotImplementedError('yakfSigmaBase is the base class!')
 
     cdef const yakfSigmaMethodsSt * get_spm(self):
         raise NotImplementedError('yakfSigmaBase is the base class!')
-        
-    #==========================================================================
-    #Decorators
-    @property
-    def sigmas_x(self):
-        return self._sigmas_x
 
     @property
-    def sigmas_z(self):
-        return self._sigmas_z
+    def pnum(self):
+        return self.c_self.base.base.np
     
-    @property
-    def wc(self):
-        return self._wc
-    
-    @property
-    def wm(self):
-        return self._wm
+    @pnum.setter
+    def pnum(self, value):
+        raise AttributeError('yakfSigmaBase does not support this!')
 #------------------------------------------------------------------------------
 #                         UD-factorized UKF definitions
 #------------------------------------------------------------------------------
@@ -864,6 +828,7 @@ cdef class yakfUnscentedBase:
 
     cdef yakfFloat [::1]    v_x
     cdef yakfFloat [::1]    v_zp
+    cdef yakfFloat [::1]    v_y
 
     cdef yakfFloat [::1]    v_Up
     cdef yakfFloat [::1]    v_Dp
@@ -879,14 +844,19 @@ cdef class yakfUnscentedBase:
     cdef yakfFloat [::1]    v_Ur
     cdef yakfFloat [::1]    v_Dr
 
+    cdef yakfFloat [:, ::1] v_sigmas_x
+    cdef yakfFloat [:, ::1] v_sigmas_z
+    cdef yakfFloat [::1]    v_wm
+    cdef yakfFloat [::1]    v_wc
+
     cdef yakfFloat [::1]    v_Sx
-    cdef yakfFloat [::1]    v_Sz
 
     # Kalman filter numpy arrays
     cdef np.ndarray  _z
 
     cdef np.ndarray  _x
     cdef np.ndarray  _zp
+    cdef np.ndarray  _y
 
     cdef np.ndarray  _Up
     cdef np.ndarray  _Dp
@@ -902,8 +872,12 @@ cdef class yakfUnscentedBase:
     cdef np.ndarray _Ur
     cdef np.ndarray _Dr
 
+    cdef np.ndarray  _sigmas_x
+    cdef np.ndarray  _sigmas_z
+    cdef np.ndarray  _wm
+    cdef np.ndarray  _wc
+
     cdef np.ndarray _Sx
-    cdef np.ndarray _Sz
 
     # Callback info
     cdef object    _points
@@ -983,7 +957,36 @@ cdef class yakfUnscentedBase:
             self.c_self.base.base.zrf = <yakfUnscentedResFuncP> 0
             self._residual_z = None
 
+        #Setup sigma points generator
+        if not isinstance(points, yakfSigmaBase):
+            raise ValueError('Invalid points type (must be subclass of yakfSigmaBase)!')
+
+        _points = <yakfSigmaBase>points
+
+        self._points = _points
+        self.c_self.base.base.sp_info = &_points.c_self.base.base
+        self.c_self.base.base.sp_meth = _points.get_spm()
+
         # Allocate memories and setup the rest of c_self
+        # Sigma points and weights
+        pnum = _points.pnum
+        self._wc  = np.zeros((pnum,), dtype=np.float64)
+        self.v_wc = self._wc
+        self.c_self.base.base.wc = &self.v_wc[0]
+
+        self._wm  = np.zeros((pnum,), dtype=np.float64)
+        self.v_wm = self._wm
+        self.c_self.base.base.wm = &self.v_wm[0]
+
+        self._sigmas_x  = np.zeros((pnum, dim_x), dtype=np.float64)
+        self.v_sigmas_x = self._sigmas_x
+        self.c_self.base.base.sigmas_x = &self.v_sigmas_x[0, 0]
+
+        self._sigmas_z  = np.zeros((pnum, dim_z), dtype=np.float64)
+        self.v_sigmas_z = self._sigmas_z
+        self.c_self.base.base.sigmas_z = &self.v_sigmas_z[0, 0]
+
+        #Rest of rhe UKF
         self._z  = np.zeros((dim_z,), dtype=np.float64)
         self.v_z = self._z
 
@@ -994,6 +997,10 @@ cdef class yakfUnscentedBase:
         self._zp  = np.zeros((dim_z,), dtype=np.float64)
         self.v_zp = self._zp
         self.c_self.base.base.zp = &self.v_zp[0]
+
+        self._y  = np.zeros((dim_z,), dtype=np.float64)
+        self.v_y = self._y
+        self.c_self.base.base.y = &self.v_y[0]
 
         self._Up  = np.zeros((_U_sz(dim_x),), dtype=np.float64)
         self.v_Up = self._Up
@@ -1034,23 +1041,6 @@ cdef class yakfUnscentedBase:
         self._Sx  = np.zeros((dim_x,), dtype=np.float64)
         self.v_Sx = self._Sx
         self.c_self.base.base.Sx = &self.v_Sx[0]
-
-        self._Sz  = np.zeros((dim_z,), dtype=np.float64)
-        self.v_Sz = self._Sz
-        self.c_self.base.base.Sz = &self.v_Sz[0]
-
-        #Setup sigma points generator
-        if not isinstance(points, yakfSigmaBase):
-            raise ValueError('Invalid points type (must be subclass of yakfSigmaBase)!')
-
-        _points = <yakfSigmaBase>points
-
-        self._points = _points
-
-        self.c_self.base.base.sigmas_x = &_points.v_sigmas_x[0, 0]
-        self.c_self.base.base.sigmas_z = &_points.v_sigmas_z[0, 0]
-        self.c_self.base.base.points   = &_points.c_self.base.base
-        self.c_self.base.base.spm      = _points.get_spm()
         
         yakf_unscented_post_init(&self.c_self.base.base)
 
@@ -1082,11 +1072,11 @@ cdef class yakfUnscentedBase:
     #--------------------------------------------------------------------------
     @property
     def y(self):
-        return self._Sz
+        return self._y
 
     @y.setter
     def y(self, value):
-        raise AttributeError('yakfBase does not support this!')
+        raise AttributeError('yakfUnscentedBase does not support this!')
     #--------------------------------------------------------------------------
     @property
     def Up(self):
@@ -1136,6 +1126,39 @@ cdef class yakfUnscentedBase:
     def Dr(self, value):
         self._Dr[:] = value
 
+    #--------------------------------------------------------------------------
+    @property
+    def sigmas_x(self):
+        return self._sigmas_x
+
+    @sigmas_x.setter
+    def sigmas_x(self, value):
+        raise AttributeError('yakfUnscentedBase does not support this!')
+
+    #--------------------------------------------------------------------------
+    @property
+    def sigmas_z(self):
+        return self._sigmas_z
+
+    @sigmas_z.setter
+    def sigmas_z(self, value):
+        raise AttributeError('yakfUnscentedBase does not support this!')
+    #--------------------------------------------------------------------------
+    @property
+    def wc(self):
+        return self._wc
+
+    @wc.setter
+    def wc(self, value):
+        raise AttributeError('yakfUnscentedBase does not support this!')
+    #--------------------------------------------------------------------------
+    @property
+    def wm(self):
+        return self._wm
+
+    @wm.setter
+    def wm(self, value):
+        raise AttributeError('yakfUnscentedBase does not support this!')
     #==========================================================================
     def _predict(self):
         yakf_unscented_predict(&self.c_self.base.base)
@@ -1359,13 +1382,12 @@ cdef class MerweSigmaPoints(yakfSigmaBase):
     """
     Van der Merwe sigma point generator implementation
     """
-    def __init__(self, yakfInt dim_x, yakfInt dim_z, \
-                 yakfFloat alpha, yakfFloat beta, yakfFloat kappa=0.0, **kwargs):
-        super().__init__(dim_x, dim_z, **kwargs)
+    def __init__(self, yakfInt dim_x, yakfFloat alpha, yakfFloat beta, \
+                 yakfFloat kappa=0.0, **kwargs):
+        super().__init__(dim_x, **kwargs)
         self.c_self.base.merwe.alpha = alpha
         self.c_self.base.merwe.beta  = beta
         self.c_self.base.merwe.kappa = kappa
-        
         
     cdef yakfInt get_np(self, int dim_x):
         return (2 * dim_x + 1)

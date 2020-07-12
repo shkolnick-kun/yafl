@@ -1168,7 +1168,7 @@ static void _unscented_transform(yakfUnscentedSt * self, \
 {
     yakfInt np;
     yakfInt i;
-    yakfSigmaSt * points;
+    yakfSigmaSt * sp_info;
     yakfFloat * wc;
 
     YAKF_ASSERT(self);
@@ -1184,15 +1184,15 @@ static void _unscented_transform(yakfUnscentedSt * self, \
         YAKF_ASSERT(noise_d);
     }
 
-    YAKF_ASSERT(self->points);
-    points = self->points;
+    YAKF_ASSERT(self->wm);
+    YAKF_ASSERT(self->wc);
+    wc = self->wc;
 
-    YAKF_ASSERT(points->np > 1);
-    np = points->np;
+    YAKF_ASSERT(self->sp_info);
+    sp_info = self->sp_info;
 
-    YAKF_ASSERT(points->wm);
-    YAKF_ASSERT(points->wc);
-    wc = points->wc;
+    YAKF_ASSERT(sp_info->np > 1);
+    np = sp_info->np;
 
     if (mf)
     {
@@ -1200,7 +1200,7 @@ static void _unscented_transform(yakfUnscentedSt * self, \
     }
     else
     {
-        yakfm_set_vtm(np, res_sz, res_v, points->wm, sigmas);
+        yakfm_set_vtm(np, res_sz, res_v, self->wm, sigmas);
     }
 
     if (noise_u)
@@ -1244,7 +1244,7 @@ void yakf_unscented_predict(yakfUnscentedSt * self)
     yakfInt np;
     yakfInt nx;
     yakfInt i;
-    yakfSigmaSt * points;
+    yakfSigmaSt * sp_info;
     yakfUnscentedFuncP fx; /*State transition function*/
     yakfFloat * sigmas_x;
 
@@ -1257,11 +1257,11 @@ void yakf_unscented_predict(yakfUnscentedSt * self)
     YAKF_ASSERT(self->sigmas_x);
     sigmas_x = self->sigmas_x;
 
-    YAKF_ASSERT(self->points);
-    points = self->points;
+    YAKF_ASSERT(self->sp_info);
+    sp_info = self->sp_info;
 
-    YAKF_ASSERT(points->np > 1);
-    np = points->np;
+    YAKF_ASSERT(sp_info->np > 1);
+    np = sp_info->np;
 
     /*Compute process sigmas*/
     YAKF_ASSERT(self->f);
@@ -1287,7 +1287,7 @@ void yakf_unscented_update(yakfUnscentedSt * self, yakfFloat * z)
     yakfInt nx;
     yakfInt nz;
     yakfInt i;
-    yakfSigmaSt * points;      /*Sigma points generator*/
+    yakfSigmaSt * sp_info;     /*Sigma point generator info*/
     yakfUnscentedFuncP hx;     /*State transition function*/
     yakfUnscentedResFuncP xrf; /*State residual function*/
     yakfUnscentedResFuncP zrf; /*Measurement residual function*/
@@ -1295,7 +1295,7 @@ void yakf_unscented_update(yakfUnscentedSt * self, yakfFloat * z)
     yakfFloat * sigmas_z;      /*Measurement sigma points*/
     /*Scratchpad memory*/
     yakfFloat * spx;           /*For state residuals*/
-    yakfFloat * spz;           /*For measurement residuals*/
+    yakfFloat * y;           /*For measurement residuals*/
 
     yakfFloat * x;             /*State*/
     yakfFloat * zp;            /*Predicted measurement*/
@@ -1323,14 +1323,14 @@ void yakf_unscented_update(yakfUnscentedSt * self, yakfFloat * z)
     YAKF_ASSERT(self->sigmas_z);
     sigmas_z = self->sigmas_z;
 
-    YAKF_ASSERT(self->points);
-    points = self->points;
+    YAKF_ASSERT(self->wc);
+    wc = self->wc;
 
-    YAKF_ASSERT(points->np > 1);
-    np = points->np;
+    YAKF_ASSERT(self->sp_info);
+    sp_info = self->sp_info;
 
-    YAKF_ASSERT(points->wc);
-    wc = points->wc;
+    YAKF_ASSERT(sp_info->np > 1);
+    np = sp_info->np;
 
     YAKF_ASSERT(self->h);
     hx = self->h;
@@ -1341,8 +1341,8 @@ void yakf_unscented_update(yakfUnscentedSt * self, yakfFloat * z)
     YAKF_ASSERT(self->Sx);
     spx = self->Sx;
 
-    YAKF_ASSERT(self->Sz);
-    spz = self->Sz;
+    YAKF_ASSERT(self->y);
+    y = self->y;
 
     YAKF_ASSERT(self->zp);
     zp = self->zp;
@@ -1370,28 +1370,27 @@ void yakf_unscented_update(yakfUnscentedSt * self, yakfFloat * z)
 
     /* Compute zp, Us, Ds */
     zrf = self->zrf;
-    _unscented_transform(self, nz, zp, us, ds, spz, \
+    _unscented_transform(self, nz, zp, us, ds, y, \
                          sigmas_z, self->Ur, self->Dr, self->zmf, zrf);
 
     /* Compute Pzx */
     xrf = self->xrf;
-    _compute_res(self, nz, zrf, sigmas_z, zp, spz);
+    _compute_res(self, nz, zrf, sigmas_z, zp, y);
     _compute_res(self, nx, xrf, sigmas_x,  x, spx);
-    yakfm_set_vvtxn(nz, nx, pzx, spz, spx, wc[0]);
+    yakfm_set_vvtxn(nz, nx, pzx, y, spx, wc[0]);
 
     for (i = 1; i < np; i++)
     {
-        _compute_res(self, nz, zrf, sigmas_z + nz * i, zp, spz);
+        _compute_res(self, nz, zrf, sigmas_z + nz * i, zp, y);
         _compute_res(self, nx, xrf, sigmas_x + nx * i,  x, spx);
-        yakfm_add_vvtxn(nz, nx, pzx, spz, spx, wc[i]);
+        yakfm_add_vvtxn(nz, nx, pzx, y, spx, wc[i]);
     }
 
     /*Compute innovation*/
-#define Y spz
-    _compute_res(self, nz, zrf, z, zp, Y);
+    _compute_res(self, nz, zrf, z, zp, y);
 
     /* Decorrelate measurements*/
-    yakfm_ruv(nz,       Y, us);
+    yakfm_ruv(nz,       y, us);
     yakfm_rum(nz, nx, pzx, us);
 
     /*Now we can do scalar updates*/
@@ -1400,13 +1399,13 @@ void yakf_unscented_update(yakfUnscentedSt * self, yakfFloat * z)
         yakfFloat * pzxi;
         pzxi = pzx + nx * i;
         /*
-        self.x += K * Y[i]
+        self.x += K * y[i]
 
-        K * Y[i] = Pzx[i].T / ds[i] * Y[i] = Pzx[i].T * (Y[i] / ds[i])
+        K * y[i] = Pzx[i].T / ds[i] * y[i] = Pzx[i].T * (y[i] / ds[i])
 
-        self.x += Pzx[i].T * (Y[i] / ds[i])
+        self.x += Pzx[i].T * (y[i] / ds[i])
         */
-        yakfm_add_vxn(nx, x, pzxi, Y[i] / ds[i]);
+        yakfm_add_vxn(nx, x, pzxi, y[i] / ds[i]);
 
         /*
         P -= K.dot(S.dot(K.T))
@@ -1417,7 +1416,6 @@ void yakf_unscented_update(yakfUnscentedSt * self, yakfFloat * z)
         */
         yakfm_udu_down(nx, up, dp, 1.0 / ds[i], pzxi);
     }
-#undef Y
 }
 /*=============================================================================
                     Van der Merwe sigma points generator
@@ -1429,7 +1427,7 @@ static void _merwe_compute_weights(yakfUnscentedSt * self)
     yakfInt i;
     yakfFloat * wc;
     yakfFloat * wm;
-    yakfSigmaSt * points;
+    yakfSigmaSt * sp_info;
     yakfFloat lambda;
     yakfFloat alpha;
     yakfFloat c;
@@ -1439,27 +1437,29 @@ static void _merwe_compute_weights(yakfUnscentedSt * self)
     YAKF_ASSERT(self->Nx);
     nx = self->Nx;
 
-    YAKF_ASSERT(self->points);
-    points = self->points;
+    YAKF_ASSERT(self->wm);
+    wm = self->wm;
 
-    YAKF_ASSERT(points->np);
-    np = points->np - 1;    /*Achtung!!!*/
+    YAKF_ASSERT(self->wc);
+    wc = self->wc;
 
-    YAKF_ASSERT(points->wm);
-    wm = points->wm;
+    YAKF_ASSERT(self->sp_info);
+    sp_info = self->sp_info;
 
-    YAKF_ASSERT(points->wc);
-    wc = points->wc;
+    YAKF_ASSERT(sp_info->np);
+    np = sp_info->np - 1;    /*Achtung!!!*/
 
-    alpha = ((yakfMerweSt *)points)->alpha;
+
+
+    alpha = ((yakfMerweSt *)sp_info)->alpha;
     alpha *= alpha;
 #define ALPHA2 alpha
 
-    lambda = ALPHA2 * (nx + ((yakfMerweSt *)points)->kappa) - nx;
+    lambda = ALPHA2 * (nx + ((yakfMerweSt *)sp_info)->kappa) - nx;
 
     d = lambda / (nx + lambda);
     wm[np] = d;
-    wc[np] = d + (1.0 - ALPHA2 + ((yakfMerweSt *)points)->beta);
+    wc[np] = d + (1.0 - ALPHA2 + ((yakfMerweSt *)sp_info)->beta);
 
     c = 0.5 / (nx + lambda);
     for (i = np - 1; i >= 0; i--)
@@ -1495,7 +1495,7 @@ static void _merwe_generate_points(yakfUnscentedSt * self)
     yakfFloat * x;
     yakfFloat * sigmas_x;
     yakfFloat * dp;
-    yakfSigmaSt * points;
+    yakfSigmaSt * sp_info;
     yakfSigmaAddP addf;
     yakfFloat lambda_p_n;
     yakfFloat alpha;
@@ -1514,17 +1514,17 @@ static void _merwe_generate_points(yakfUnscentedSt * self)
     YAKF_ASSERT(self->sigmas_x);
     sigmas_x = self->sigmas_x;
 
-    YAKF_ASSERT(self->points);
-    points = self->points;
+    YAKF_ASSERT(self->sp_info);
+    sp_info = self->sp_info;
 
-    alpha = ((yakfMerweSt *)points)->alpha;
-    lambda_p_n = alpha * alpha * (nx + ((yakfMerweSt *)points)->kappa);
+    alpha = ((yakfMerweSt *)sp_info)->alpha;
+    lambda_p_n = alpha * alpha * (nx + ((yakfMerweSt *)sp_info)->kappa);
 
     yakfm_bset_ut(nx, sigmas_x, nx, self->Up);
     memcpy((void *)(sigmas_x + nx * nx), (void *)sigmas_x, \
            nx * nx * sizeof(yakfFloat));
 
-    addf = points->addf;
+    addf = sp_info->addf;
     for (i = 0; i < nx; i++)
     {
         yakfFloat mult;
