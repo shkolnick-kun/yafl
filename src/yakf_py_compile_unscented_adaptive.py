@@ -121,7 +121,7 @@ plt.show()
 plt.plot(clean[:,0], clean[:,1], kf_out[:,0], kf_out[:,1])
 plt.show()
 
-plt.plot(noisy[:,0], noisy[:,1],  kf_out[:,0], kf_out[:,1])
+plt.plot(noisy[:,0], noisy[:,1], kf_out[:,0], kf_out[:,1])
 plt.show()
 
 plt.plot(t, noisy[:,1], t, kf_out[:,1], t, clean[:,1])

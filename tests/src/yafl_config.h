@@ -15,22 +15,22 @@
     and limitations under the License.
 ******************************************************************************/
 
-#ifndef YAKF_CONFIG_H
-#define YAKF_CONFIG_H
+#ifndef YAFL_CONFIG_H
+#define YAFL_CONFIG_H
 
 #include <assert.h>
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
 
-#define YAKF_ASSERT assert
+#define YAFL_ASSERT assert
 
-typedef double  yakfFloat;
-typedef int32_t yakfInt;
+typedef double  yaflFloat;
+typedef int32_t yaflInt;
 
 /*TODO: уточнить*/
-#define YAKF_UDU_EPS  (1.0e-15)
+#define YAFL_UDU_EPS  (1.0e-15)
 
-#define YAKF_SQRT sqrt
+#define YAFL_SQRT sqrt
 
-#endif // YAKF_CONFIG_H
+#endif // YAFL_CONFIG_H

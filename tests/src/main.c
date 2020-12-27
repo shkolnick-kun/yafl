@@ -20,7 +20,7 @@
 
 #include <hdf5/serial/hdf5.h>
 #include <hdf5utils.h>
-#include <yakf.h>
+#include <yafl.h>
 
 /*-----------------------------------------------------------------------------
                             Kalman filter things
@@ -28,28 +28,28 @@
 #define NX 4
 #define NZ 2
 
-void fx(yakfBaseSt * self)
+void fx(yaflEKFBaseSt * self)
 {
-    yakfFloat * x;
-    YAKF_ASSERT(self);
-    YAKF_ASSERT(self->x);
-    YAKF_ASSERT(4 == self->Nx);
+    yaflFloat * x;
+    YAFL_ASSERT(self);
+    YAFL_ASSERT(self->x);
+    YAFL_ASSERT(4 == self->Nx);
 
     x = self->x;
     x[0] += 0.1 * x[2];
     x[1] += 0.1 * x[3];
 }
 
-void jfx(yakfBaseSt * self)
+void jfx(yaflEKFBaseSt * self)
 {
-    yakfInt i;
-    yakfInt nx;
-    yakfInt nx2;
-    yakfFloat * w;
+    yaflInt i;
+    yaflInt nx;
+    yaflInt nx2;
+    yaflFloat * w;
 
-    YAKF_ASSERT(self);
-    YAKF_ASSERT(self->W);
-    YAKF_ASSERT(4 == self->Nx);
+    YAFL_ASSERT(self);
+    YAFL_ASSERT(self->W);
+    YAFL_ASSERT(4 == self->Nx);
 
     w   = self->W;
     nx  = self->Nx;
@@ -57,8 +57,8 @@ void jfx(yakfBaseSt * self)
 
     for (i = 0; i < nx; i++)
     {
-        yakfInt j;
-        yakfInt nci;
+        yaflInt j;
+        yaflInt nci;
 
         nci = nx2 * i;
         for (j = 0; j < nx; j++)
@@ -71,13 +71,13 @@ void jfx(yakfBaseSt * self)
     w[nx2*1 + 3] = 0.1;
 }
 
-void hx(yakfBaseSt * self)
+void hx(yaflEKFBaseSt * self)
 {
-    yakfFloat * x;
-    yakfFloat * y;
-    YAKF_ASSERT(self);
-    YAKF_ASSERT(self->x);
-    YAKF_ASSERT(2 == self->Nz);
+    yaflFloat * x;
+    yaflFloat * y;
+    YAFL_ASSERT(self);
+    YAFL_ASSERT(self->x);
+    YAFL_ASSERT(2 == self->Nz);
 
     x = self->x;
     y = self->y;
@@ -85,17 +85,17 @@ void hx(yakfBaseSt * self)
     y[1] = x[1];
 }
 
-void jhx(yakfBaseSt * self)
+void jhx(yaflEKFBaseSt * self)
 {
-    yakfInt i;
-    yakfInt nx;
-    yakfInt nz;
-    yakfFloat * h;
+    yaflInt i;
+    yaflInt nx;
+    yaflInt nz;
+    yaflFloat * h;
 
-    YAKF_ASSERT(self);
-    YAKF_ASSERT(self->H);
-    YAKF_ASSERT(4 == self->Nx);
-    YAKF_ASSERT(2 == self->Nz);
+    YAFL_ASSERT(self);
+    YAFL_ASSERT(self->H);
+    YAFL_ASSERT(4 == self->Nx);
+    YAFL_ASSERT(2 == self->Nz);
 
     nx = self->Nx;
     nz = self->Nz;
@@ -103,8 +103,8 @@ void jhx(yakfBaseSt * self)
 
     for (i = 0; i < nz; i++)
     {
-        yakfInt j;
-        yakfInt nci;
+        yaflInt j;
+        yaflInt nci;
 
         nci = nx * i;
         for (j = 0; j < nx; j++)
@@ -118,8 +118,8 @@ void jhx(yakfBaseSt * self)
 }
 /*---------------------------------------------------------------------------*/
 typedef struct{
-    YAKF_BASE_MEMORY_MIXIN(NX, NZ);
-    yakfFloat dummy[30];
+    YAFL_EKF_BASE_MEMORY_MIXIN(NX, NZ);
+    yaflFloat dummy[30];
 } kfMemorySt;
 
 #define DP (0.1)
@@ -150,7 +150,7 @@ kfMemorySt kf_memory =
     .Dr = {DZ, DZ}
 };
 
-yakfBaseSt kf = YAKF_BASE_INITIALIZER(fx, jfx, hx, jhx, 0, NX, NZ, kf_memory);
+yaflEKFBaseSt kf = YAFL_EKF_BASE_INITIALIZER(fx, jfx, hx, jhx, 0, NX, NZ, kf_memory);
 
 /*-----------------------------------------------------------------------------
                                   Test data
@@ -173,11 +173,11 @@ int main (void)
     status = H5Fclose(file);
     printf("File %s closed with status: %d\n", IN_FILE, status);
 
-    YAKF_ASSERT(mat.shape.dim.y == NZ);
+    YAFL_ASSERT(mat.shape.dim.y == NZ);
     for (i=0; i<mat.shape.dim.x; i++)
     {
-        yakf_base_predict(&kf);
-        yakf_joseph_update(&kf, mat.data + NZ*i);
+        yafl_ekf_base_predict(&kf);
+        yafl_ekf_joseph_update(&kf, mat.data + NZ*i);
         mat.data[NZ*i + 0] = kf.x[0];
         mat.data[NZ*i + 1] = kf.x[1];
     }

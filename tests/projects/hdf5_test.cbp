@@ -30,14 +30,14 @@
 			<Add library="z" />
 			<Add directory="/home/anon/Documents/Projects/hdf5_test/" />
 		</Linker>
-		<Unit filename="../../src/yakf.c">
+		<Unit filename="../../src/yafl.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="../../src/yakf.h" />
-		<Unit filename="../../src/yakf_math.c">
+		<Unit filename="../../src/yafl.h" />
+		<Unit filename="../../src/yafl_math.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="../../src/yakf_math.h" />
+		<Unit filename="../../src/yafl_math.h" />
 		<Unit filename="../src/hdf5utils.c">
 			<Option compilerVar="CC" />
 		</Unit>
@@ -45,7 +45,7 @@
 		<Unit filename="../src/main.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="../src/yakf_config.h" />
+		<Unit filename="../src/yafl_config.h" />
 		<Extensions>
 			<code_completion />
 			<envvars />

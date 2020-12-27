@@ -15,15 +15,15 @@
     and limitations under the License.
 ******************************************************************************/
 
-#include "yakf_math.h"
+#include "yafl_math.h"
 
 #define _DO_VXN(name, op)                                         \
-void name(yakfInt sz, yakfFloat *res, yakfFloat *v, yakfFloat n) \
+void name(yaflInt sz, yaflFloat *res, yaflFloat *v, yaflFloat n) \
 {                                                                \
-    yakfInt k;                                                   \
+    yaflInt k;                                                   \
                                                                  \
-    YAKF_ASSERT(res);                                            \
-    YAKF_ASSERT(v);                                              \
+    YAFL_ASSERT(res);                                            \
+    YAFL_ASSERT(v);                                              \
                                                                  \
     for (k = 0; k < sz; k++)                                     \
     {                                                            \
@@ -31,18 +31,18 @@ void name(yakfInt sz, yakfFloat *res, yakfFloat *v, yakfFloat n) \
     }                                                            \
 }
 
-_DO_VXN(yakfm_set_vxn,  =)
-_DO_VXN(yakfm_add_vxn, +=)
-_DO_VXN(yakfm_sub_vxn, -=)
+_DO_VXN(yaflm_set_vxn,  =)
+_DO_VXN(yaflm_add_vxn, +=)
+_DO_VXN(yaflm_sub_vxn, -=)
 
 #define _DO_VRN(name, op)                                        \
-void name(yakfInt sz, yakfFloat *res, yakfFloat *v, yakfFloat n) \
+void name(yaflInt sz, yaflFloat *res, yaflFloat *v, yaflFloat n) \
 {                                                                \
-    yakfInt k;                                                   \
+    yaflInt k;                                                   \
                                                                  \
-    YAKF_ASSERT(res);                                            \
-    YAKF_ASSERT(v);                                              \
-    YAKF_ASSERT(n);                                              \
+    YAFL_ASSERT(res);                                            \
+    YAFL_ASSERT(v);                                              \
+    YAFL_ASSERT(n);                                              \
                                                                  \
     for (k = 0; k < sz; k++)                                     \
     {                                                            \
@@ -50,18 +50,18 @@ void name(yakfInt sz, yakfFloat *res, yakfFloat *v, yakfFloat n) \
     }                                                            \
 }
 
-_DO_VRN(yakfm_set_vrn,  =)
-_DO_VRN(yakfm_add_vrn, +=)
-_DO_VRN(yakfm_sub_vrn, -=)
+_DO_VRN(yaflm_set_vrn,  =)
+_DO_VRN(yaflm_add_vrn, +=)
+_DO_VRN(yaflm_sub_vrn, -=)
 
 #define _DO_VXV(name, op)                                        \
-void name(yakfInt sz, yakfFloat *res, yakfFloat *a, yakfFloat *b)\
+void name(yaflInt sz, yaflFloat *res, yaflFloat *a, yaflFloat *b)\
 {                                                                \
-    yakfInt k;                                                   \
+    yaflInt k;                                                   \
                                                                  \
-    YAKF_ASSERT(res);                                            \
-    YAKF_ASSERT(a);                                              \
-    YAKF_ASSERT(b);                                              \
+    YAFL_ASSERT(res);                                            \
+    YAFL_ASSERT(a);                                              \
+    YAFL_ASSERT(b);                                              \
                                                                  \
     for (k = 0; k < sz; k++)                                     \
     {                                                            \
@@ -69,18 +69,18 @@ void name(yakfInt sz, yakfFloat *res, yakfFloat *a, yakfFloat *b)\
     }                                                            \
 }
 
-_DO_VXV(yakfm_set_vxv,  =)
-_DO_VXV(yakfm_add_vxv, +=)
-_DO_VXV(yakfm_sub_vxv, -=)
+_DO_VXV(yaflm_set_vxv,  =)
+_DO_VXV(yaflm_add_vxv, +=)
+_DO_VXV(yaflm_sub_vxv, -=)
 
 #define _DO_VRV(name, op)                                        \
-void name(yakfInt sz, yakfFloat *res, yakfFloat *a, yakfFloat *b)\
+void name(yaflInt sz, yaflFloat *res, yaflFloat *a, yaflFloat *b)\
 {                                                                \
-    yakfInt k;                                                   \
+    yaflInt k;                                                   \
                                                                  \
-    YAKF_ASSERT(res);                                            \
-    YAKF_ASSERT(a);                                              \
-    YAKF_ASSERT(b);                                              \
+    YAFL_ASSERT(res);                                            \
+    YAFL_ASSERT(a);                                              \
+    YAFL_ASSERT(b);                                              \
                                                                  \
     for (k = 0; k < sz; k++)                                     \
     {                                                            \
@@ -88,17 +88,17 @@ void name(yakfInt sz, yakfFloat *res, yakfFloat *a, yakfFloat *b)\
     }                                                            \
 }
 
-_DO_VRV(yakfm_set_vrv,  =)
-_DO_VRV(yakfm_add_vrv, +=)
-_DO_VRV(yakfm_sub_vrv, -=)
+_DO_VRV(yaflm_set_vrv,  =)
+_DO_VRV(yaflm_add_vrv, +=)
+_DO_VRV(yaflm_sub_vrv, -=)
 
-yakfFloat yakfm_vtv(yakfInt sz, yakfFloat *a, yakfFloat *b)
+yaflFloat yaflm_vtv(yaflInt sz, yaflFloat *a, yaflFloat *b)
 {
-    yakfInt k;
-    yakfFloat res;
+    yaflInt k;
+    yaflFloat res;
 
-    YAKF_ASSERT(a);
-    YAKF_ASSERT(b);
+    YAFL_ASSERT(a);
+    YAFL_ASSERT(b);
 
     res = a[0] * b[0];
     for (k = 1; k < sz; k++)
@@ -109,19 +109,19 @@ yakfFloat yakfm_vtv(yakfInt sz, yakfFloat *a, yakfFloat *b)
 }
 
 #define _DO_VVT(name, op)                                                     \
-void name(yakfInt nr, yakfInt nc, yakfFloat *res, yakfFloat *a, yakfFloat *b) \
+void name(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloat *b) \
 {                                                                             \
-    yakfInt j;                                                                \
+    yaflInt j;                                                                \
                                                                               \
-    YAKF_ASSERT(res);                                                         \
-    YAKF_ASSERT(a);                                                           \
-    YAKF_ASSERT(b);                                                           \
+    YAFL_ASSERT(res);                                                         \
+    YAFL_ASSERT(a);                                                           \
+    YAFL_ASSERT(b);                                                           \
                                                                               \
     for (j = 0; j < nr; j++)                                                  \
     {                                                                         \
-        yakfInt k;                                                            \
-        yakfInt ncj;                                                          \
-        yakfFloat aj;                                                         \
+        yaflInt k;                                                            \
+        yaflInt ncj;                                                          \
+        yaflFloat aj;                                                         \
                                                                               \
         ncj = nc * j;                                                         \
         aj  = a[j];                                                           \
@@ -133,24 +133,24 @@ void name(yakfInt nr, yakfInt nc, yakfFloat *res, yakfFloat *a, yakfFloat *b) \
     }                                                                         \
 }
 
-_DO_VVT(yakfm_set_vvt,  =)
-_DO_VVT(yakfm_add_vvt, +=)
-_DO_VVT(yakfm_sub_vvt, -=)
+_DO_VVT(yaflm_set_vvt,  =)
+_DO_VVT(yaflm_add_vvt, +=)
+_DO_VVT(yaflm_sub_vvt, -=)
 
 #define _DO_VVTXN(name, op)                                                                \
-void name(yakfInt nr, yakfInt nc, yakfFloat *res, yakfFloat *a, yakfFloat *b, yakfFloat n) \
+void name(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloat *b, yaflFloat n) \
 {                                                                                          \
-    yakfInt j;                                                                             \
+    yaflInt j;                                                                             \
                                                                                            \
-    YAKF_ASSERT(res);                                                                      \
-    YAKF_ASSERT(a);                                                                        \
-    YAKF_ASSERT(b);                                                                        \
+    YAFL_ASSERT(res);                                                                      \
+    YAFL_ASSERT(a);                                                                        \
+    YAFL_ASSERT(b);                                                                        \
                                                                                            \
     for (j = 0; j < nr; j++)                                                               \
     {                                                                                      \
-        yakfInt k;                                                                         \
-        yakfInt ncj;                                                                       \
-        yakfFloat aj;                                                                      \
+        yaflInt k;                                                                         \
+        yaflInt ncj;                                                                       \
+        yaflFloat aj;                                                                      \
                                                                                            \
         ncj = nc * j;                                                                      \
         aj  = a[j] * n;                                                                    \
@@ -162,24 +162,24 @@ void name(yakfInt nr, yakfInt nc, yakfFloat *res, yakfFloat *a, yakfFloat *b, ya
     }                                                                                      \
 }
 
-_DO_VVTXN(yakfm_set_vvtxn,  =)
-_DO_VVTXN(yakfm_add_vvtxn, +=)
-_DO_VVTXN(yakfm_sub_vvtxn, -=)
+_DO_VVTXN(yaflm_set_vvtxn,  =)
+_DO_VVTXN(yaflm_add_vvtxn, +=)
+_DO_VVTXN(yaflm_sub_vvtxn, -=)
 
 #define _DO_MV(name, op1, op2)                                               \
-void name(yakfInt nr, yakfInt nc, yakfFloat *res, yakfFloat *a, yakfFloat *b)\
+void name(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloat *b)\
 {                                                                            \
-    yakfInt j;                                                               \
+    yaflInt j;                                                               \
                                                                              \
-    YAKF_ASSERT(res);                                                        \
-    YAKF_ASSERT(a);                                                          \
-    YAKF_ASSERT(b);                                                          \
+    YAFL_ASSERT(res);                                                        \
+    YAFL_ASSERT(a);                                                          \
+    YAFL_ASSERT(b);                                                          \
                                                                              \
     for (j = 0; j < nr; j++)                                                 \
     {                                                                        \
-        yakfInt k;                                                           \
-        yakfInt ncj;                                                         \
-        yakfFloat resj;                                                      \
+        yaflInt k;                                                           \
+        yaflInt ncj;                                                         \
+        yaflFloat resj;                                                      \
                                                                              \
         ncj  =   nc * j;                                                     \
         resj =   res[j];                                                     \
@@ -193,18 +193,18 @@ void name(yakfInt nr, yakfInt nc, yakfFloat *res, yakfFloat *a, yakfFloat *b)\
     }                                                                        \
 }
 
-_DO_MV(yakfm_set_mv,  =, +=)
-_DO_MV(yakfm_add_mv, +=, +=)
-_DO_MV(yakfm_sub_mv, -=, -=)
+_DO_MV(yaflm_set_mv,  =, +=)
+_DO_MV(yaflm_add_mv, +=, +=)
+_DO_MV(yaflm_sub_mv, -=, -=)
 
 #define _DO_VTM(name, op1, op2)                                              \
-void name(yakfInt nr, yakfInt nc, yakfFloat *res, yakfFloat *a, yakfFloat *b)\
+void name(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloat *b)\
 {                                                                            \
-    yakfInt j;                                                               \
+    yaflInt j;                                                               \
                                                                              \
-    YAKF_ASSERT(res);                                                        \
-    YAKF_ASSERT(a);                                                          \
-    YAKF_ASSERT(b);                                                          \
+    YAFL_ASSERT(res);                                                        \
+    YAFL_ASSERT(a);                                                          \
+    YAFL_ASSERT(b);                                                          \
                                                                              \
     for (j = 0; j < nc; j++)                                                 \
     {                                                                        \
@@ -213,9 +213,9 @@ void name(yakfInt nr, yakfInt nc, yakfFloat *res, yakfFloat *a, yakfFloat *b)\
                                                                              \
     for (j = 1; j < nr; j++)                                                 \
     {                                                                        \
-        yakfInt k;                                                           \
-        yakfInt ncj;                                                         \
-        yakfFloat aj;                                                        \
+        yaflInt k;                                                           \
+        yaflInt ncj;                                                         \
+        yaflFloat aj;                                                        \
                                                                              \
         ncj = nc * j;                                                        \
         aj = a[j];                                                           \
@@ -227,26 +227,26 @@ void name(yakfInt nr, yakfInt nc, yakfFloat *res, yakfFloat *a, yakfFloat *b)\
     }                                                                        \
 }
 
-_DO_VTM(yakfm_set_vtm,  =, +=)
-_DO_VTM(yakfm_add_vtm, +=, +=)
-_DO_VTM(yakfm_sub_vtm, -=, -=)
+_DO_VTM(yaflm_set_vtm,  =, +=)
+_DO_VTM(yaflm_add_vtm, +=, +=)
+_DO_VTM(yaflm_sub_vtm, -=, -=)
 
 /*This is right as it is OMP friendly style*/
 #define _DO_MM(name, op1, op2)                                                             \
-void name(yakfInt nr,  yakfInt ncr, yakfInt nc, yakfFloat *res, yakfFloat *a, yakfFloat *b)\
+void name(yaflInt nr,  yaflInt ncr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloat *b)\
 {                                                                                          \
-    yakfInt i;                                                                             \
+    yaflInt i;                                                                             \
                                                                                            \
-    YAKF_ASSERT(res);                                                                      \
-    YAKF_ASSERT(a);                                                                        \
-    YAKF_ASSERT(b);                                                                        \
+    YAFL_ASSERT(res);                                                                      \
+    YAFL_ASSERT(a);                                                                        \
+    YAFL_ASSERT(b);                                                                        \
                                                                                            \
     for (i = 0; i < nr; i++)                                                               \
     {                                                                                      \
-        yakfInt j;                                                                         \
-        yakfInt k;                                                                         \
-        yakfInt nci;                                                                       \
-        yakfInt ncri;                                                                      \
+        yaflInt j;                                                                         \
+        yaflInt k;                                                                         \
+        yaflInt nci;                                                                       \
+        yaflInt ncri;                                                                      \
                                                                                            \
         nci = nc * i;                                                                      \
         ncri = ncr * i;                                                                    \
@@ -258,8 +258,8 @@ void name(yakfInt nr,  yakfInt ncr, yakfInt nc, yakfFloat *res, yakfFloat *a, ya
                                                                                            \
         for (j = 1; j < ncr; j++)                                                          \
         {                                                                                  \
-            yakfInt ncj;                                                                   \
-            yakfFloat aij;                                                                 \
+            yaflInt ncj;                                                                   \
+            yaflFloat aij;                                                                 \
                                                                                            \
             ncj = nc * j;                                                                  \
             aij = a[ncri + j];                                                             \
@@ -272,19 +272,19 @@ void name(yakfInt nr,  yakfInt ncr, yakfInt nc, yakfFloat *res, yakfFloat *a, ya
     }                                                                                      \
 }
 
-_DO_MM(yakfm_set_mm,  =, +=)
-_DO_MM(yakfm_add_mm, +=, +=)
-_DO_MM(yakfm_sub_mm, -=, -=)
+_DO_MM(yaflm_set_mm,  =, +=)
+_DO_MM(yaflm_add_mm, +=, +=)
+_DO_MM(yaflm_sub_mm, -=, -=)
 
 #define _DO_VTU(name, op1, op2)                                  \
-void name(yakfInt sz, yakfFloat *res, yakfFloat *a, yakfFloat *b)\
+void name(yaflInt sz, yaflFloat *res, yaflFloat *a, yaflFloat *b)\
 {                                                                \
-    yakfInt j;                                                   \
-    yakfInt szj;                                                 \
+    yaflInt j;                                                   \
+    yaflInt szj;                                                 \
                                                                  \
-    YAKF_ASSERT(res);                                            \
-    YAKF_ASSERT(a);                                              \
-    YAKF_ASSERT(b);                                              \
+    YAFL_ASSERT(res);                                            \
+    YAFL_ASSERT(a);                                              \
+    YAFL_ASSERT(b);                                              \
                                                                  \
     for (j = 0; j < sz; j++)                                     \
     {                                                            \
@@ -293,8 +293,8 @@ void name(yakfInt sz, yakfFloat *res, yakfFloat *a, yakfFloat *b)\
                                                                  \
     for (szj = 0, j = 1; j < sz; szj += j++)                     \
     {                                                            \
-        yakfInt k;                                               \
-        yakfFloat resj;                                          \
+        yaflInt k;                                               \
+        yaflFloat resj;                                          \
                                                                  \
         resj = res[j];                                           \
         for (k = 0; k < j; k++)                                  \
@@ -305,19 +305,19 @@ void name(yakfInt sz, yakfFloat *res, yakfFloat *a, yakfFloat *b)\
     }                                                            \
 }
 
-_DO_VTU(yakfm_set_vtu,  =, +=)
-_DO_VTU(yakfm_add_vtu, +=, +=)
-_DO_VTU(yakfm_sub_vtu, -=, -=)
+_DO_VTU(yaflm_set_vtu,  =, +=)
+_DO_VTU(yaflm_add_vtu, +=, +=)
+_DO_VTU(yaflm_sub_vtu, -=, -=)
 
 #define _DO_UV(name, op1, op2)                                   \
-void name(yakfInt sz, yakfFloat *res, yakfFloat *a, yakfFloat *b)\
+void name(yaflInt sz, yaflFloat *res, yaflFloat *a, yaflFloat *b)\
 {                                                                \
-    yakfInt j;                                                   \
-    yakfInt szj;                                                 \
+    yaflInt j;                                                   \
+    yaflInt szj;                                                 \
                                                                  \
-    YAKF_ASSERT(res);                                            \
-    YAKF_ASSERT(a);                                              \
-    YAKF_ASSERT(b);                                              \
+    YAFL_ASSERT(res);                                            \
+    YAFL_ASSERT(a);                                              \
+    YAFL_ASSERT(b);                                              \
                                                                  \
     for (j = 0; j < sz; j++)                                     \
     {                                                            \
@@ -326,8 +326,8 @@ void name(yakfInt sz, yakfFloat *res, yakfFloat *a, yakfFloat *b)\
                                                                  \
     for (szj = 0, j = 1; j < sz; szj += j++)                     \
     {                                                            \
-        yakfInt k;                                               \
-        yakfFloat bj;                                            \
+        yaflInt k;                                               \
+        yaflFloat bj;                                            \
                                                                  \
         bj = b[j];                                               \
         for (k = 0; k < j; k++)                                  \
@@ -337,25 +337,25 @@ void name(yakfInt sz, yakfFloat *res, yakfFloat *a, yakfFloat *b)\
     }                                                            \
 }
 
-_DO_UV(yakfm_set_uv,  =, +=)
-_DO_UV(yakfm_add_uv, +=, +=)
-_DO_UV(yakfm_sub_uv, -=, -=)
+_DO_UV(yaflm_set_uv,  =, +=)
+_DO_UV(yaflm_add_uv, +=, +=)
+_DO_UV(yaflm_sub_uv, -=, -=)
 
 /*This is right as it is OMP friendly style*/
 #define _DO_MU(name, op1, op2)                                                 \
-void name(yakfInt nr,  yakfInt nc, yakfFloat *res, yakfFloat *a, yakfFloat *b) \
+void name(yaflInt nr,  yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloat *b) \
 {                                                                              \
-    yakfInt i;                                                                 \
+    yaflInt i;                                                                 \
                                                                                \
-    YAKF_ASSERT(res);                                                          \
-    YAKF_ASSERT(a);                                                            \
-    YAKF_ASSERT(b);                                                            \
+    YAFL_ASSERT(res);                                                          \
+    YAFL_ASSERT(a);                                                            \
+    YAFL_ASSERT(b);                                                            \
                                                                                \
     for (i = 0; i < nr; i++)                                                   \
     {                                                                          \
-        yakfInt j;                                                             \
-        yakfInt nci;                                                           \
-        yakfInt ncj;                                                           \
+        yaflInt j;                                                             \
+        yaflInt nci;                                                           \
+        yaflInt ncj;                                                           \
                                                                                \
         nci = nc * i;                                                          \
                                                                                \
@@ -366,8 +366,8 @@ void name(yakfInt nr,  yakfInt nc, yakfFloat *res, yakfFloat *a, yakfFloat *b) \
                                                                                \
         for (ncj = 0, j = 1; j < nc; ncj += j++)                               \
         {                                                                      \
-            yakfInt k;                                                         \
-            yakfFloat resij;                                                   \
+            yaflInt k;                                                         \
+            yaflFloat resij;                                                   \
                                                                                \
             resij = res[nci + j];                                              \
             for (k = 0; k < j; k++)                                            \
@@ -379,21 +379,21 @@ void name(yakfInt nr,  yakfInt nc, yakfFloat *res, yakfFloat *a, yakfFloat *b) \
     }                                                                          \
 }
 
-_DO_MU(yakfm_set_mu,  =, +=)
-_DO_MU(yakfm_add_mu, +=, +=)
-_DO_MU(yakfm_sub_mu, -=, -=)
+_DO_MU(yaflm_set_mu,  =, +=)
+_DO_MU(yaflm_add_mu, +=, +=)
+_DO_MU(yaflm_sub_mu, -=, -=)
 
-void yakfm_set_u(yakfInt sz, yakfFloat *res, yakfFloat *u)
+void yaflm_set_u(yaflInt sz, yaflFloat *res, yaflFloat *u)
 {
-    yakfInt i;
+    yaflInt i;
 
-    YAKF_ASSERT(res);
-    YAKF_ASSERT(u);
+    YAFL_ASSERT(res);
+    YAFL_ASSERT(u);
 
     for (i = 0; i < sz; i++)
     {
-        yakfInt szi;
-        yakfInt j;
+        yaflInt szi;
+        yaflInt j;
 
         szi = sz * i;
         for (j = 0; j < i; j++)
@@ -411,17 +411,17 @@ void yakfm_set_u(yakfInt sz, yakfFloat *res, yakfFloat *u)
 }
 
 #define _DO_U(name, op)                               \
-void name(yakfInt sz, yakfFloat *res, yakfFloat *u)   \
+void name(yaflInt sz, yaflFloat *res, yaflFloat *u)   \
 {                                                     \
-    yakfInt i;                                        \
+    yaflInt i;                                        \
                                                       \
-    YAKF_ASSERT(res);                                 \
-    YAKF_ASSERT(u);                                   \
+    YAFL_ASSERT(res);                                 \
+    YAFL_ASSERT(u);                                   \
                                                       \
     for (i = 0; i < sz; i++)                          \
     {                                                 \
-        yakfInt szi;                                  \
-        yakfInt j;                                    \
+        yaflInt szi;                                  \
+        yaflInt j;                                    \
                                                       \
         res[(sz + 1) * i] op 1.0;                     \
                                                       \
@@ -433,20 +433,20 @@ void name(yakfInt sz, yakfFloat *res, yakfFloat *u)   \
     }                                                 \
 }
 
-_DO_U(yakfm_add_u, +=)
-_DO_U(yakfm_sub_u, -=)
+_DO_U(yaflm_add_u, +=)
+_DO_U(yaflm_sub_u, -=)
 
-void yakfm_bset_u(yakfInt nc, yakfFloat *res, yakfInt sz, yakfFloat *u)
+void yaflm_bset_u(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *u)
 {
-    yakfInt i;
+    yaflInt i;
 
-    YAKF_ASSERT(res);
-    YAKF_ASSERT(u);
+    YAFL_ASSERT(res);
+    YAFL_ASSERT(u);
 
     for (i = 0; i < sz; i++)
     {
-        yakfInt nci;
-        yakfInt j;
+        yaflInt nci;
+        yaflInt j;
 
         nci = nc * i;
         for (j = 0; j < i; j++)
@@ -464,17 +464,17 @@ void yakfm_bset_u(yakfInt nc, yakfFloat *res, yakfInt sz, yakfFloat *u)
 }
 
 #define _DO_BU(name, op)                                        \
-void name(yakfInt nc, yakfFloat *res, yakfInt sz, yakfFloat *u) \
+void name(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *u) \
 {                                                               \
-    yakfInt i;                                                  \
+    yaflInt i;                                                  \
                                                                 \
-    YAKF_ASSERT(res);                                           \
-    YAKF_ASSERT(u);                                             \
+    YAFL_ASSERT(res);                                           \
+    YAFL_ASSERT(u);                                             \
                                                                 \
     for (i = 0; i < sz; i++)                                    \
     {                                                           \
-        yakfInt nci;                                            \
-        yakfInt j;                                              \
+        yaflInt nci;                                            \
+        yaflInt j;                                              \
                                                                 \
         res[(nc + 1) * i] op 1.0;                               \
                                                                 \
@@ -486,21 +486,21 @@ void name(yakfInt nc, yakfFloat *res, yakfInt sz, yakfFloat *u) \
     }                                                           \
 }
 
-_DO_BU(yakfm_badd_u, +=)
-_DO_BU(yakfm_bsub_u, -=)
+_DO_BU(yaflm_badd_u, +=)
+_DO_BU(yaflm_bsub_u, -=)
 
-void yakfm_bset_ut(yakfInt nc, yakfFloat *res, yakfInt sz, yakfFloat *u)
+void yaflm_bset_ut(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *u)
 {
-    yakfInt i;
-    yakfInt szi;
+    yaflInt i;
+    yaflInt szi;
 
-    YAKF_ASSERT(res);
-    YAKF_ASSERT(u);
+    YAFL_ASSERT(res);
+    YAFL_ASSERT(u);
 
     for (szi = 0, i = 0; i < sz; szi += i++)
     {
-        yakfInt nci;
-        yakfInt j;
+        yaflInt nci;
+        yaflInt j;
 
         nci = nc * i;
         for (j = 0; j < i; j++)
@@ -518,18 +518,18 @@ void yakfm_bset_ut(yakfInt nc, yakfFloat *res, yakfInt sz, yakfFloat *u)
 }
 
 #define _DO_BUT(name, op)                                       \
-void name(yakfInt nc, yakfFloat *res, yakfInt sz, yakfFloat *u) \
+void name(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *u) \
 {                                                               \
-    yakfInt i;                                                  \
-    yakfInt szi;                                                \
+    yaflInt i;                                                  \
+    yaflInt szi;                                                \
                                                                 \
-    YAKF_ASSERT(res);                                           \
-    YAKF_ASSERT(u);                                             \
+    YAFL_ASSERT(res);                                           \
+    YAFL_ASSERT(u);                                             \
                                                                 \
     for (szi = 0, i = 1; i < sz; szi += i++)                    \
     {                                                           \
-        yakfInt nci;                                            \
-        yakfInt j;                                              \
+        yaflInt nci;                                            \
+        yaflInt j;                                              \
                                                                 \
         nci = nc * i;                                           \
         for (j = 0; j < i; j++)                                 \
@@ -541,16 +541,16 @@ void name(yakfInt nc, yakfFloat *res, yakfInt sz, yakfFloat *u) \
     }                                                           \
 }
 
-_DO_BUT(yakfm_badd_ut, +=)
-_DO_BUT(yakfm_bsub_ut, -=)
+_DO_BUT(yaflm_badd_ut, +=)
+_DO_BUT(yaflm_bsub_ut, -=)
 
 #define _DO_BV(name, op)                                        \
-void name(yakfInt nc, yakfFloat *res, yakfInt sz, yakfFloat *v) \
+void name(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *v) \
 {                                                               \
-    yakfInt i;                                                  \
+    yaflInt i;                                                  \
                                                                 \
-    YAKF_ASSERT(res);                                           \
-    YAKF_ASSERT(v);                                             \
+    YAFL_ASSERT(res);                                           \
+    YAFL_ASSERT(v);                                             \
                                                                 \
     for (i = 0; i < sz; i++)                                    \
     {                                                           \
@@ -558,24 +558,24 @@ void name(yakfInt nc, yakfFloat *res, yakfInt sz, yakfFloat *v) \
     }                                                           \
 }
 
-_DO_BV(yakfm_bset_v,  =)
-_DO_BV(yakfm_badd_v, +=)
-_DO_BV(yakfm_bsub_v, -=)
+_DO_BV(yaflm_bset_v,  =)
+_DO_BV(yaflm_badd_v, +=)
+_DO_BV(yaflm_bsub_v, -=)
 
 #define _DO_BVVT(name, op)                                                    \
-void name(yakfInt nc, yakfFloat *res, yakfInt sz, yakfFloat *a, yakfFloat *b) \
+void name(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *a, yaflFloat *b) \
 {                                                                             \
-    yakfInt j;                                                                \
+    yaflInt j;                                                                \
                                                                               \
-    YAKF_ASSERT(res);                                                         \
-    YAKF_ASSERT(a);                                                           \
-    YAKF_ASSERT(b);                                                           \
+    YAFL_ASSERT(res);                                                         \
+    YAFL_ASSERT(a);                                                           \
+    YAFL_ASSERT(b);                                                           \
                                                                               \
     for (j = 0; j < sz; j++)                                                  \
     {                                                                         \
-        yakfInt k;                                                            \
-        yakfInt ncj;                                                          \
-        yakfFloat aj;                                                         \
+        yaflInt k;                                                            \
+        yaflInt ncj;                                                          \
+        yaflFloat aj;                                                         \
                                                                               \
         ncj = nc * j;                                                         \
         aj = a[j];                                                            \
@@ -587,26 +587,26 @@ void name(yakfInt nc, yakfFloat *res, yakfInt sz, yakfFloat *a, yakfFloat *b) \
     }                                                                         \
 }
 
-_DO_BVVT(yakfm_bset_vvt,  =)
-_DO_BVVT(yakfm_badd_vvt, +=)
-_DO_BVVT(yakfm_bsub_vvt, -=)
+_DO_BVVT(yaflm_bset_vvt,  =)
+_DO_BVVT(yaflm_badd_vvt, +=)
+_DO_BVVT(yaflm_bsub_vvt, -=)
 
 #define _DO_BMU(name, op1, op2)                                                            \
-void name(yakfInt rnc, yakfFloat *res, yakfInt nr, yakfInt nc, yakfFloat *a, yakfFloat *b) \
+void name(yaflInt rnc, yaflFloat *res, yaflInt nr, yaflInt nc, yaflFloat *a, yaflFloat *b) \
 {                                                                                          \
-    yakfInt i;                                                                             \
+    yaflInt i;                                                                             \
                                                                                            \
-    YAKF_ASSERT(res);                                                                      \
-    YAKF_ASSERT(a);                                                                        \
-    YAKF_ASSERT(b);                                                                        \
-    YAKF_ASSERT(rnc > nc);                                                                 \
+    YAFL_ASSERT(res);                                                                      \
+    YAFL_ASSERT(a);                                                                        \
+    YAFL_ASSERT(b);                                                                        \
+    YAFL_ASSERT(rnc > nc);                                                                 \
                                                                                            \
     for (i = 0; i < nr; i++)                                                               \
     {                                                                                      \
-        yakfInt j;                                                                         \
-        yakfInt nci;                                                                       \
-        yakfInt rnci;                                                                      \
-        yakfInt ncj;                                                                       \
+        yaflInt j;                                                                         \
+        yaflInt nci;                                                                       \
+        yaflInt rnci;                                                                      \
+        yaflInt ncj;                                                                       \
                                                                                            \
         nci  = nc * i;                                                                     \
         rnci = rnc * i;                                                                    \
@@ -618,8 +618,8 @@ void name(yakfInt rnc, yakfFloat *res, yakfInt nr, yakfInt nc, yakfFloat *a, yak
                                                                                            \
         for (ncj = 0, j = 1; j < nc; ncj += j++)                                           \
         {                                                                                  \
-            yakfInt k;                                                                     \
-            yakfFloat resij;                                                               \
+            yaflInt k;                                                                     \
+            yaflFloat resij;                                                               \
                                                                                            \
             resij = res[rnci + j];                                                         \
             for (k = 0; k < j; k++)                                                        \
@@ -631,27 +631,27 @@ void name(yakfInt rnc, yakfFloat *res, yakfInt nr, yakfInt nc, yakfFloat *a, yak
     }                                                                                      \
 }
 
-_DO_BMU(yakfm_bset_mu,  =, +=)
-_DO_BMU(yakfm_badd_mu, +=, +=)
-_DO_BMU(yakfm_bsub_mu, -=, -=)
+_DO_BMU(yaflm_bset_mu,  =, +=)
+_DO_BMU(yaflm_badd_mu, +=, +=)
+_DO_BMU(yaflm_bsub_mu, -=, -=)
 
 #define _DO_BBU(name, op1, op2)                                                                         \
-void name(yakfInt rnc, yakfFloat *res, yakfInt nr, yakfInt nc, yakfInt anc, yakfFloat *a, yakfFloat *b) \
+void name(yaflInt rnc, yaflFloat *res, yaflInt nr, yaflInt nc, yaflInt anc, yaflFloat *a, yaflFloat *b) \
 {                                                                                                       \
-    yakfInt i;                                                                                          \
+    yaflInt i;                                                                                          \
                                                                                                         \
-    YAKF_ASSERT(res);                                                                                   \
-    YAKF_ASSERT(a);                                                                                     \
-    YAKF_ASSERT(b);                                                                                     \
-    YAKF_ASSERT(anc > nc);                                                                              \
-    YAKF_ASSERT(rnc > nc);                                                                              \
+    YAFL_ASSERT(res);                                                                                   \
+    YAFL_ASSERT(a);                                                                                     \
+    YAFL_ASSERT(b);                                                                                     \
+    YAFL_ASSERT(anc > nc);                                                                              \
+    YAFL_ASSERT(rnc > nc);                                                                              \
                                                                                                         \
     for (i = 0; i < nr; i++)                                                                            \
     {                                                                                                   \
-        yakfInt j;                                                                                      \
-        yakfInt anci;                                                                                   \
-        yakfInt rnci;                                                                                   \
-        yakfInt ncj;                                                                                    \
+        yaflInt j;                                                                                      \
+        yaflInt anci;                                                                                   \
+        yaflInt rnci;                                                                                   \
+        yaflInt ncj;                                                                                    \
                                                                                                         \
         anci = anc * i;                                                                                 \
         rnci = rnc * i;                                                                                 \
@@ -663,8 +663,8 @@ void name(yakfInt rnc, yakfFloat *res, yakfInt nr, yakfInt nc, yakfInt anc, yakf
                                                                                                         \
         for (ncj = 0, j = 1; j < nc; ncj += j++)                                                        \
         {                                                                                               \
-            yakfInt k;                                                                                  \
-            yakfFloat resij;                                                                            \
+            yaflInt k;                                                                                  \
+            yaflFloat resij;                                                                            \
                                                                                                         \
             resij = res[rnci + j];                                                                      \
             for (k = 0; k < j; k++)                                                                     \
@@ -676,24 +676,24 @@ void name(yakfInt rnc, yakfFloat *res, yakfInt nr, yakfInt nc, yakfInt anc, yakf
     }                                                                                                   \
 }
 
-_DO_BBU(yakfm_bset_bu,  =, +=)
-_DO_BBU(yakfm_badd_bu, +=, +=)
-_DO_BBU(yakfm_bsub_bu, -=, -=)
+_DO_BBU(yaflm_bset_bu,  =, +=)
+_DO_BBU(yaflm_badd_bu, +=, +=)
+_DO_BBU(yaflm_bsub_bu, -=, -=)
 
-void yakfm_ruv(yakfInt sz, yakfFloat *res, yakfFloat *u)
+void yaflm_ruv(yaflInt sz, yaflFloat *res, yaflFloat *u)
 {
-    yakfInt j;
-    yakfInt szj;
+    yaflInt j;
+    yaflInt szj;
 
-    YAKF_ASSERT(res);
-    YAKF_ASSERT(u);
+    YAFL_ASSERT(res);
+    YAFL_ASSERT(u);
 
     for (j = sz - 1, szj = ((j - 1) * j) / 2; j > 0; szj -= --j)
     /*for (j = sz - 1; j > 0; j--)*/
     {
-        yakfInt i;
-        yakfFloat resj;
-        /*yakfInt szj;
+        yaflInt i;
+        yaflFloat resj;
+        /*yaflInt szj;
 
         szj = ((j - 1)*j)/2;*/
         resj = res[j];
@@ -705,27 +705,27 @@ void yakfm_ruv(yakfInt sz, yakfFloat *res, yakfFloat *u)
     }
 }
 
-void yakfm_rum(yakfInt nr, yakfInt nc, yakfFloat *res, yakfFloat *u)
+void yaflm_rum(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *u)
 {
-    yakfInt j;
-    yakfInt nrj;
+    yaflInt j;
+    yaflInt nrj;
 
-    YAKF_ASSERT(res);
-    YAKF_ASSERT(u);
+    YAFL_ASSERT(res);
+    YAFL_ASSERT(u);
 
     for (j = nr - 1, nrj = ((j - 1) * j) / 2; j > 0; nrj -= --j)
     {
-        yakfInt ncj;
-        yakfInt i;
+        yaflInt ncj;
+        yaflInt i;
 
         ncj = nc * j;
 
         for (i = j - 1; i >= 0; i--)
         {
-            yakfInt k;
-            yakfInt nci;
+            yaflInt k;
+            yaflInt nci;
 
-            yakfFloat uij;
+            yaflFloat uij;
 
             nci = nc * i;
             uij = u[i + nrj];
@@ -738,22 +738,22 @@ void yakfm_rum(yakfInt nr, yakfInt nc, yakfFloat *res, yakfFloat *u)
     }
 }
 
-void yakfm_mwgsu(yakfInt nr, yakfInt nc, yakfFloat *res_u, yakfFloat *res_d, yakfFloat *w, yakfFloat *d)
+void yaflm_mwgsu(yaflInt nr, yaflInt nc, yaflFloat *res_u, yaflFloat *res_d, yaflFloat *w, yaflFloat *d)
 {
-    yakfInt j;
-    yakfInt nrj;
+    yaflInt j;
+    yaflInt nrj;
 
-    YAKF_ASSERT(res_u);
-    YAKF_ASSERT(res_d);
-    YAKF_ASSERT(w);
-    YAKF_ASSERT(d);
+    YAFL_ASSERT(res_u);
+    YAFL_ASSERT(res_d);
+    YAFL_ASSERT(w);
+    YAFL_ASSERT(d);
 
     for (j = nr - 1, nrj = ((j - 1) * j) / 2; j >= 0; nrj -= --j)
     {
-        yakfInt   ncj;
-        yakfInt   k;
-        yakfFloat res_dj;
-        yakfFloat wjk;
+        yaflInt   ncj;
+        yaflInt   k;
+        yaflFloat res_dj;
+        yaflFloat wjk;
 
         ncj = nc * j;
 
@@ -769,9 +769,9 @@ void yakfm_mwgsu(yakfInt nr, yakfInt nc, yakfFloat *res_u, yakfFloat *res_d, yak
         }
 
         /*Bad Eigenvalue workaround*/
-        if (res_dj < YAKF_UDU_EPS)
+        if (res_dj < YAFL_UDU_EPS)
         {
-            res_d[j] = YAKF_UDU_EPS;
+            res_d[j] = YAFL_UDU_EPS;
 
             for (k = j - 1; k >= 0; k--)
             {
@@ -785,9 +785,9 @@ void yakfm_mwgsu(yakfInt nr, yakfInt nc, yakfFloat *res_u, yakfFloat *res_d, yak
 
         for (k = j - 1; k >= 0; k--)
         {
-            yakfInt   nck;
-            yakfInt   i;
-            yakfFloat res_ukj;
+            yaflInt   nck;
+            yaflInt   i;
+            yaflFloat res_ukj;
 
             nck = nc * k;
 
@@ -809,31 +809,31 @@ void yakfm_mwgsu(yakfInt nr, yakfInt nc, yakfFloat *res_u, yakfFloat *res_d, yak
     }
 }
 
-void yakfm_udu_up(yakfInt sz, yakfFloat *res_u, yakfFloat *res_d, yakfFloat alpha, yakfFloat *v)
+void yaflm_udu_up(yaflInt sz, yaflFloat *res_u, yaflFloat *res_d, yaflFloat alpha, yaflFloat *v)
 {
-    yakfInt j;
-    yakfInt szj;
+    yaflInt j;
+    yaflInt szj;
 
-    YAKF_ASSERT(res_u);
-    YAKF_ASSERT(res_d);
-    YAKF_ASSERT(v);
-    YAKF_ASSERT(alpha >= 0);
+    YAFL_ASSERT(res_u);
+    YAFL_ASSERT(res_d);
+    YAFL_ASSERT(v);
+    YAFL_ASSERT(alpha >= 0);
 
     for (j = sz - 1, szj = ((j - 1) * j) / 2; j >= 0; szj -= --j)
     {
-        yakfInt k;
-        yakfFloat pj;
-        yakfFloat dj;
-        yakfFloat res_dj;
-        yakfFloat betaj;
+        yaflInt k;
+        yaflFloat pj;
+        yaflFloat dj;
+        yaflFloat res_dj;
+        yaflFloat betaj;
 
         dj = res_d[j];
 
         pj = v[j];
         res_dj = dj + alpha * pj * pj;
-        if (res_dj < YAKF_UDU_EPS)
+        if (res_dj < YAFL_UDU_EPS)
         {
-            res_dj = YAKF_UDU_EPS;
+            res_dj = YAFL_UDU_EPS;
         }
 
         betaj = alpha * pj / res_dj;
@@ -845,8 +845,8 @@ void yakfm_udu_up(yakfInt sz, yakfFloat *res_u, yakfFloat *res_d, yakfFloat alph
         for (k = j - 1; k >= 0; k--)
         {
             /*Buffer vars*/
-            yakfFloat ukj;
-            yakfFloat vk;
+            yaflFloat ukj;
+            yaflFloat vk;
 
             ukj = res_u[k + szj];
 
@@ -859,29 +859,29 @@ void yakfm_udu_up(yakfInt sz, yakfFloat *res_u, yakfFloat *res_d, yakfFloat alph
     }
 }
 
-void yakfm_udu_down(yakfInt sz, yakfFloat *res_u, yakfFloat *res_d, yakfFloat alpha, yakfFloat *v)
+void yaflm_udu_down(yaflInt sz, yaflFloat *res_u, yaflFloat *res_d, yaflFloat alpha, yaflFloat *v)
 {
-    yakfInt j;
-    yakfInt szj;
-    yakfFloat pj;
-    yakfFloat dj;
+    yaflInt j;
+    yaflInt szj;
+    yaflFloat pj;
+    yaflFloat dj;
 
-    YAKF_ASSERT(res_u);
-    YAKF_ASSERT(res_d);
-    YAKF_ASSERT(v);
-    YAKF_ASSERT(alpha >= 0);
+    YAFL_ASSERT(res_u);
+    YAFL_ASSERT(res_d);
+    YAFL_ASSERT(v);
+    YAFL_ASSERT(alpha >= 0);
 
     /*Solve U*p = v*/
-    yakfm_ruv(sz, v, res_u);
+    yaflm_ruv(sz, v, res_u);
 
     /*Compute alpha0*/
     pj = v[0];
     dj = pj * pj / res_d[0];
     for (j = 1; j < sz; j++)
     {
-        if (res_d[j] < YAKF_UDU_EPS)
+        if (res_d[j] < YAFL_UDU_EPS)
         {
-            res_d[j] = YAKF_UDU_EPS;
+            res_d[j] = YAFL_UDU_EPS;
         }
 
         pj  = v[j];
@@ -890,9 +890,9 @@ void yakfm_udu_down(yakfInt sz, yakfFloat *res_u, yakfFloat *res_d, yakfFloat al
 
     dj = 1 - alpha * dj;
 
-    if (dj < YAKF_UDU_EPS)
+    if (dj < YAFL_UDU_EPS)
     {
-        dj = YAKF_UDU_EPS;
+        dj = YAFL_UDU_EPS;
     }
 
     alpha /= dj;
@@ -900,9 +900,9 @@ void yakfm_udu_down(yakfInt sz, yakfFloat *res_u, yakfFloat *res_d, yakfFloat al
     /*Conmpute update*/
     for (szj = 0, j = 0; j < sz; szj += j++)
     {
-        yakfInt k;
-        yakfFloat res_dj;
-        yakfFloat betaj;
+        yaflInt k;
+        yaflFloat res_dj;
+        yaflFloat betaj;
 
         dj = res_d[j];
         pj = v[j]; /*We don't need to do v[j] = pj; as it was done in #L774*/
@@ -917,8 +917,8 @@ void yakfm_udu_down(yakfInt sz, yakfFloat *res_u, yakfFloat *res_d, yakfFloat al
         for (k = 0; k < j; k++)
         {
             /*Buffer vars*/
-            yakfFloat ukj;
-            yakfFloat vk;
+            yaflFloat ukj;
+            yaflFloat vk;
 
             ukj = res_u[k + szj];
             vk  = v[k];
