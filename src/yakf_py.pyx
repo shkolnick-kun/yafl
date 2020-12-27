@@ -970,13 +970,14 @@ cdef class yakfUnscentedBase:
         # Allocate memories and setup the rest of c_self
         # Sigma points and weights
         pnum = _points.pnum
-        self._wc  = np.zeros((pnum,), dtype=np.float64)
-        self.v_wc = self._wc
-        self.c_self.base.base.wc = &self.v_wc[0]
 
         self._wm  = np.zeros((pnum,), dtype=np.float64)
         self.v_wm = self._wm
         self.c_self.base.base.wm = &self.v_wm[0]
+
+        self._wc  = np.zeros((pnum,), dtype=np.float64)
+        self.v_wc = self._wc
+        self.c_self.base.base.wc = &self.v_wc[0]
 
         self._sigmas_x  = np.zeros((pnum, dim_x), dtype=np.float64)
         self.v_sigmas_x = self._sigmas_x
@@ -1042,6 +1043,7 @@ cdef class yakfUnscentedBase:
         self.v_Sx = self._Sx
         self.c_self.base.base.Sx = &self.v_Sx[0]
         
+        #Call C-post init
         yakf_unscented_post_init(&self.c_self.base.base)
 
     #==========================================================================
