@@ -24,6 +24,7 @@
 #include <stdio.h>
 
 #define YAFL_ASSERT assert
+#define YAFL_LOG(...) fprintf(stderr, __VA_ARGS__)
 
 typedef double  yaflFloat;
 typedef int32_t yaflInt;

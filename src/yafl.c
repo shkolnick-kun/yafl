@@ -14,9 +14,10 @@
     See the License for the specific language governing permissions
     and limitations under the License.
 ******************************************************************************/
+#include <string.h>
 
 #include "yafl.h"
-#include <string.h>
+
 
 /*=============================================================================
                                   Base UDEKF
@@ -69,9 +70,9 @@ void yafl_ekf_base_predict(yaflEKFBaseSt * self)
         self->jf(self); /* Place F(x, ...)=df/dx to W  */
     }
     /* Now W = (F|***) */
-    YAFLM_BSET_BU(nx2, 0, nx, w, nx, nx, nx2, 0, 0, w, self->Up);
+    YAFL_MATH_BSET_BU(nx2, 0, nx, w, nx, nx, nx2, 0, 0, w, self->Up);
     /* Now W = (F|FUp) */
-    yaflm_bset_u(nx2, w, nx, self->Uq);
+    yafl_math_bset_u(nx2, w, nx, self->Uq);
     /* Now W = (Uq|FUp) */
 
     /* D = concatenate([Dq, Dp]) */
@@ -81,7 +82,7 @@ void yafl_ekf_base_predict(yaflEKFBaseSt * self)
     memcpy((void *)(d + nx), (void *)self->Dp, i);
 
     /* Up, Dp = MWGSU(w, d)*/
-    yaflm_mwgsu(nx, nx2, self->Up, self->Dp, w, d);
+    yafl_math_mwgsu(nx, nx2, self->Up, self->Dp, w, d);
 }
 
 void yafl_ekf_base_update(yaflEKFBaseSt * self, yaflFloat * z, yaflEKFScalarUpdateP scalar_update)
@@ -132,8 +133,8 @@ void yafl_ekf_base_update(yaflEKFBaseSt * self, yaflFloat * z, yaflEKFScalarUpda
     /* Decorrelate measurement noise */
     ur = self->Ur;
     h  = self->H;
-    yaflm_ruv(nz,     y, ur);
-    yaflm_rum(nz, nx, h, ur);
+    yafl_math_ruv(nz,     y, ur);
+    yafl_math_rum(nz, nx, h, ur);
 
     /* Do scalar updates */
     for (j = 0; j < nz; j++)
@@ -174,11 +175,11 @@ static void _bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 
     /* f = h.dot(Up) */
     f = self->D;
-    yaflm_set_vtu(nx, f, h, u);
+    yafl_math_set_vtu(nx, f, h, u);
 
     /* v = f.dot(Dp).T = Dp.dot(f.T).T */
 #define v h /*Don't need h any more, use it to store v*/
-    YAFLM_SET_DV(nx, v, d, f);
+    YAFL_MATH_SET_DV(nx, v, d, f);
 
     r = self->Dr[i];
     for (k = 0, nxk = 0; k < nx; nxk += k++)
@@ -223,7 +224,7 @@ static void _bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
     Finally we get:
     self.x += v * (y[i] / r)
     */
-    yaflm_add_vxn(nx, self->x, v, self->y[i] / r);
+    yafl_math_add_vxn(nx, self->x, v, self->y[i] / r);
 #undef v /*Don't nee v any more*/
 }
 
@@ -273,28 +274,28 @@ static void _joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
     w = self->W;
 
     /* f = h.dot(Up) */
-    yaflm_set_vtu(nx, f, h, u);
+    yafl_math_set_vtu(nx, f, h, u);
 
     /* v = f.dot(Dp).T = Dp.dot(f.T).T */
-    YAFLM_SET_DV(nx, v, d, f);
+    YAFL_MATH_SET_DV(nx, v, d, f);
 
     r = self->Dr[i];
 
     /* s = r + f.dot(v)*/
-    s = r + yaflm_vtv(nx, f, v);
+    s = r + yafl_math_vtv(nx, f, v);
 
     /*K = Up.dot(v/s) = Up.dot(v)/s*/
 #define K h /*Don't need h any more, use it to store K*/
 #define D v
-    yaflm_set_uv(nx, K, u, v);
-    yaflm_set_vrn(nx, K, K, s); /*May be used in place*/
+    yafl_math_set_uv(nx, K, u, v);
+    yafl_math_set_vrn(nx, K, K, s); /*May be used in place*/
 
     /*Set W and D*/
-    yaflm_bset_vvt(nx1, w, nx, K, f);
-    yaflm_bsub_u(nx1, w, nx, u);
+    yafl_math_bset_vvt(nx1, w, nx, K, f);
+    yafl_math_bsub_u(nx1, w, nx, u);
 
     /* Now w is (Kf - Up|***) */
-    YAFLM_BSET_V(nx1, 0, nx, w, nx, K);
+    YAFL_MATH_BSET_V(nx1, 0, nx, w, nx, K);
     /* Now w is (Kf - Up|K) */
 
     /* D = concatenate([Dp, np.array([r])]) */
@@ -302,10 +303,10 @@ static void _joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
     D[nx] = r;
 
     /* Up, Dp = MWGSU(W, D)*/
-    yaflm_mwgsu(nx, nx1, u, d, w, D);
+    yafl_math_mwgsu(nx, nx1, u, d, w, D);
 
     /* self.x += K * y[i] */
-    yaflm_add_vxn(nx, self->x, K, self->y[i]);
+    yafl_math_add_vxn(nx, self->x, K, self->y[i]);
 #undef D /*Don't nee D any more*/
 #undef K /*Don't nee K any more*/
 }
@@ -355,14 +356,14 @@ static void _adaptive_bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 
     /* f = h.dot(Up) */
     f = self->D;
-    yaflm_set_vtu(nx, f, h, u);
+    yafl_math_set_vtu(nx, f, h, u);
 
     /* v = f.dot(Dp).T = Dp.dot(f.T).T */
 #define v h /*Don't need h any more, use it to store v*/
-    YAFLM_SET_DV(nx, v, d, f);
+    YAFL_MATH_SET_DV(nx, v, d, f);
 
     /* s = r + f.dot(v)*/
-    c = yaflm_vtv(nx, f, v);
+    c = yafl_math_vtv(nx, f, v);
     s = c + r;
 
     /* Divergence test */
@@ -422,7 +423,7 @@ static void _adaptive_bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
     Finally we get:
     self.x += v * (nu / r)
     */
-    yaflm_add_vxn(nx, self->x, v, nu / r);
+    yafl_math_add_vxn(nx, self->x, v, nu / r);
 #undef v /*Don't nee v any more*/
 }
 
@@ -478,13 +479,13 @@ static void _adaptive_joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
     r  = self->Dr[i];
 
     /* f = h.dot(Up) */
-    yaflm_set_vtu(nx, f, h, u);
+    yafl_math_set_vtu(nx, f, h, u);
 
     /* v = f.dot(Dp).T = Dp.dot(f.T).T */
-    YAFLM_SET_DV(nx, v, d, f);
+    YAFL_MATH_SET_DV(nx, v, d, f);
 
     /* s = r + f.dot(v)*/
-    c = yaflm_vtv(nx, f, v);
+    c = yafl_math_vtv(nx, f, v);
     s = c + r;
 
     /* Divergence test */
@@ -505,26 +506,26 @@ static void _adaptive_joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
     /* K = Up.dot(v * ac / s) = Up.dot(v) * (ac / s) */
 #define K h /*Don't need h any more, use it to store K*/
 #define D v
-    yaflm_set_vxn(nx, v, v, ac / s); /*May be used in place*/
-    yaflm_set_uv(nx, K, u, v);
+    yafl_math_set_vxn(nx, v, v, ac / s); /*May be used in place*/
+    yafl_math_set_uv(nx, K, u, v);
 
     /*Set W and D*/
-    yaflm_bset_vvt(nx1, w, nx, K, f);
-    yaflm_bsub_u(nx1, w, nx, u);
+    yafl_math_bset_vvt(nx1, w, nx, K, f);
+    yafl_math_bsub_u(nx1, w, nx, u);
 
     /* Now w is (Kf - Up|***) */
-    YAFLM_BSET_V(nx1, 0, nx, w, nx, K);
+    YAFL_MATH_BSET_V(nx1, 0, nx, w, nx, K);
     /* Now w is (Kf - Up|K) */
 
     /* D = concatenate([ac * Dp, np.array([r])]) */
-    yaflm_set_vxn(nx, D, d, ac);
+    yafl_math_set_vxn(nx, D, d, ac);
     D[nx] = r;
 
     /* Up, Dp = MWGSU(W, D)*/
-    yaflm_mwgsu(nx, nx1, u, d, w, D);
+    yafl_math_mwgsu(nx, nx1, u, d, w, D);
 
     /* self.x += K * nu */
-    yaflm_add_vxn(nx, self->x, K, nu);
+    yafl_math_add_vxn(nx, self->x, K, nu);
 #undef D /*Don't nee D any more*/
 #undef K /*Don't nee K any more*/
 }
@@ -585,13 +586,13 @@ static void _do_not_use_this_update(yaflEKFBaseSt * self, yaflInt i)
     r  = self->Dr[i];
 
     /* f = h.dot(Up) */
-    yaflm_set_vtu(nx, f, h, u);
+    yafl_math_set_vtu(nx, f, h, u);
 
     /* v = f.dot(Dp).T = Dp.dot(f.T).T */
-    YAFLM_SET_DV(nx, v, d, f);
+    YAFL_MATH_SET_DV(nx, v, d, f);
 
     /* s = r + f.dot(v)*/
-    c = yaflm_vtv(nx, f, v);
+    c = yafl_math_vtv(nx, f, v);
     s = c + r;
 
     /* Divergence test */
@@ -599,32 +600,32 @@ static void _do_not_use_this_update(yaflEKFBaseSt * self, yaflInt i)
     if (ac > 0.0)
     {
         /*Adaptive correction with no limitations approach*/
-        yaflm_set_uv(nx, f, u, v);
-        yaflm_udu_up(nx, u, d, (ac / c) / c, f);
+        yafl_math_set_uv(nx, f, u, v);
+        yafl_math_udu_up(nx, u, d, (ac / c) / c, f);
 
         /*Recompute f,v,s*/
         /* f = h.dot(Up) */
-        yaflm_set_vtu(nx, f, h, u);
+        yafl_math_set_vtu(nx, f, h, u);
 
         /* v = f.dot(Dp).T = Dp.dot(f.T).T */
-        YAFLM_SET_DV(nx, v, d, f);
+        YAFL_MATH_SET_DV(nx, v, d, f);
 
         /* s = r + f.dot(v)*/
-        s  = r + yaflm_vtv(nx, f, v);;
+        s  = r + yafl_math_vtv(nx, f, v);;
     }
 
     /* K = Up.dot(v * ac / s) = Up.dot(v) * (ac / s) */
 #define K h /*Don't need h any more, use it to store K*/
 #define D v
-    yaflm_set_uv(nx, K, u, v);
-    yaflm_set_vrn(nx, K, K, s); /*May be used in place*/
+    yafl_math_set_uv(nx, K, u, v);
+    yafl_math_set_vrn(nx, K, K, s); /*May be used in place*/
 
     /*Set W and D*/
-    yaflm_bset_vvt(nx1, w, nx, K, f);
-    yaflm_bsub_u(nx1, w, nx, u);
+    yafl_math_bset_vvt(nx1, w, nx, K, f);
+    yafl_math_bsub_u(nx1, w, nx, u);
 
     /* Now w is (Kf - Up|***) */
-    YAFLM_BSET_V(nx1, 0, nx, w, nx, K);
+    YAFL_MATH_BSET_V(nx1, 0, nx, w, nx, K);
     /* Now w is (Kf - Up|K) */
 
     /* D = concatenate([Dp, np.array([r])]) */
@@ -632,10 +633,10 @@ static void _do_not_use_this_update(yaflEKFBaseSt * self, yaflInt i)
     D[nx] = r;
 
     /* Up, Dp = MWGSU(W, D)*/
-    yaflm_mwgsu(nx, nx1, u, d, w, D);
+    yafl_math_mwgsu(nx, nx1, u, d, w, D);
 
     /* self.x += K * nu */
-    yaflm_add_vxn(nx, self->x, K, nu);
+    yafl_math_add_vxn(nx, self->x, K, nu);
 #undef D /*Don't nee D any more*/
 #undef K /*Don't nee K any more*/
 }
@@ -702,11 +703,11 @@ static void _robust_bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 
     /* f = h.dot(Up) */
     f = self->D;
-    yaflm_set_vtu(nx, f, h, u);
+    yafl_math_set_vtu(nx, f, h, u);
 
     /* v = f.dot(Dp).T = Dp.dot(f.T).T */
 #define v h /*Don't need h any more, use it to store v*/
-    YAFLM_SET_DV(nx, v, d, f);
+    YAFL_MATH_SET_DV(nx, v, d, f);
 
     for (k = 0, nxk = 0; k < nx; nxk += k++)
     {
@@ -751,7 +752,7 @@ static void _robust_bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
     Finally we get:
     self.x += v * (y / A2)
     */
-    yaflm_add_vxn(nx, self->x, v, y / A2);
+    yafl_math_add_vxn(nx, self->x, v, y / A2);
 #undef v  /*Don't nee v any more*/
 #undef A2 /*Don't nee A2 any more*/
 }
@@ -826,27 +827,27 @@ static void _robust_joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
     w = self->W;
 
     /* f = h.dot(Up) */
-    yaflm_set_vtu(nx, f, h, u);
+    yafl_math_set_vtu(nx, f, h, u);
 
     /* v = f.dot(Dp).T = Dp.dot(f.T).T */
-    YAFLM_SET_DV(nx, v, d, f);
+    YAFL_MATH_SET_DV(nx, v, d, f);
 
     /* s = alpha**2 + gdot * f.dot(v)*/
-    s = A2 + gdot * yaflm_vtv(nx, f, v);
+    s = A2 + gdot * yafl_math_vtv(nx, f, v);
 
     /*K = Up.dot(v/s) = Up.dot(v)/s*/
 #define K h /*Don't need h any more, use it to store K*/
 #define D v
-    yaflm_set_uv(nx, K, u, v);
-    yaflm_set_vrn(nx, K, K, s); /*May be used in place*/
+    yafl_math_set_uv(nx, K, u, v);
+    yafl_math_set_vrn(nx, K, K, s); /*May be used in place*/
 
     /*Set W and D*/
-    yaflm_set_vxn(nx, f, f, gdot); /*May be used in place*/
-    yaflm_bset_vvt(nx1, w, nx, K, f); /*How about yaflm_bset_vvtxn ?*/
-    yaflm_bsub_u(nx1, w, nx, u);
+    yafl_math_set_vxn(nx, f, f, gdot); /*May be used in place*/
+    yafl_math_bset_vvt(nx1, w, nx, K, f); /*How about yafl_math_bset_vvtxn ?*/
+    yafl_math_bsub_u(nx1, w, nx, u);
 
     /* Now w is (gdot*Kf - Up|***) */
-    YAFLM_BSET_V(nx1, 0, nx, w, nx, K);
+    YAFL_MATH_BSET_V(nx1, 0, nx, w, nx, K);
     /* Now w is (gdot*Kf - Up|K) */
 
     /* D = concatenate([Dp, np.array([gdot * alpha**2])]) */
@@ -854,10 +855,10 @@ static void _robust_joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
     D[nx] = gdot * A2;
 
     /* Up, Dp = MWGSU(W, D)*/
-    yaflm_mwgsu(nx, nx1, u, d, w, D);
+    yafl_math_mwgsu(nx, nx1, u, d, w, D);
 
     /* self.x += K * alpha * g(y[i] / alpha) */
-    yaflm_add_vxn(nx, self->x, K, y);
+    yafl_math_add_vxn(nx, self->x, K, y);
 #undef D  /*Don't nee D any more*/
 #undef K  /*Don't nee K any more*/
 #undef A2 /*Don't nee A2 any more*/
@@ -928,14 +929,14 @@ static void _ada_rob_bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 
     /* f = h.dot(Up) */
     f = self->D;
-    yaflm_set_vtu(nx, f, h, u);
+    yafl_math_set_vtu(nx, f, h, u);
 
     /* v = f.dot(Dp).T = Dp.dot(f.T).T */
 #define v h /*Don't need h any more, use it to store v*/
-    YAFLM_SET_DV(nx, v, d, f);
+    YAFL_MATH_SET_DV(nx, v, d, f);
 
     /* s = alpha**2 + gdot * f.dot(v)*/
-    c = gdot * yaflm_vtv(nx, f, v);
+    c = gdot * yafl_math_vtv(nx, f, v);
     s = A2 + c;
 
     /* Divergence test */
@@ -999,7 +1000,7 @@ static void _ada_rob_bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
     Finally we get:
     self.x += v * (nu / A2)
     */
-    yaflm_add_vxn(nx, self->x, v, nu / A2);
+    yafl_math_add_vxn(nx, self->x, v, nu / A2);
 #undef v  /*Don't nee v any more*/
 #undef A2 /*Don't nee A2 any more*/
 }
@@ -1076,13 +1077,13 @@ static void _ada_rob_joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
     w = self->W;
 
     /* f = h.dot(Up) */
-    yaflm_set_vtu(nx, f, h, u);
+    yafl_math_set_vtu(nx, f, h, u);
 
     /* v = f.dot(Dp).T = Dp.dot(f.T).T */
-    YAFLM_SET_DV(nx, v, d, f);
+    YAFL_MATH_SET_DV(nx, v, d, f);
 
     /* s = alpha**2 + gdot * f.dot(v)*/
-    c = gdot * yaflm_vtv(nx, f, v);
+    c = gdot * yafl_math_vtv(nx, f, v);
     s = A2 + c;
 
     /* Divergence test */
@@ -1103,27 +1104,27 @@ static void _ada_rob_joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
     /* K = Up.dot(v * ac / s) = Up.dot(v) * (ac / s) */
 #define K h /*Don't need h any more, use it to store K*/
 #define D v
-    yaflm_set_vxn(nx, v, v, ac / s); /*May be used in place*/
-    yaflm_set_uv(nx, K, u, v);
+    yafl_math_set_vxn(nx, v, v, ac / s); /*May be used in place*/
+    yafl_math_set_uv(nx, K, u, v);
 
     /*Set W and D*/
-    yaflm_set_vxn(nx, f, f, gdot); /*May be used in place*/
-    yaflm_bset_vvt(nx1, w, nx, K, f); /*How about yaflm_bset_vvtxn ?*/
-    yaflm_bsub_u(nx1, w, nx, u);
+    yafl_math_set_vxn(nx, f, f, gdot); /*May be used in place*/
+    yafl_math_bset_vvt(nx1, w, nx, K, f); /*How about yafl_math_bset_vvtxn ?*/
+    yafl_math_bsub_u(nx1, w, nx, u);
 
     /* Now w is (gdot*Kf - Up|***) */
-    YAFLM_BSET_V(nx1, 0, nx, w, nx, K);
+    YAFL_MATH_BSET_V(nx1, 0, nx, w, nx, K);
     /* Now w is (gdot*Kf - Up|K) */
 
     /* D = concatenate([ac * Dp, np.array([gdot * alpha**2])]) */
-    yaflm_set_vxn(nx, D, d, ac);
+    yafl_math_set_vxn(nx, D, d, ac);
     D[nx] = gdot * A2;
 
     /* Up, Dp = MWGSU(W, D)*/
-    yaflm_mwgsu(nx, nx1, u, d, w, D);
+    yafl_math_mwgsu(nx, nx1, u, d, w, D);
 
     /* self.x += K * nu */
-    yaflm_add_vxn(nx, self->x, K, nu);
+    yafl_math_add_vxn(nx, self->x, K, nu);
 #undef D  /*Don't nee D any more*/
 #undef K  /*Don't nee K any more*/
 #undef A2 /*Don't nee A2 any more*/
@@ -1202,7 +1203,7 @@ static void _unscented_transform(yaflUKFBaseSt * self, \
     }
     else
     {
-        yaflm_set_vtm(np, res_sz, res_v, self->wm, sigmas);
+        yafl_math_set_vtm(np, res_sz, res_v, self->wm, sigmas);
     }
 
     if (noise_u)
@@ -1232,11 +1233,11 @@ static void _unscented_transform(yaflUKFBaseSt * self, \
         /*wc should be sorted in descending order*/
         if (wc[i] >= 0.0)
         {
-            yaflm_udu_up(res_sz, res_u, res_d, wc[i], sp);
+            yafl_math_udu_up(res_sz, res_u, res_d, wc[i], sp);
         }
         else
         {
-            yaflm_udu_down(res_sz, res_u, res_d, -wc[i], sp);
+            yafl_math_udu_down(res_sz, res_u, res_d, -wc[i], sp);
         }
     }
 }
@@ -1379,21 +1380,21 @@ void yafl_ukf_update(yaflUKFBaseSt * self, yaflFloat * z)
     xrf = self->xrf;
     _compute_res(self, nz, zrf, sigmas_z, zp, y);
     _compute_res(self, nx, xrf, sigmas_x,  x, spx);
-    yaflm_set_vvtxn(nz, nx, pzx, y, spx, wc[0]);
+    yafl_math_set_vvtxn(nz, nx, pzx, y, spx, wc[0]);
 
     for (i = 1; i < np; i++)
     {
         _compute_res(self, nz, zrf, sigmas_z + nz * i, zp, y);
         _compute_res(self, nx, xrf, sigmas_x + nx * i,  x, spx);
-        yaflm_add_vvtxn(nz, nx, pzx, y, spx, wc[i]);
+        yafl_math_add_vvtxn(nz, nx, pzx, y, spx, wc[i]);
     }
 
     /*Compute innovation*/
     _compute_res(self, nz, zrf, z, zp, y);
 
     /* Decorrelate measurements*/
-    yaflm_ruv(nz,       y, us);
-    yaflm_rum(nz, nx, pzx, us);
+    yafl_math_ruv(nz,       y, us);
+    yafl_math_rum(nz, nx, pzx, us);
 
     /*Now we can do scalar updates*/
     for (i = 0; i < nz; i++)
@@ -1407,7 +1408,7 @@ void yafl_ukf_update(yaflUKFBaseSt * self, yaflFloat * z)
 
         self.x += Pzx[i].T * (y[i] / ds[i])
         */
-        yaflm_add_vxn(nx, x, pzxi, y[i] / ds[i]);
+        yafl_math_add_vxn(nx, x, pzxi, y[i] / ds[i]);
 
         /*
         P -= K.dot(S.dot(K.T))
@@ -1416,7 +1417,7 @@ void yafl_ukf_update(yaflUKFBaseSt * self, yaflFloat * z)
         P -= (Pzx[i].T).outer(Pzx[i]) / ds[i]
         Up, Dp = udu(P)
         */
-        yaflm_udu_down(nx, up, dp, 1.0 / ds[i], pzxi);
+        yafl_math_udu_down(nx, up, dp, 1.0 / ds[i], pzxi);
     }
 }
 
@@ -1510,7 +1511,7 @@ void yafl_ukf_base_update(yaflUKFBaseSt * self, yaflFloat * z, \
     }
     else
     {
-        yaflm_set_vtm(np, nz, zp, self->wm, sigmas_z);
+        yafl_math_set_vtm(np, nz, zp, self->wm, sigmas_z);
     }
 
     /* Compute Pzx */
@@ -1518,21 +1519,21 @@ void yafl_ukf_base_update(yaflUKFBaseSt * self, yaflFloat * z, \
     xrf = self->xrf;
     _compute_res(self, nz, zrf, sigmas_z, zp, y);
     _compute_res(self, nx, xrf, sigmas_x,  x, spx);
-    yaflm_set_vvtxn(nz, nx, pzx, y, spx, wc[0]);
+    yafl_math_set_vvtxn(nz, nx, pzx, y, spx, wc[0]);
 
     for (i = 1; i < np; i++)
     {
         _compute_res(self, nz, zrf, sigmas_z + nz * i, zp, y);
         _compute_res(self, nx, xrf, sigmas_x + nx * i,  x, spx);
-        yaflm_add_vvtxn(nz, nx, pzx, y, spx, wc[i]);
+        yafl_math_add_vvtxn(nz, nx, pzx, y, spx, wc[i]);
     }
 
     /*Compute innovation*/
     _compute_res(self, nz, zrf, z, zp, y);
 
     /* Decorrelate measurements*/
-    yaflm_ruv(nz,       y, ur);
-    yaflm_rum(nz, nx, pzx, ur);
+    yafl_math_ruv(nz,       y, ur);
+    yafl_math_rum(nz, nx, pzx, ur);
 
     /*Now we can do scalar updates*/
     for (i = 0; i < nz; i++)
@@ -1543,7 +1544,7 @@ void yafl_ukf_base_update(yaflUKFBaseSt * self, yaflFloat * z, \
 
         It's cheaper than computing _unscented_transform.
         */
-        yaflm_ruv(nx, pzx + nx * i, up);
+        yafl_math_ruv(nx, pzx + nx * i, up);
         scalar_update(self, i);
     }
 }
@@ -1579,7 +1580,7 @@ static void _bierman_like_scalar_update(yaflUKFBaseSt * self, yaflInt i)
 
     /* f = linalg.inv(Dp).dot(v)*/
     f = self->Sx;
-    YAFLM_SET_RDV(nx, f, d, v);
+    YAFL_MATH_SET_RDV(nx, f, d, v);
 
     r = self->Dr[i];
     for (k = 0, nxk = 0; k < nx; nxk += k++)
@@ -1624,7 +1625,7 @@ static void _bierman_like_scalar_update(yaflUKFBaseSt * self, yaflInt i)
     Finally we get:
     self.x += v * (y[i] / r)
     */
-    yaflm_add_vxn(nx, self->x, v, self->y[i] / r);
+    yafl_math_add_vxn(nx, self->x, v, self->y[i] / r);
 }
 
 void yafl_ukf_bierman_update(yaflUKFBaseSt * self, yaflFloat * z)
@@ -1669,13 +1670,13 @@ static void _adaptive_bierman_like_scalar_update(yaflUKFBaseSt * self, yaflInt i
 
     /* f = linalg.inv(Dp).dot(v)*/
     f = self->Sx;
-    YAFLM_SET_RDV(nx, f, d, v);
+    YAFL_MATH_SET_RDV(nx, f, d, v);
 
     nu = self->y[i];
     r  = self->Dr[i];
 
     /* s = r + f.dot(v)*/
-    c = yaflm_vtv(nx, f, v);
+    c = yafl_math_vtv(nx, f, v);
     s = c + r;
 
     /* Divergence test */
@@ -1735,7 +1736,7 @@ static void _adaptive_bierman_like_scalar_update(yaflUKFBaseSt * self, yaflInt i
     Finally we get:
     self.x += v * (nu / r)
     */
-    yaflm_add_vxn(nx, self->x, v, nu / r);
+    yafl_math_add_vxn(nx, self->x, v, nu / r);
 }
 
 void yafl_ukf_adaptive_bierman_update(yaflUKFAdaptivedSt * self, \
@@ -1848,7 +1849,7 @@ static void _merwe_generate_points(yaflUKFBaseSt * self)
     alpha = ((yaflUKFMerweSt *)sp_info)->alpha;
     lambda_p_n = alpha * alpha * (nx + ((yaflUKFMerweSt *)sp_info)->kappa);
 
-    yaflm_bset_ut(nx, sigmas_x, nx, self->Up);
+    yafl_math_bset_ut(nx, sigmas_x, nx, self->Up);
     memcpy((void *)(sigmas_x + nx * nx), (void *)sigmas_x, \
            nx * nx * sizeof(yaflFloat));
 

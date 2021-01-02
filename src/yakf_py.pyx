@@ -27,6 +27,27 @@ cdef extern from "yafl_config.h":
     ctypedef stdint.int32_t yaflInt
 
 #------------------------------------------------------------------------------
+cdef extern from "yafl_math.c":
+    cdef enum yaflStatusEn:
+        YAFL_ST_OK           = 0x00
+        YAFL_ST_REGULARIZED  = 0x01
+        YAFL_ST_GLITCH_SMALL = 0x02
+        YAFL_ST_GLITCH_LARGE = 0x04
+        # Error threshold value (greater values are errors)
+        YAFL_ST_ERR_THR      = 0x100
+        # Invalid argument numer
+        YAFL_ST_INV_AGR_1    = 0x100
+        YAFL_ST_INV_AGR_2    = 0x110
+        YAFL_ST_INV_AGR_3    = 0x120
+        YAFL_ST_INV_AGR_4    = 0x130
+        YAFL_ST_INV_AGR_5    = 0x140
+        YAFL_ST_INV_AGR_6    = 0x150
+        YAFL_ST_INV_AGR_7    = 0x160
+
+    #--------------------------------------------------------------------------
+    cdef yaflStatusEn yafl_math_set_u(yaflInt sz, yaflFloat *res, yaflFloat *u)
+
+#------------------------------------------------------------------------------
 cdef extern from "yafl.c":
     #==========================================================================
     #                     UD-factorized EKF definitions
@@ -211,10 +232,6 @@ cdef extern from "yafl.c":
         yaflFloat kappa
 
     cdef const yaflUKFSigmaMethodsSt yafl_ukf_merwe_spm
-
-#------------------------------------------------------------------------------
-cdef extern from "yafl_math.c":
-    cdef void yaflm_set_u(yaflInt sz, yaflFloat *res, yaflFloat *u)
 
 #==============================================================================
 #Extension API
