@@ -30,8 +30,8 @@ pyximport.install(
 
 #from yakf_py import RobustJoseph as KF
 #from yakf_py import RobustBierman as KF
-#from yakf_py import AdaptiveRobustJoseph as KF
-from yakf_py import AdaptiveRobustBierman as KF
+from yakf_py import AdaptiveRobustJoseph as KF
+#from yakf_py import AdaptiveRobustBierman as KF
 
 def _fx(x, dt, **fx_args):
     x = x.copy()
@@ -102,7 +102,7 @@ kf.Dr *= STD
 kf.Dr[0] *= .87
 kf.Ur += 0.5
 
-N = 6000
+N = 60000
 
 clean = np.zeros((N, 2))
 noisy = np.zeros((N, 2))

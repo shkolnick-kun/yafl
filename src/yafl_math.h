@@ -39,17 +39,24 @@ typedef enum {
     YAFL_ST_OK           = 0x00,
     YAFL_ST_REGULARIZED  = 0x01,
     YAFL_ST_GLITCH_SMALL = 0x02,
+    YAFL_ST_GSR          = 0x03,
     YAFL_ST_GLITCH_LARGE = 0x04,
+    YAFL_ST_GLR          = 0x05,
+    YAFL_ST_GLITCH_ALL   = 0x06,
+    YAFL_ST_GAR          = 0x07,
     /*Error threshold value (greater values are errors)*/
     YAFL_ST_ERR_THR      = 0x100,
     /*Invalid argument numer*/
-    YAFL_ST_INV_AGR_1    = 0x100,
-    YAFL_ST_INV_AGR_2    = 0x110,
-    YAFL_ST_INV_AGR_3    = 0x120,
-    YAFL_ST_INV_AGR_4    = 0x130,
-    YAFL_ST_INV_AGR_5    = 0x140,
-    YAFL_ST_INV_AGR_6    = 0x150,
-    YAFL_ST_INV_AGR_7    = 0x160,
+    YAFL_ST_INV_ARG_1    = 0x100,
+    YAFL_ST_INV_ARG_2    = 0x110,
+    YAFL_ST_INV_ARG_3    = 0x120,
+    YAFL_ST_INV_ARG_4    = 0x130,
+    YAFL_ST_INV_ARG_5    = 0x140,
+    YAFL_ST_INV_ARG_6    = 0x150,
+    YAFL_ST_INV_ARG_7    = 0x160,
+    YAFL_ST_INV_ARG_8    = 0x170,
+    YAFL_ST_INV_ARG_9    = 0x180,
+    YAFL_ST_INV_ARG_10   = 0x190,
 } yaflStatusEn;
 
 /*=======================================================================================

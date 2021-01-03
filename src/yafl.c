@@ -145,17 +145,78 @@ void yafl_ekf_base_update(yaflEKFBaseSt * self, yaflFloat * z, yaflEKFScalarUpda
 /*=============================================================================
                                 Bierman filter
 =============================================================================*/
-static void _bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
+static yaflStatusEn \
+    _bierman_update_body(yaflInt    nx, yaflFloat * x, yaflFloat * u, \
+                         yaflFloat * d, yaflFloat * f, yaflFloat * v, \
+                         yaflFloat   r, yaflFloat  nu, yaflFloat  ac, \
+                         yaflFloat   gdot)
 {
     yaflInt j;
     yaflInt k;
-    yaflInt nx;
     yaflInt nxk;
+
+    YAFL_CHECK(x, YAFL_ST_INV_ARG_2);
+    YAFL_CHECK(u, YAFL_ST_INV_ARG_3);
+    YAFL_CHECK(d, YAFL_ST_INV_ARG_4);
+    YAFL_CHECK(f, YAFL_ST_INV_ARG_5);
+    YAFL_CHECK(v, YAFL_ST_INV_ARG_6);
+
+    for (k = 0, nxk = 0; k < nx; nxk += k++)
+    {
+        yaflFloat a;
+        yaflFloat fk;
+        yaflFloat vk;
+
+        fk = gdot * f[k];
+        /*Correct v in place*/
+        vk = ac * v[k];
+        v[k] = vk;
+        a = r + fk * vk;
+        /*Correct d in place*/
+        d[k] *= ac * r / a;
+#define p fk /*No need for separate p variable*/
+        p = - fk / r;
+        for (j = 0; j < k; j++)
+        {
+            yaflFloat ujk;
+            yaflFloat vj;
+
+            ujk = u[j + nxk];
+            vj  = v[j];
+
+            u[j + nxk] = ujk +   p * vj;
+            v[j]       = vj  + ujk * vk;
+        }
+#undef  p /*Don't need p any more...*/
+        r = a;
+    }
+    /*
+    Now we must do:
+    x += K * nu
+
+    Since:
+    r == a
+
+    then we have:
+    K == v / a == v / r
+
+    and so:
+    K * nu == (v / r) * nu == v / r * nu == v * (nu / r)
+
+    Finally we get:
+    x += v * (nu / r)
+    */
+    return yafl_math_add_vxn(nx, x, v, nu / r);
+}
+
+/*---------------------------------------------------------------------------*/
+static void _bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
+{
+    yaflInt nx;
     yaflFloat * d;
     yaflFloat * u;
     yaflFloat * h;
     yaflFloat * f;
-    yaflFloat r;
 
     YAFL_ASSERT(self);
 
@@ -181,50 +242,8 @@ static void _bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 #define v h /*Don't need h any more, use it to store v*/
     YAFL_MATH_SET_DV(nx, v, d, f);
 
-    r = self->Dr[i];
-    for (k = 0, nxk = 0; k < nx; nxk += k++)
-    {
-        yaflFloat a;
-        yaflFloat fk;
-        yaflFloat vk;
+    _bierman_update_body(nx, self->x, u, d, f, v, self->Dr[i], self->y[i], 1.0, 1.0);
 
-        fk = f[k];
-        vk = v[k];
-        a = r + fk * vk;
-        d[k] *= r / a;
-#define p fk /*No need for separate p variable*/
-        p = - fk / r;
-        for (j = 0; j < k; j++)
-        {
-            yaflFloat ujk;
-            yaflFloat vj;
-
-            ujk = u[j + nxk];
-            vj  = v[j];
-
-            u[j + nxk] = ujk +   p * vj;
-            v[j]       = vj  + ujk * vk;
-        }
-#undef  p /*Don't need p any more...*/
-        r = a;
-    }
-    /*
-    Now we must do:
-    self.x += K * y[i]
-
-    Since:
-    r == a
-
-    then we have:
-    K == v / a == v / r
-
-    and so:
-    K * y[i] == (v / r) * y[i] == v / r * y[i] == v * (y[i] / r)
-
-    Finally we get:
-    self.x += v * (y[i] / r)
-    */
-    yafl_math_add_vxn(nx, self->x, v, self->y[i] / r);
 #undef v /*Don't nee v any more*/
 }
 
@@ -319,20 +338,55 @@ void yafl_ekf_joseph_update(yaflEKFBaseSt * self, yaflFloat * z)
 /*=============================================================================
                           Adaptive Bierman filter
 =============================================================================*/
+static inline yaflFloat \
+    _adaptive_correction(yaflInt    nx, yaflFloat * f, yaflFloat * v,    \
+                         yaflFloat   r, yaflFloat  nu, yaflFloat   gdot, \
+                         yaflFloat chi2, yaflFloat * s)
+{
+    yaflFloat c;
+    yaflFloat ac;
+    yaflFloat _s;
+
+    YAFL_CHECK(f, 0.0);
+    YAFL_CHECK(v, 0.0);
+
+    /* s = alpha**2 + gdot * f.dot(v)*/
+    c = gdot * yafl_math_vtv(nx, f, v);
+    _s = r + c;
+
+    /* Divergence test */
+    ac = gdot * (nu * (nu / chi2)) - _s;
+    if (ac > 0.0)
+    {
+        /*Adaptive correction factor*/
+        ac = ac / c + 1.0;
+
+        /*Corrected s*/
+        _s = ac * c + r;
+    }
+    else
+    {
+        ac = 1.0;
+    }
+
+    if (s)
+    {
+        *s = _s;
+    }
+
+    return ac;
+}
+
+
 static void _adaptive_bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 {
-    yaflInt j;
-    yaflInt k;
     yaflInt nx;
-    yaflInt nxk;
     yaflFloat * d;
     yaflFloat * u;
     yaflFloat * h;
     yaflFloat * f;
     yaflFloat nu;
     yaflFloat r;
-    yaflFloat c;
-    yaflFloat s;
     yaflFloat ac;
 
     YAFL_ASSERT(self);
@@ -362,68 +416,11 @@ static void _adaptive_bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 #define v h /*Don't need h any more, use it to store v*/
     YAFL_MATH_SET_DV(nx, v, d, f);
 
-    /* s = r + f.dot(v)*/
-    c = yafl_math_vtv(nx, f, v);
-    s = c + r;
+    ac = _adaptive_correction(nx, f, v, r, nu, 1.0, \
+                              ((yaflEKFAdaptiveSt *)self)->chi2, 0);
 
-    /* Divergence test */
-    ac = (nu * (nu / (((yaflEKFAdaptiveSt *)self)->chi2))) - s;
-    if (ac > 0.0)
-    {
-        /*Adaptive correction factor*/
-        ac = ac / c + 1.0;
-    }
-    else
-    {
-        ac = 1.0;
-    }
-
-    for (k = 0, nxk = 0; k < nx; nxk += k++)
-    {
-        yaflFloat a;
-        yaflFloat fk;
-        yaflFloat vk;
-
-        fk = f[k];
-        /*Correct v in place*/
-        vk = ac * v[k];
-        v[k] = vk;
-        a = r + fk * vk;
-        /*Correct d in place*/
-        d[k] *= ac * r / a;
-#define p fk /*No need for separate p variable*/
-        p = - fk / r;
-        for (j = 0; j < k; j++)
-        {
-            yaflFloat ujk;
-            yaflFloat vj;
-
-            ujk = u[j + nxk];
-            vj  = v[j];
-
-            u[j + nxk] = ujk +   p * vj;
-            v[j]       = vj  + ujk * vk;
-        }
-#undef  p /*Don't need p any more...*/
-        r = a;
-    }
-    /*
-    Now we must do:
-    self.x += K * nu
-
-    Since:
-    r == a
-
-    then we have:
-    K == v / a == v / r
-
-    and so:
-    K * nu == (v / r) * nu == v / r * nu == v * (nu / r)
-
-    Finally we get:
-    self.x += v * (nu / r)
-    */
-    yafl_math_add_vxn(nx, self->x, v, nu / r);
+    /*!TODO: YAFL_EXEC*/
+    _bierman_update_body(nx, self->x, u, d, f, v, r, self->y[i], ac, 1.0);
 #undef v /*Don't nee v any more*/
 }
 
@@ -447,8 +444,7 @@ static void _adaptive_joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
     yaflFloat * w;
     yaflFloat nu;
     yaflFloat r;
-    yaflFloat c;
-    yaflFloat s;
+    yaflFloat s = 1.0;
     yaflFloat ac;
 
     YAFL_ASSERT(self);
@@ -484,24 +480,9 @@ static void _adaptive_joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
     /* v = f.dot(Dp).T = Dp.dot(f.T).T */
     YAFL_MATH_SET_DV(nx, v, d, f);
 
-    /* s = r + f.dot(v)*/
-    c = yafl_math_vtv(nx, f, v);
-    s = c + r;
 
-    /* Divergence test */
-    ac = (nu * (nu / (((yaflEKFAdaptiveSt *)self)->chi2))) - s;
-    if (ac > 0.0)
-    {
-        /*Adaptive correction factor*/
-        ac = ac / c + 1.0;
-
-        /*Corrected s*/
-        s  = ac * c + r;
-    }
-    else
-    {
-        ac = 1.0;
-    }
+    ac = _adaptive_correction(nx, f, v, r, nu, 1.0, \
+                              ((yaflEKFAdaptiveSt *)self)->chi2, &s);
 
     /* K = Up.dot(v * ac / s) = Up.dot(v) * (ac / s) */
 #define K h /*Don't need h any more, use it to store K*/
@@ -649,12 +630,38 @@ void yafl_ekf_do_not_use_this_update(yaflEKFAdaptiveSt * self, yaflFloat * z)
 /*=============================================================================
                             Robust Bierman filter
 =============================================================================*/
+static inline yaflStatusEn \
+    _scalar_robustify(yaflEKFBaseSt * self, yaflFloat * gdot, \
+                      yaflFloat * nu, yaflFloat r05)
+{
+    yaflEKFRobFuncP g;
+
+    YAFL_CHECK(self, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(gdot, YAFL_ST_INV_ARG_3);
+    YAFL_CHECK(nu,   YAFL_ST_INV_ARG_4);
+
+    g = ((yaflEKFRobustSt *)self)->g;
+
+    if (g)
+    {
+        *gdot = *nu / r05; /*Use gdot as temp variable*/
+        *nu = r05 * g(self, *gdot);
+
+        g = ((yaflEKFRobustSt *)self)->gdot;
+        YAFL_CHECK(g, YAFL_ST_INV_ARG_1);
+
+        *gdot = g(self, *gdot);
+    }
+    else
+    {
+        *gdot = 1.0;
+    }
+    return YAFL_ST_OK;
+}
+
 static void _robust_bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 {
-    yaflInt j;
-    yaflInt k;
     yaflInt nx;
-    yaflInt nxk;
     yaflFloat * d;
     yaflFloat * u;
     yaflFloat * h;
@@ -662,7 +669,6 @@ static void _robust_bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
     yaflFloat r05;
     yaflFloat gdot;
     yaflFloat y;
-    yaflEKFRobFuncP g;
 
     YAFL_ASSERT(self);
 
@@ -677,24 +683,9 @@ static void _robust_bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 
     r05 = self->Dr[i]; /* alpha = r**0.5 is stored in Dr*/
     y   = self->y[i];
-    g   = ((yaflEKFRobustSt *)self)->g;
-    if (g)
-    {
-        gdot = y / r05; /*Use gdot as temp variable*/
-        y = r05 * g(self, gdot);
 
-        g = ((yaflEKFRobustSt *)self)->gdot;
-        YAFL_ASSERT(g);
-
-        gdot = g(self, gdot);
-    }
-    else
-    {
-        gdot = 1.0;
-    }
-
-    r05 *= r05;
-#define A2 r05 /*Now it is r = alpha**2 */
+    /*!TODO: YAFL_EXEC*/
+    _scalar_robustify(self, &gdot, &y, r05);
 
     u = self->Up;
     d = self->Dp;
@@ -709,52 +700,9 @@ static void _robust_bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 #define v h /*Don't need h any more, use it to store v*/
     YAFL_MATH_SET_DV(nx, v, d, f);
 
-    for (k = 0, nxk = 0; k < nx; nxk += k++)
-    {
-        yaflFloat a;
-        yaflFloat fk;
-        yaflFloat vk;
-
-        fk = gdot * f[k];
-        vk = v[k];
-        a = A2 + fk * vk;
-        d[k] *= A2 / a;
-#define p fk /*No need for separate p variable*/
-        p = - fk / A2;
-        for (j = 0; j < k; j++)
-        {
-            yaflFloat ujk;
-            yaflFloat vj;
-
-            ujk = u[j + nxk];
-            vj  = v[j];
-
-            u[j + nxk] = ujk +   p * vj;
-            v[j]       = vj  + ujk * vk;
-        }
-#undef  p /*Don't need p any more...*/
-        A2 = a;
-    }
-    /*
-    Now we must do:
-    y = alpha * g(y[i] / alpha)
-    self.x += K * y
-
-    Since:
-    A2 == a
-
-    then we have:
-    K == v / a == v / A2
-
-    and so:
-    K * nu == (v / A2) * y == v / A2 * y == v * (y / A2)
-
-    Finally we get:
-    self.x += v * (y / A2)
-    */
-    yafl_math_add_vxn(nx, self->x, v, y / A2);
+    /*!TODO: YAFL_EXEC*/
+    _bierman_update_body(nx, self->x, u, d, f, v, r05 * r05, y, 1.0, gdot);
 #undef v  /*Don't nee v any more*/
-#undef A2 /*Don't nee A2 any more*/
 }
 
 void yafl_ekf_robust_bierman_update(yaflEKFRobustSt * self, yaflFloat * z)
@@ -779,7 +727,6 @@ static void _robust_joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
     yaflFloat gdot;
     yaflFloat s;
     yaflFloat y;
-    yaflEKFRobFuncP g;
 
     YAFL_ASSERT(self);
 
@@ -795,21 +742,9 @@ static void _robust_joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 
     r05 = self->Dr[i]; /* alpha = r**0.5 is stored in Dr*/
     y   = self->y[i];
-    g   = ((yaflEKFRobustSt *)self)->g;
-    if (g)
-    {
-        s = y / r05;
-        y = r05 * g(self, s);
 
-        g = ((yaflEKFRobustSt *)self)->gdot;
-        YAFL_ASSERT(g);
-
-        gdot = g(self, s);
-    }
-    else
-    {
-        gdot = 1.0;
-    }
+    /*!TODO: YAFL_EXEC*/
+    _scalar_robustify(self, &gdot, &y, r05);
 
     r05 *= r05;
 #define A2 r05 /*Now it is r = alpha**2 */
@@ -874,10 +809,7 @@ void yafl_ekf_robust_joseph_update(yaflEKFRobustSt * self, yaflFloat * z)
 =============================================================================*/
 static void _ada_rob_bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 {
-    yaflInt j;
-    yaflInt k;
     yaflInt nx;
-    yaflInt nxk;
     yaflFloat * d;
     yaflFloat * u;
     yaflFloat * h;
@@ -885,10 +817,7 @@ static void _ada_rob_bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
     yaflFloat r05;
     yaflFloat gdot;
     yaflFloat nu;
-    yaflFloat c;
-    yaflFloat s;
     yaflFloat ac;
-    yaflEKFRobFuncP g;
 
     YAFL_ASSERT(self);
 
@@ -903,21 +832,9 @@ static void _ada_rob_bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 
     r05 = self->Dr[i]; /* alpha = r**0.5 is stored in Dr*/
     nu   = self->y[i];
-    g   = ((yaflEKFRobustSt *)self)->g;
-    if (g)
-    {
-        gdot = nu / r05; /*Use gdot as temp variable*/
-        nu = r05 * g(self, gdot);
 
-        g = ((yaflEKFRobustSt *)self)->gdot;
-        YAFL_ASSERT(g);
-
-        gdot = g(self, gdot);
-    }
-    else
-    {
-        gdot = 1.0;
-    }
+    /*!TODO: YAFL_EXEC*/
+    _scalar_robustify(self, &gdot, &nu, r05);
 
     r05 *= r05;
 #define A2 r05 /*Now it is r = alpha**2 */
@@ -935,72 +852,11 @@ static void _ada_rob_bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 #define v h /*Don't need h any more, use it to store v*/
     YAFL_MATH_SET_DV(nx, v, d, f);
 
-    /* s = alpha**2 + gdot * f.dot(v)*/
-    c = gdot * yafl_math_vtv(nx, f, v);
-    s = A2 + c;
+    ac = _adaptive_correction(nx, f, v, A2, nu, gdot, \
+                              ((yaflEKFAdaptiveRobustSt *)self)->chi2, 0);
 
-    /* Divergence test */
-    ac = gdot * (nu * (nu / (((yaflEKFAdaptiveRobustSt *)self)->chi2))) - s;
-    if (ac > 0.0)
-    {
-        /*Adaptive correction factor*/
-        ac = ac / c + 1.0;
-
-        /*Corrected s*/
-        s  = A2 + ac * c;
-    }
-    else
-    {
-        ac = 1.0;
-    }
-
-    for (k = 0, nxk = 0; k < nx; nxk += k++)
-    {
-        yaflFloat a;
-        yaflFloat fk;
-        yaflFloat vk;
-
-        fk = gdot * f[k];
-        /*Correct v in place*/
-        vk = ac * v[k];
-        v[k] = vk;
-        a = A2 + fk * vk;
-        /*Correct d in place*/
-        d[k] *= ac * A2 / a;
-#define p fk /*No need for separate p variable*/
-        p = - fk / A2;
-        for (j = 0; j < k; j++)
-        {
-            yaflFloat ujk;
-            yaflFloat vj;
-
-            ujk = u[j + nxk];
-            vj  = v[j];
-
-            u[j + nxk] = ujk +   p * vj;
-            v[j]       = vj  + ujk * vk;
-        }
-#undef  p /*Don't need p any more...*/
-        A2 = a;
-    }
-    /*
-    Now we must do:
-    nu = alpha * g(y[i] / alpha)
-    self.x += K * nu
-
-    Since:
-    A2 == a
-
-    then we have:
-    K == v / a == v / A2
-
-    and so:
-    K * nu == (v / A2) * nu == v / A2 * nu == v * (nu / A2)
-
-    Finally we get:
-    self.x += v * (nu / A2)
-    */
-    yafl_math_add_vxn(nx, self->x, v, nu / A2);
+    /*!TODO: YAFL_EXEC*/
+    _bierman_update_body(nx, self->x, u, d, f, v, A2, nu, ac, gdot);
 #undef v  /*Don't nee v any more*/
 #undef A2 /*Don't nee A2 any more*/
 }
@@ -1026,10 +882,9 @@ static void _ada_rob_joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
     yaflFloat r05;
     yaflFloat gdot;
     yaflFloat ac;
-    yaflFloat c;
-    yaflFloat s;
+    yaflFloat s = 1.0;
     yaflFloat nu;
-    yaflEKFRobFuncP g;
+    //yaflEKFRobFuncP g;
 
     YAFL_ASSERT(self);
 
@@ -1045,21 +900,9 @@ static void _ada_rob_joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 
     r05 = self->Dr[i]; /* alpha = r**0.5 is stored in Dr*/
     nu  = self->y[i];
-    g   = ((yaflEKFRobustSt *)self)->g;
-    if (g)
-    {
-        s  = nu / r05;
-        nu = r05 * g(self, s); /*nu = alpha * g(y[i] / alpha)*/
 
-        g = ((yaflEKFRobustSt *)self)->gdot;
-        YAFL_ASSERT(g);
-
-        gdot = g(self, s);
-    }
-    else
-    {
-        gdot = 1.0;
-    }
+    /*!TODO: YAFL_EXEC*/
+    _scalar_robustify(self, &gdot, &nu, r05);
 
     r05 *= r05;
 #define A2 r05 /*Now it is r = alpha**2 */
@@ -1082,24 +925,8 @@ static void _ada_rob_joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
     /* v = f.dot(Dp).T = Dp.dot(f.T).T */
     YAFL_MATH_SET_DV(nx, v, d, f);
 
-    /* s = alpha**2 + gdot * f.dot(v)*/
-    c = gdot * yafl_math_vtv(nx, f, v);
-    s = A2 + c;
-
-    /* Divergence test */
-    ac = gdot * (nu * (nu / (((yaflEKFAdaptiveRobustSt *)self)->chi2))) - s;
-    if (ac > 0.0)
-    {
-        /*Adaptive correction factor*/
-        ac = ac / c + 1.0;
-
-        /*Corrected s*/
-        s  = A2 + ac * c;
-    }
-    else
-    {
-        ac = 1.0;
-    }
+    ac = _adaptive_correction(nx, f, v, A2, nu, gdot, \
+                              ((yaflEKFAdaptiveRobustSt *)self)->chi2, &s);
 
     /* K = Up.dot(v * ac / s) = Up.dot(v) * (ac / s) */
 #define K h /*Don't need h any more, use it to store K*/
@@ -1290,28 +1117,28 @@ void yafl_ukf_update(yaflUKFBaseSt * self, yaflFloat * z)
     yaflInt nx;
     yaflInt nz;
     yaflInt i;
-    yaflUKFSigmaSt * sp_info;     /*Sigma point generator info*/
-    yaflUKFFuncP hx;     /*State transition function*/
-    yaflUKFResFuncP xrf; /*State residual function*/
-    yaflUKFResFuncP zrf; /*Measurement residual function*/
-    yaflFloat * sigmas_x;      /*State sigma points*/
-    yaflFloat * sigmas_z;      /*Measurement sigma points*/
+    yaflUKFSigmaSt * sp_info; /*Sigma point generator info*/
+    yaflUKFFuncP hx;          /*State transition function*/
+    yaflUKFResFuncP xrf;      /*State residual function*/
+    yaflUKFResFuncP zrf;      /*Measurement residual function*/
+    yaflFloat * sigmas_x;     /*State sigma points*/
+    yaflFloat * sigmas_z;     /*Measurement sigma points*/
     /*Scratchpad memory*/
-    yaflFloat * spx;           /*For state residuals*/
-    yaflFloat * y;           /*For measurement residuals*/
+    yaflFloat * spx;          /*For state residuals*/
+    yaflFloat * y;            /*For measurement residuals*/
 
-    yaflFloat * x;             /*State*/
-    yaflFloat * zp;            /*Predicted measurement*/
-    yaflFloat * wc;            /*Covariance computation weights*/
-    yaflFloat * pzx;           /*Pzx cross covariance matrix*/
+    yaflFloat * x;            /*State*/
+    yaflFloat * zp;           /*Predicted measurement*/
+    yaflFloat * wc;           /*Covariance computation weights*/
+    yaflFloat * pzx;          /*Pzx cross covariance matrix*/
 
     /*Pzz covariance*/
-    yaflFloat * us;            /*Unit upper triangular factor*/
-    yaflFloat * ds;            /*Diagonal factor*/
+    yaflFloat * us;           /*Unit upper triangular factor*/
+    yaflFloat * ds;           /*Diagonal factor*/
 
     /*P covariance*/
-    yaflFloat * up;            /*Unit upper triangular factor*/
-    yaflFloat * dp;            /*Diagonal factor*/
+    yaflFloat * up;           /*Unit upper triangular factor*/
+    yaflFloat * dp;           /*Diagonal factor*/
 
     YAFL_ASSERT(self);
     YAFL_ASSERT(self->Nx);
@@ -1429,26 +1256,26 @@ void yafl_ukf_base_update(yaflUKFBaseSt * self, yaflFloat * z, \
     yaflInt nx;
     yaflInt nz;
     yaflInt i;
-    yaflUKFSigmaSt * sp_info;     /*Sigma point generator info*/
-    yaflUKFFuncP hx;     /*State transition function*/
-    yaflUKFResFuncP xrf; /*State residual function*/
-    yaflUKFResFuncP zrf; /*Measurement residual function*/
-    yaflFloat * sigmas_x;      /*State sigma points*/
-    yaflFloat * sigmas_z;      /*Measurement sigma points*/
+    yaflUKFSigmaSt * sp_info; /*Sigma point generator info*/
+    yaflUKFFuncP hx;          /*State transition function*/
+    yaflUKFResFuncP xrf;      /*State residual function*/
+    yaflUKFResFuncP zrf;      /*Measurement residual function*/
+    yaflFloat * sigmas_x;     /*State sigma points*/
+    yaflFloat * sigmas_z;     /*Measurement sigma points*/
     /*Scratchpad memory*/
-    yaflFloat * spx;           /*For state residuals*/
-    yaflFloat * y;           /*For measurement residuals*/
+    yaflFloat * spx;          /*For state residuals*/
+    yaflFloat * y;            /*For measurement residuals*/
 
-    yaflFloat * x;             /*State*/
-    yaflFloat * zp;            /*Predicted measurement*/
-    yaflFloat * wc;            /*Covariance computation weights*/
-    yaflFloat * pzx;           /*Pzx cross covariance matrix*/
+    yaflFloat * x;            /*State*/
+    yaflFloat * zp;           /*Predicted measurement*/
+    yaflFloat * wc;           /*Covariance computation weights*/
+    yaflFloat * pzx;          /*Pzx cross covariance matrix*/
 
     /*Output noise covariance*/
-    yaflFloat * ur;            /*Unit upper triangular factor*/
+    yaflFloat * ur;           /*Unit upper triangular factor*/
 
     /*P covariance*/
-    yaflFloat * up;            /*Unit upper triangular factor*/
+    yaflFloat * up;           /*Unit upper triangular factor*/
 
     YAFL_ASSERT(scalar_update);
 

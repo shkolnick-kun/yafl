@@ -22,8 +22,8 @@ yaflStatusEn name(yaflInt sz, yaflFloat *res, yaflFloat *v, yaflFloat n) \
 {                                                                        \
     yaflInt k;                                                           \
                                                                          \
-    YAFL_CHECK(res, YAFL_ST_INV_AGR_2);                                  \
-    YAFL_CHECK(v,   YAFL_ST_INV_AGR_3);                                  \
+    YAFL_CHECK(res, YAFL_ST_INV_ARG_2);                                  \
+    YAFL_CHECK(v,   YAFL_ST_INV_ARG_3);                                  \
                                                                          \
     for (k = 0; k < sz; k++)                                             \
     {                                                                    \
@@ -41,9 +41,9 @@ yaflStatusEn name(yaflInt sz, yaflFloat *res, yaflFloat *v, yaflFloat n) \
 {                                                                        \
     yaflInt k;                                                           \
                                                                          \
-    YAFL_CHECK(res, YAFL_ST_INV_AGR_2);                                  \
-    YAFL_CHECK(v,   YAFL_ST_INV_AGR_3);                                  \
-    YAFL_CHECK(n,   YAFL_ST_INV_AGR_4);                                  \
+    YAFL_CHECK(res, YAFL_ST_INV_ARG_2);                                  \
+    YAFL_CHECK(v,   YAFL_ST_INV_ARG_3);                                  \
+    YAFL_CHECK(n,   YAFL_ST_INV_ARG_4);                                  \
                                                                          \
     for (k = 0; k < sz; k++)                                             \
     {                                                                    \
@@ -61,9 +61,9 @@ yaflStatusEn name(yaflInt sz, yaflFloat *res, yaflFloat *a, yaflFloat *b)\
 {                                                                        \
     yaflInt k;                                                           \
                                                                          \
-    YAFL_CHECK(res, YAFL_ST_INV_AGR_2);                                  \
-    YAFL_CHECK(a,   YAFL_ST_INV_AGR_3);                                  \
-    YAFL_CHECK(b,   YAFL_ST_INV_AGR_4);                                  \
+    YAFL_CHECK(res, YAFL_ST_INV_ARG_2);                                  \
+    YAFL_CHECK(a,   YAFL_ST_INV_ARG_3);                                  \
+    YAFL_CHECK(b,   YAFL_ST_INV_ARG_4);                                  \
                                                                          \
     for (k = 0; k < sz; k++)                                             \
     {                                                                    \
@@ -81,9 +81,9 @@ yaflStatusEn name(yaflInt sz, yaflFloat *res, yaflFloat *a, yaflFloat *b)\
 {                                                                        \
     yaflInt k;                                                           \
                                                                          \
-    YAFL_CHECK(res, YAFL_ST_INV_AGR_2);                                  \
-    YAFL_CHECK(a,   YAFL_ST_INV_AGR_3);                                  \
-    YAFL_CHECK(b,   YAFL_ST_INV_AGR_4);                                  \
+    YAFL_CHECK(res, YAFL_ST_INV_ARG_2);                                  \
+    YAFL_CHECK(a,   YAFL_ST_INV_ARG_3);                                  \
+    YAFL_CHECK(b,   YAFL_ST_INV_ARG_4);                                  \
                                                                          \
     for (k = 0; k < sz; k++)                                             \
     {                                                                    \
@@ -117,9 +117,9 @@ yaflStatusEn name(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloa
 {                                                                                     \
     yaflInt j;                                                                        \
                                                                                       \
-    YAFL_CHECK(res, YAFL_ST_INV_AGR_3);                                               \
-    YAFL_CHECK(a,   YAFL_ST_INV_AGR_4);                                               \
-    YAFL_CHECK(b,   YAFL_ST_INV_AGR_5);                                               \
+    YAFL_CHECK(res, YAFL_ST_INV_ARG_3);                                               \
+    YAFL_CHECK(a,   YAFL_ST_INV_ARG_4);                                               \
+    YAFL_CHECK(b,   YAFL_ST_INV_ARG_5);                                               \
                                                                                       \
     for (j = 0; j < nr; j++)                                                          \
     {                                                                                 \
@@ -147,9 +147,9 @@ yaflStatusEn name(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloa
 {                                                                                                  \
     yaflInt j;                                                                                     \
                                                                                                    \
-    YAFL_CHECK(res, YAFL_ST_INV_AGR_3);                                                            \
-    YAFL_CHECK(a,   YAFL_ST_INV_AGR_4);                                                            \
-    YAFL_CHECK(b,   YAFL_ST_INV_AGR_5);                                                            \
+    YAFL_CHECK(res, YAFL_ST_INV_ARG_3);                                                            \
+    YAFL_CHECK(a,   YAFL_ST_INV_ARG_4);                                                            \
+    YAFL_CHECK(b,   YAFL_ST_INV_ARG_5);                                                            \
                                                                                                    \
     for (j = 0; j < nr; j++)                                                                       \
     {                                                                                              \
@@ -177,9 +177,9 @@ yaflStatusEn name(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloa
 {                                                                                     \
     yaflInt j;                                                                        \
                                                                                       \
-    YAFL_CHECK(res, YAFL_ST_INV_AGR_3);                                               \
-    YAFL_CHECK(a,   YAFL_ST_INV_AGR_4);                                               \
-    YAFL_CHECK(b,   YAFL_ST_INV_AGR_5);                                               \
+    YAFL_CHECK(res, YAFL_ST_INV_ARG_3);                                               \
+    YAFL_CHECK(a,   YAFL_ST_INV_ARG_4);                                               \
+    YAFL_CHECK(b,   YAFL_ST_INV_ARG_5);                                               \
                                                                                       \
     for (j = 0; j < nr; j++)                                                          \
     {                                                                                 \
@@ -209,9 +209,9 @@ yaflStatusEn name(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloa
 {                                                                                     \
     yaflInt j;                                                                        \
                                                                                       \
-    YAFL_CHECK(res, YAFL_ST_INV_AGR_3);                                               \
-    YAFL_CHECK(a,   YAFL_ST_INV_AGR_4);                                               \
-    YAFL_CHECK(b,   YAFL_ST_INV_AGR_5);                                               \
+    YAFL_CHECK(res, YAFL_ST_INV_ARG_3);                                               \
+    YAFL_CHECK(a,   YAFL_ST_INV_ARG_4);                                               \
+    YAFL_CHECK(b,   YAFL_ST_INV_ARG_5);                                               \
                                                                                       \
     for (j = 0; j < nc; j++)                                                          \
     {                                                                                 \
@@ -245,9 +245,9 @@ yaflStatusEn name(yaflInt nr,  yaflInt ncr, yaflInt nc, yaflFloat *res, yaflFloa
 {                                                                                                   \
     yaflInt i;                                                                                      \
                                                                                                     \
-    YAFL_CHECK(res, YAFL_ST_INV_AGR_4);                                                             \
-    YAFL_CHECK(a,   YAFL_ST_INV_AGR_5);                                                             \
-    YAFL_CHECK(b,   YAFL_ST_INV_AGR_6);                                                             \
+    YAFL_CHECK(res, YAFL_ST_INV_ARG_4);                                                             \
+    YAFL_CHECK(a,   YAFL_ST_INV_ARG_5);                                                             \
+    YAFL_CHECK(b,   YAFL_ST_INV_ARG_6);                                                             \
                                                                                                     \
     for (i = 0; i < nr; i++)                                                                        \
     {                                                                                               \
@@ -291,9 +291,9 @@ yaflStatusEn name(yaflInt sz, yaflFloat *res, yaflFloat *a, yaflFloat *b) \
     yaflInt j;                                                            \
     yaflInt szj;                                                          \
                                                                           \
-    YAFL_CHECK(res, YAFL_ST_INV_AGR_2);                                   \
-    YAFL_CHECK(a,   YAFL_ST_INV_AGR_3);                                   \
-    YAFL_CHECK(b,   YAFL_ST_INV_AGR_4);                                   \
+    YAFL_CHECK(res, YAFL_ST_INV_ARG_2);                                   \
+    YAFL_CHECK(a,   YAFL_ST_INV_ARG_3);                                   \
+    YAFL_CHECK(b,   YAFL_ST_INV_ARG_4);                                   \
                                                                           \
     for (j = 0; j < sz; j++)                                              \
     {                                                                     \
@@ -325,9 +325,9 @@ yaflStatusEn name(yaflInt sz, yaflFloat *res, yaflFloat *a, yaflFloat *b) \
     yaflInt j;                                                            \
     yaflInt szj;                                                          \
                                                                           \
-    YAFL_CHECK(res, YAFL_ST_INV_AGR_2);                                   \
-    YAFL_CHECK(a,   YAFL_ST_INV_AGR_3);                                   \
-    YAFL_CHECK(b,   YAFL_ST_INV_AGR_4);                                   \
+    YAFL_CHECK(res, YAFL_ST_INV_ARG_2);                                   \
+    YAFL_CHECK(a,   YAFL_ST_INV_ARG_3);                                   \
+    YAFL_CHECK(b,   YAFL_ST_INV_ARG_4);                                   \
                                                                           \
     for (j = 0; j < sz; j++)                                              \
     {                                                                     \
@@ -358,9 +358,9 @@ yaflStatusEn name(yaflInt nr,  yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFlo
 {                                                                                      \
     yaflInt i;                                                                         \
                                                                                        \
-    YAFL_CHECK(res, YAFL_ST_INV_AGR_3);                                                \
-    YAFL_CHECK(a,   YAFL_ST_INV_AGR_4);                                                \
-    YAFL_CHECK(b,   YAFL_ST_INV_AGR_5);                                                \
+    YAFL_CHECK(res, YAFL_ST_INV_ARG_3);                                                \
+    YAFL_CHECK(a,   YAFL_ST_INV_ARG_4);                                                \
+    YAFL_CHECK(b,   YAFL_ST_INV_ARG_5);                                                \
                                                                                        \
     for (i = 0; i < nr; i++)                                                           \
     {                                                                                  \
@@ -399,8 +399,8 @@ yaflStatusEn yafl_math_set_u(yaflInt sz, yaflFloat *res, yaflFloat *u)
 {
     yaflInt i;
 
-    YAFL_CHECK(res, YAFL_ST_INV_AGR_2);
-    YAFL_CHECK(u,   YAFL_ST_INV_AGR_3);
+    YAFL_CHECK(res, YAFL_ST_INV_ARG_2);
+    YAFL_CHECK(u,   YAFL_ST_INV_ARG_3);
 
     for (i = 0; i < sz; i++)
     {
@@ -428,8 +428,8 @@ yaflStatusEn name(yaflInt sz, yaflFloat *res, yaflFloat *u) \
 {                                                           \
     yaflInt i;                                              \
                                                             \
-    YAFL_CHECK(res, YAFL_ST_INV_AGR_2);                     \
-    YAFL_CHECK(u,   YAFL_ST_INV_AGR_3);                     \
+    YAFL_CHECK(res, YAFL_ST_INV_ARG_2);                     \
+    YAFL_CHECK(u,   YAFL_ST_INV_ARG_3);                     \
                                                             \
     for (i = 0; i < sz; i++)                                \
     {                                                       \
@@ -454,8 +454,8 @@ yaflStatusEn yafl_math_bset_u(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat 
 {
     yaflInt i;
 
-    YAFL_CHECK(res, YAFL_ST_INV_AGR_2);
-    YAFL_CHECK(u,   YAFL_ST_INV_AGR_4);
+    YAFL_CHECK(res, YAFL_ST_INV_ARG_2);
+    YAFL_CHECK(u,   YAFL_ST_INV_ARG_4);
 
     for (i = 0; i < sz; i++)
     {
@@ -483,8 +483,8 @@ yaflStatusEn name(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *u) \
 {                                                                       \
     yaflInt i;                                                          \
                                                                         \
-    YAFL_CHECK(res, YAFL_ST_INV_AGR_2);                                 \
-    YAFL_CHECK(u,   YAFL_ST_INV_AGR_4);                                 \
+    YAFL_CHECK(res, YAFL_ST_INV_ARG_2);                                 \
+    YAFL_CHECK(u,   YAFL_ST_INV_ARG_4);                                 \
                                                                         \
     for (i = 0; i < sz; i++)                                            \
     {                                                                   \
@@ -510,8 +510,8 @@ yaflStatusEn yafl_math_bset_ut(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat
     yaflInt i;
     yaflInt szi;
 
-    YAFL_CHECK(res, YAFL_ST_INV_AGR_2);
-    YAFL_CHECK(u,   YAFL_ST_INV_AGR_4);
+    YAFL_CHECK(res, YAFL_ST_INV_ARG_2);
+    YAFL_CHECK(u,   YAFL_ST_INV_ARG_4);
 
     for (szi = 0, i = 0; i < sz; szi += i++)
     {
@@ -540,8 +540,8 @@ yaflStatusEn name(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *u) \
     yaflInt i;                                                          \
     yaflInt szi;                                                        \
                                                                         \
-    YAFL_CHECK(res, YAFL_ST_INV_AGR_2);                                 \
-    YAFL_CHECK(u,   YAFL_ST_INV_AGR_4);                                 \
+    YAFL_CHECK(res, YAFL_ST_INV_ARG_2);                                 \
+    YAFL_CHECK(u,   YAFL_ST_INV_ARG_4);                                 \
                                                                         \
     for (szi = 0, i = 1; i < sz; szi += i++)                            \
     {                                                                   \
@@ -567,8 +567,8 @@ yaflStatusEn name(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *v) \
 {                                                                       \
     yaflInt i;                                                          \
                                                                         \
-    YAFL_CHECK(res, YAFL_ST_INV_AGR_2);                                 \
-    YAFL_CHECK(v,   YAFL_ST_INV_AGR_4);                                 \
+    YAFL_CHECK(res, YAFL_ST_INV_ARG_2);                                 \
+    YAFL_CHECK(v,   YAFL_ST_INV_ARG_4);                                 \
                                                                         \
     for (i = 0; i < sz; i++)                                            \
     {                                                                   \
@@ -586,9 +586,9 @@ yaflStatusEn name(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *a, yaflFloa
 {                                                                                     \
     yaflInt j;                                                                        \
                                                                                       \
-    YAFL_CHECK(res, YAFL_ST_INV_AGR_2);                                               \
-    YAFL_CHECK(a,   YAFL_ST_INV_AGR_4);                                               \
-    YAFL_CHECK(b,   YAFL_ST_INV_AGR_5);                                               \
+    YAFL_CHECK(res, YAFL_ST_INV_ARG_2);                                               \
+    YAFL_CHECK(a,   YAFL_ST_INV_ARG_4);                                               \
+    YAFL_CHECK(b,   YAFL_ST_INV_ARG_5);                                               \
                                                                                       \
     for (j = 0; j < sz; j++)                                                          \
     {                                                                                 \
@@ -616,10 +616,10 @@ yaflStatusEn name(yaflInt rnc, yaflFloat *res, yaflInt nr, yaflInt nc, yaflFloat
 {                                                                                                  \
     yaflInt i;                                                                                     \
                                                                                                    \
-    YAFL_CHECK(res,      YAFL_ST_INV_AGR_2);                                                       \
-    YAFL_CHECK(a,        YAFL_ST_INV_AGR_5);                                                       \
-    YAFL_CHECK(b,        YAFL_ST_INV_AGR_6);                                                       \
-    YAFL_CHECK(rnc > nc, YAFL_ST_INV_AGR_1);                                                       \
+    YAFL_CHECK(res,      YAFL_ST_INV_ARG_2);                                                       \
+    YAFL_CHECK(a,        YAFL_ST_INV_ARG_5);                                                       \
+    YAFL_CHECK(b,        YAFL_ST_INV_ARG_6);                                                       \
+    YAFL_CHECK(rnc > nc, YAFL_ST_INV_ARG_1);                                                       \
                                                                                                    \
     for (i = 0; i < nr; i++)                                                                       \
     {                                                                                              \
@@ -661,11 +661,11 @@ yaflStatusEn name(yaflInt rnc, yaflFloat *res, yaflInt nr, yaflInt nc, yaflInt a
 {                                                                                                               \
     yaflInt i;                                                                                                  \
                                                                                                                 \
-    YAFL_CHECK(res,      YAFL_ST_INV_AGR_2);                                                                    \
-    YAFL_CHECK(a,        YAFL_ST_INV_AGR_6);                                                                    \
-    YAFL_CHECK(b,        YAFL_ST_INV_AGR_7);                                                                    \
-    YAFL_CHECK(rnc > nc, YAFL_ST_INV_AGR_1);                                                                    \
-    YAFL_CHECK(anc > nc, YAFL_ST_INV_AGR_5);                                                                    \
+    YAFL_CHECK(res,      YAFL_ST_INV_ARG_2);                                                                    \
+    YAFL_CHECK(a,        YAFL_ST_INV_ARG_6);                                                                    \
+    YAFL_CHECK(b,        YAFL_ST_INV_ARG_7);                                                                    \
+    YAFL_CHECK(rnc > nc, YAFL_ST_INV_ARG_1);                                                                    \
+    YAFL_CHECK(anc > nc, YAFL_ST_INV_ARG_5);                                                                    \
                                                                                                                 \
     for (i = 0; i < nr; i++)                                                                                    \
     {                                                                                                           \
@@ -707,8 +707,8 @@ yaflStatusEn yafl_math_ruv(yaflInt sz, yaflFloat *res, yaflFloat *u)
     yaflInt j;
     yaflInt szj;
 
-    YAFL_CHECK(res, YAFL_ST_INV_AGR_2);
-    YAFL_CHECK(u,   YAFL_ST_INV_AGR_3);
+    YAFL_CHECK(res, YAFL_ST_INV_ARG_2);
+    YAFL_CHECK(u,   YAFL_ST_INV_ARG_3);
 
     for (j = sz - 1, szj = ((j - 1) * j) / 2; j > 0; szj -= --j)
     /*for (j = sz - 1; j > 0; j--)*/
@@ -733,8 +733,8 @@ yaflStatusEn yafl_math_rum(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *u)
     yaflInt j;
     yaflInt nrj;
 
-    YAFL_CHECK(res, YAFL_ST_INV_AGR_3);
-    YAFL_CHECK(u,   YAFL_ST_INV_AGR_4);
+    YAFL_CHECK(res, YAFL_ST_INV_ARG_3);
+    YAFL_CHECK(u,   YAFL_ST_INV_ARG_4);
 
     for (j = nr - 1, nrj = ((j - 1) * j) / 2; j > 0; nrj -= --j)
     {
@@ -767,10 +767,10 @@ yaflStatusEn yafl_math_mwgsu(yaflInt nr, yaflInt nc, yaflFloat *res_u, yaflFloat
     yaflInt j;
     yaflInt nrj;
 
-    YAFL_CHECK(res_u, YAFL_ST_INV_AGR_3);
-    YAFL_CHECK(res_d, YAFL_ST_INV_AGR_4);
-    YAFL_CHECK(w,     YAFL_ST_INV_AGR_5);
-    YAFL_CHECK(d,     YAFL_ST_INV_AGR_6);
+    YAFL_CHECK(res_u, YAFL_ST_INV_ARG_3);
+    YAFL_CHECK(res_d, YAFL_ST_INV_ARG_4);
+    YAFL_CHECK(w,     YAFL_ST_INV_ARG_5);
+    YAFL_CHECK(d,     YAFL_ST_INV_ARG_6);
 
     for (j = nr - 1, nrj = ((j - 1) * j) / 2; j >= 0; nrj -= --j)
     {
@@ -839,10 +839,10 @@ yaflStatusEn yafl_math_udu_up(yaflInt sz, yaflFloat *res_u, yaflFloat *res_d, ya
     yaflInt j;
     yaflInt szj;
 
-    YAFL_CHECK(res_u,      YAFL_ST_INV_AGR_2);
-    YAFL_CHECK(res_d,      YAFL_ST_INV_AGR_3);
-    YAFL_CHECK(v,          YAFL_ST_INV_AGR_5);
-    YAFL_CHECK(alpha >= 0, YAFL_ST_INV_AGR_4);
+    YAFL_CHECK(res_u,      YAFL_ST_INV_ARG_2);
+    YAFL_CHECK(res_d,      YAFL_ST_INV_ARG_3);
+    YAFL_CHECK(v,          YAFL_ST_INV_ARG_5);
+    YAFL_CHECK(alpha >= 0, YAFL_ST_INV_ARG_4);
 
     for (j = sz - 1, szj = ((j - 1) * j) / 2; j >= 0; szj -= --j)
     {
@@ -892,10 +892,10 @@ yaflStatusEn yafl_math_udu_down(yaflInt sz, yaflFloat *res_u, yaflFloat *res_d, 
     yaflFloat pj;
     yaflFloat dj;
 
-    YAFL_CHECK(res_u,      YAFL_ST_INV_AGR_2);
-    YAFL_CHECK(res_d,      YAFL_ST_INV_AGR_3);
-    YAFL_CHECK(v,          YAFL_ST_INV_AGR_5);
-    YAFL_CHECK(alpha >= 0, YAFL_ST_INV_AGR_4);
+    YAFL_CHECK(res_u,      YAFL_ST_INV_ARG_2);
+    YAFL_CHECK(res_d,      YAFL_ST_INV_ARG_3);
+    YAFL_CHECK(v,          YAFL_ST_INV_ARG_5);
+    YAFL_CHECK(alpha >= 0, YAFL_ST_INV_ARG_4);
 
     /*Solve U*p = v*/
     yafl_math_ruv(sz, v, res_u);
