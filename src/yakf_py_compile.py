@@ -30,8 +30,8 @@ pyximport.install(
 
 #from yakf_py import Bierman as KF
 #from yakf_py import Joseph as KF
-#from yakf_py import AdaptiveBierman as KF
-from yakf_py import AdaptiveJoseph as KF
+from yakf_py import AdaptiveBierman as KF
+#from yakf_py import AdaptiveJoseph as KF
 #from yakf_py import DoNotUseThisFilter as KF
 
 def _fx(x, dt, **fx_args):

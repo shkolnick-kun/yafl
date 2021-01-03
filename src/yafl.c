@@ -85,6 +85,7 @@ void yafl_ekf_base_predict(yaflEKFBaseSt * self)
     yafl_math_mwgsu(nx, nx2, self->Up, self->Dp, w, d);
 }
 
+/*---------------------------------------------------------------------------*/
 void yafl_ekf_base_update(yaflEKFBaseSt * self, yaflFloat * z, yaflEKFScalarUpdateP scalar_update)
 {
     yaflInt j;
@@ -145,12 +146,13 @@ void yafl_ekf_base_update(yaflEKFBaseSt * self, yaflFloat * z, yaflEKFScalarUpda
 /*=============================================================================
                                 Bierman filter
 =============================================================================*/
-static yaflStatusEn \
+static inline yaflStatusEn \
     _bierman_update_body(yaflInt    nx, yaflFloat * x, yaflFloat * u, \
                          yaflFloat * d, yaflFloat * f, yaflFloat * v, \
                          yaflFloat   r, yaflFloat  nu, yaflFloat  ac, \
                          yaflFloat   gdot)
 {
+    yaflStatusEn status = YAFL_ST_OK;
     yaflInt j;
     yaflInt k;
     yaflInt nxk;
@@ -206,7 +208,8 @@ static yaflStatusEn \
     Finally we get:
     x += v * (nu / r)
     */
-    return yafl_math_add_vxn(nx, x, v, nu / r);
+    YAFL_EXEC(status, yafl_math_add_vxn(nx, x, v, nu / r));
+    return status;
 }
 
 /*---------------------------------------------------------------------------*/
@@ -242,11 +245,13 @@ static void _bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 #define v h /*Don't need h any more, use it to store v*/
     YAFL_MATH_SET_DV(nx, v, d, f);
 
+    /*!TODO: YAFL_EXEC*/
     _bierman_update_body(nx, self->x, u, d, f, v, self->Dr[i], self->y[i], 1.0, 1.0);
 
 #undef v /*Don't nee v any more*/
 }
 
+/*---------------------------------------------------------------------------*/
 void yafl_ekf_bierman_update(yaflEKFBaseSt * self, yaflFloat * z)
 {
     yafl_ekf_base_update(self, z, _bierman_scalar_update);
@@ -255,16 +260,67 @@ void yafl_ekf_bierman_update(yaflEKFBaseSt * self, yaflFloat * z)
 /*=============================================================================
                                 Joseph filter
 =============================================================================*/
+static inline yaflStatusEn \
+    _joseph_update_body(yaflInt nx,    yaflFloat * x, yaflFloat * u, \
+                        yaflFloat * d, yaflFloat * f, yaflFloat * v, \
+                        yaflFloat * k, yaflFloat * w, yaflFloat  nu, \
+                        yaflFloat  a2, yaflFloat   s, yaflFloat  ac, \
+                        yaflFloat  gdot)
+{
+    yaflStatusEn status = YAFL_ST_OK;
+
+    yaflInt nx1;
+
+    YAFL_CHECK(x, YAFL_ST_INV_ARG_2);
+    YAFL_CHECK(u, YAFL_ST_INV_ARG_3);
+    YAFL_CHECK(d, YAFL_ST_INV_ARG_4);
+    YAFL_CHECK(f, YAFL_ST_INV_ARG_5);
+    YAFL_CHECK(v, YAFL_ST_INV_ARG_6);
+    YAFL_CHECK(k, YAFL_ST_INV_ARG_7);
+    YAFL_CHECK(w, YAFL_ST_INV_ARG_8);
+    YAFL_CHECK(s, YAFL_ST_INV_ARG_11);
+
+    nx1 = nx + 1;
+
+    /* k = Up.dot(v * ac / s) = Up.dot(v) * (ac / s) */
+    /*May be used in place*/
+    YAFL_EXEC(status, yafl_math_set_vxn(nx, v, v, ac / s));
+    YAFL_EXEC(status, yafl_math_set_uv(nx, k, u, v));
+
+#   define D v
+    /*Set W and D*/
+    /*May be used in place*/
+    YAFL_EXEC(status, yafl_math_set_vxn(nx, f, f, gdot));
+    /*How about yafl_math_bset_vvtxn ?*/
+    YAFL_EXEC(status, yafl_math_bset_vvt(nx1, w, nx, k, f));
+    YAFL_EXEC(status, yafl_math_bsub_u(nx1, w, nx, u));
+
+    /* Now w is (gdot*kf - Up|***) */
+    YAFL_EXEC(status, YAFL_MATH_BSET_V(nx1, 0, nx, w, nx, k));
+    /* Now w is (gdot*kf - Up|k) */
+
+    /* D = concatenate([ac * Dp, np.array([gdot * alpha**2])]) */
+    YAFL_EXEC(status, yafl_math_set_vxn(nx, D, d, ac));
+    D[nx] = gdot * a2;
+
+    /* Up, Dp = MWGSU(W, D)*/
+    YAFL_EXEC(status, yafl_math_mwgsu(nx, nx1, u, d, w, D));
+
+    /* x += k * nu */
+    YAFL_EXEC(status, yafl_math_add_vxn(nx, x, k, nu));
+#   undef D  /*Don't nee D any more*/
+    return status;
+}
+
+/*---------------------------------------------------------------------------*/
 static void _joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 {
     yaflInt nx;
-    yaflInt nx1;
     yaflFloat * d;
     yaflFloat * u;
     yaflFloat * h;
     yaflFloat * f;
     yaflFloat * v;
-    yaflFloat * w;
     yaflFloat r;
     yaflFloat s;
 
@@ -280,8 +336,6 @@ static void _joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
     YAFL_ASSERT(self->W);
     YAFL_ASSERT(self->D);
 
-    nx1 = nx + 1;
-
     d = self->Dp;
     u = self->Up;
 
@@ -289,8 +343,6 @@ static void _joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 
     v = self->D;
     f = v + nx;
-
-    w = self->W;
 
     /* f = h.dot(Up) */
     yafl_math_set_vtu(nx, f, h, u);
@@ -305,31 +357,13 @@ static void _joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 
     /*K = Up.dot(v/s) = Up.dot(v)/s*/
 #define K h /*Don't need h any more, use it to store K*/
-#define D v
-    yafl_math_set_uv(nx, K, u, v);
-    yafl_math_set_vrn(nx, K, K, s); /*May be used in place*/
-
-    /*Set W and D*/
-    yafl_math_bset_vvt(nx1, w, nx, K, f);
-    yafl_math_bsub_u(nx1, w, nx, u);
-
-    /* Now w is (Kf - Up|***) */
-    YAFL_MATH_BSET_V(nx1, 0, nx, w, nx, K);
-    /* Now w is (Kf - Up|K) */
-
-    /* D = concatenate([Dp, np.array([r])]) */
-    memcpy((void *)D, (void *)d, nx * sizeof(yaflFloat));
-    D[nx] = r;
-
-    /* Up, Dp = MWGSU(W, D)*/
-    yafl_math_mwgsu(nx, nx1, u, d, w, D);
-
-    /* self.x += K * y[i] */
-    yafl_math_add_vxn(nx, self->x, K, self->y[i]);
-#undef D /*Don't nee D any more*/
+    /*!TODO: YAFL_EXEC*/
+    _joseph_update_body(nx, self->x, u, d, f, v, K, self->W, self->y[i], \
+                        self->Dr[i], s, 1.0, 1.0);
 #undef K /*Don't nee K any more*/
 }
 
+/*---------------------------------------------------------------------------*/
 void yafl_ekf_joseph_update(yaflEKFBaseSt * self, yaflFloat * z)
 {
     yafl_ekf_base_update(self, z, _joseph_scalar_update);
@@ -377,7 +411,7 @@ static inline yaflFloat \
     return ac;
 }
 
-
+/*---------------------------------------------------------------------------*/
 static void _adaptive_bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 {
     yaflInt nx;
@@ -420,10 +454,11 @@ static void _adaptive_bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
                               ((yaflEKFAdaptiveSt *)self)->chi2, 0);
 
     /*!TODO: YAFL_EXEC*/
-    _bierman_update_body(nx, self->x, u, d, f, v, r, self->y[i], ac, 1.0);
+    _bierman_update_body(nx, self->x, u, d, f, v, r, nu, ac, 1.0);
 #undef v /*Don't nee v any more*/
 }
 
+/*---------------------------------------------------------------------------*/
 void yafl_ekf_adaptive_bierman_update(yaflEKFAdaptiveSt * self, yaflFloat * z)
 {
     yafl_ekf_base_update((yaflEKFBaseSt *)self, z, _adaptive_bierman_scalar_update);
@@ -435,13 +470,11 @@ void yafl_ekf_adaptive_bierman_update(yaflEKFAdaptiveSt * self, yaflFloat * z)
 static void _adaptive_joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 {
     yaflInt nx;
-    yaflInt nx1;
     yaflFloat * d;
     yaflFloat * u;
     yaflFloat * h;
     yaflFloat * f;
     yaflFloat * v;
-    yaflFloat * w;
     yaflFloat nu;
     yaflFloat r;
     yaflFloat s = 1.0;
@@ -459,8 +492,6 @@ static void _adaptive_joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
     YAFL_ASSERT(self->W);
     YAFL_ASSERT(self->D);
 
-    nx1 = nx + 1;
-
     d = self->Dp;
     u = self->Up;
 
@@ -468,8 +499,6 @@ static void _adaptive_joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 
     v = self->D;
     f = v + nx;
-
-    w = self->W;
 
     nu = self->y[i];
     r  = self->Dr[i];
@@ -486,31 +515,13 @@ static void _adaptive_joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 
     /* K = Up.dot(v * ac / s) = Up.dot(v) * (ac / s) */
 #define K h /*Don't need h any more, use it to store K*/
-#define D v
-    yafl_math_set_vxn(nx, v, v, ac / s); /*May be used in place*/
-    yafl_math_set_uv(nx, K, u, v);
-
-    /*Set W and D*/
-    yafl_math_bset_vvt(nx1, w, nx, K, f);
-    yafl_math_bsub_u(nx1, w, nx, u);
-
-    /* Now w is (Kf - Up|***) */
-    YAFL_MATH_BSET_V(nx1, 0, nx, w, nx, K);
-    /* Now w is (Kf - Up|K) */
-
-    /* D = concatenate([ac * Dp, np.array([r])]) */
-    yafl_math_set_vxn(nx, D, d, ac);
-    D[nx] = r;
-
-    /* Up, Dp = MWGSU(W, D)*/
-    yafl_math_mwgsu(nx, nx1, u, d, w, D);
-
-    /* self.x += K * nu */
-    yafl_math_add_vxn(nx, self->x, K, nu);
-#undef D /*Don't nee D any more*/
+    /*!TODO: YAFL_EXEC*/
+    _joseph_update_body(nx, self->x, u, d, f, v, K, self->W, nu, \
+                        self->Dr[i], s, ac, 1.0);
 #undef K /*Don't nee K any more*/
 }
 
+/*---------------------------------------------------------------------------*/
 void yafl_ekf_adaptive_joseph_update(yaflEKFAdaptiveSt * self, yaflFloat * z)
 {
     yafl_ekf_base_update((yaflEKFBaseSt *)self, z, _adaptive_joseph_scalar_update);
@@ -622,6 +633,7 @@ static void _do_not_use_this_update(yaflEKFBaseSt * self, yaflInt i)
 #undef K /*Don't nee K any more*/
 }
 
+/*---------------------------------------------------------------------------*/
 void yafl_ekf_do_not_use_this_update(yaflEKFAdaptiveSt * self, yaflFloat * z)
 {
     yafl_ekf_base_update((yaflEKFBaseSt *)self, z, _do_not_use_this_update);
@@ -659,6 +671,7 @@ static inline yaflStatusEn \
     return YAFL_ST_OK;
 }
 
+/*---------------------------------------------------------------------------*/
 static void _robust_bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 {
     yaflInt nx;
@@ -705,6 +718,7 @@ static void _robust_bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 #undef v  /*Don't nee v any more*/
 }
 
+/*---------------------------------------------------------------------------*/
 void yafl_ekf_robust_bierman_update(yaflEKFRobustSt * self, yaflFloat * z)
 {
     yafl_ekf_base_update((yaflEKFBaseSt *)self, z, _robust_bierman_scalar_update);
@@ -716,13 +730,11 @@ void yafl_ekf_robust_bierman_update(yaflEKFRobustSt * self, yaflFloat * z)
 static void _robust_joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 {
     yaflInt nx;
-    yaflInt nx1;
     yaflFloat * d;
     yaflFloat * u;
     yaflFloat * h;
     yaflFloat * f;
     yaflFloat * v;
-    yaflFloat * w;
     yaflFloat r05;
     yaflFloat gdot;
     yaflFloat s;
@@ -749,8 +761,6 @@ static void _robust_joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
     r05 *= r05;
 #define A2 r05 /*Now it is r = alpha**2 */
 
-    nx1 = nx + 1;
-
     d = self->Dp;
     u = self->Up;
 
@@ -758,8 +768,6 @@ static void _robust_joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 
     v = self->D;
     f = v + nx;
-
-    w = self->W;
 
     /* f = h.dot(Up) */
     yafl_math_set_vtu(nx, f, h, u);
@@ -772,33 +780,14 @@ static void _robust_joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 
     /*K = Up.dot(v/s) = Up.dot(v)/s*/
 #define K h /*Don't need h any more, use it to store K*/
-#define D v
-    yafl_math_set_uv(nx, K, u, v);
-    yafl_math_set_vrn(nx, K, K, s); /*May be used in place*/
-
-    /*Set W and D*/
-    yafl_math_set_vxn(nx, f, f, gdot); /*May be used in place*/
-    yafl_math_bset_vvt(nx1, w, nx, K, f); /*How about yafl_math_bset_vvtxn ?*/
-    yafl_math_bsub_u(nx1, w, nx, u);
-
-    /* Now w is (gdot*Kf - Up|***) */
-    YAFL_MATH_BSET_V(nx1, 0, nx, w, nx, K);
-    /* Now w is (gdot*Kf - Up|K) */
-
-    /* D = concatenate([Dp, np.array([gdot * alpha**2])]) */
-    memcpy((void *)D, (void *)d, nx * sizeof(yaflFloat));
-    D[nx] = gdot * A2;
-
-    /* Up, Dp = MWGSU(W, D)*/
-    yafl_math_mwgsu(nx, nx1, u, d, w, D);
-
-    /* self.x += K * alpha * g(y[i] / alpha) */
-    yafl_math_add_vxn(nx, self->x, K, y);
-#undef D  /*Don't nee D any more*/
+    /*!TODO: YAFL_EXEC*/
+    _joseph_update_body(nx, self->x, u, d, f, v, K, self->W, y, \
+                        A2, s, 1.0, gdot);
 #undef K  /*Don't nee K any more*/
 #undef A2 /*Don't nee A2 any more*/
 }
 
+/*---------------------------------------------------------------------------*/
 void yafl_ekf_robust_joseph_update(yaflEKFRobustSt * self, yaflFloat * z)
 {
     yafl_ekf_base_update((yaflEKFBaseSt *)self, z, _robust_joseph_scalar_update);
@@ -861,6 +850,7 @@ static void _ada_rob_bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 #undef A2 /*Don't nee A2 any more*/
 }
 
+/*---------------------------------------------------------------------------*/
 void yafl_ekf_adaptive_robust_bierman_update(yaflEKFAdaptiveRobustSt * self, yaflFloat * z)
 {
     yafl_ekf_base_update((yaflEKFBaseSt *)self, z, _ada_rob_bierman_scalar_update);
@@ -872,13 +862,13 @@ void yafl_ekf_adaptive_robust_bierman_update(yaflEKFAdaptiveRobustSt * self, yaf
 static void _ada_rob_joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 {
     yaflInt nx;
-    yaflInt nx1;
+    //yaflInt nx1;
     yaflFloat * d;
     yaflFloat * u;
     yaflFloat * h;
     yaflFloat * f;
     yaflFloat * v;
-    yaflFloat * w;
+    //yaflFloat * w;
     yaflFloat r05;
     yaflFloat gdot;
     yaflFloat ac;
@@ -907,8 +897,6 @@ static void _ada_rob_joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
     r05 *= r05;
 #define A2 r05 /*Now it is r = alpha**2 */
 
-    nx1 = nx + 1;
-
     d = self->Dp;
     u = self->Up;
 
@@ -916,8 +904,6 @@ static void _ada_rob_joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 
     v = self->D;
     f = v + nx;
-
-    w = self->W;
 
     /* f = h.dot(Up) */
     yafl_math_set_vtu(nx, f, h, u);
@@ -930,33 +916,14 @@ static void _ada_rob_joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 
     /* K = Up.dot(v * ac / s) = Up.dot(v) * (ac / s) */
 #define K h /*Don't need h any more, use it to store K*/
-#define D v
-    yafl_math_set_vxn(nx, v, v, ac / s); /*May be used in place*/
-    yafl_math_set_uv(nx, K, u, v);
-
-    /*Set W and D*/
-    yafl_math_set_vxn(nx, f, f, gdot); /*May be used in place*/
-    yafl_math_bset_vvt(nx1, w, nx, K, f); /*How about yafl_math_bset_vvtxn ?*/
-    yafl_math_bsub_u(nx1, w, nx, u);
-
-    /* Now w is (gdot*Kf - Up|***) */
-    YAFL_MATH_BSET_V(nx1, 0, nx, w, nx, K);
-    /* Now w is (gdot*Kf - Up|K) */
-
-    /* D = concatenate([ac * Dp, np.array([gdot * alpha**2])]) */
-    yafl_math_set_vxn(nx, D, d, ac);
-    D[nx] = gdot * A2;
-
-    /* Up, Dp = MWGSU(W, D)*/
-    yafl_math_mwgsu(nx, nx1, u, d, w, D);
-
-    /* self.x += K * nu */
-    yafl_math_add_vxn(nx, self->x, K, nu);
-#undef D  /*Don't nee D any more*/
+    /*!TODO: YAFL_EXEC*/
+    _joseph_update_body(nx, self->x, u, d, f, v, K, self->W, nu, \
+                        A2, s, ac, gdot);
 #undef K  /*Don't nee K any more*/
 #undef A2 /*Don't nee A2 any more*/
 }
 
+/*---------------------------------------------------------------------------*/
 void yafl_ekf_adaptive_robust_joseph_update(yaflEKFAdaptiveRobustSt * self, yaflFloat * z)
 {
     yafl_ekf_base_update((yaflEKFBaseSt *)self, z, _ada_rob_joseph_scalar_update);
@@ -984,6 +951,7 @@ static inline void _compute_res(yaflUKFBaseSt * self, yaflInt sz,          \
     }
 }
 
+/*---------------------------------------------------------------------------*/
 static void _unscented_transform(yaflUKFBaseSt * self, \
                                  yaflInt    res_sz,      \
                                  yaflFloat * res_v,      \
@@ -1069,6 +1037,7 @@ static void _unscented_transform(yaflUKFBaseSt * self, \
     }
 }
 
+/*---------------------------------------------------------------------------*/
 void yafl_ukf_predict(yaflUKFBaseSt * self)
 {
     yaflInt np;
@@ -1111,6 +1080,7 @@ void yafl_ukf_predict(yaflUKFBaseSt * self)
                          sigmas_x, self->Uq, self->Dq, self->xmf, self->xrf);
 }
 
+/*---------------------------------------------------------------------------*/
 void yafl_ukf_update(yaflUKFBaseSt * self, yaflFloat * z)
 {
     yaflInt np;
@@ -1379,15 +1349,11 @@ void yafl_ukf_base_update(yaflUKFBaseSt * self, yaflFloat * z, \
 /*===========================================================================*/
 static void _bierman_like_scalar_update(yaflUKFBaseSt * self, yaflInt i)
 {
-    yaflInt j;
-    yaflInt k;
     yaflInt nx;
-    yaflInt nxk;
     yaflFloat * d;
     yaflFloat * u;
     yaflFloat * v;
     yaflFloat * f;
-    yaflFloat r;
 
     YAFL_ASSERT(self);
 
@@ -1409,52 +1375,11 @@ static void _bierman_like_scalar_update(yaflUKFBaseSt * self, yaflInt i)
     f = self->Sx;
     YAFL_MATH_SET_RDV(nx, f, d, v);
 
-    r = self->Dr[i];
-    for (k = 0, nxk = 0; k < nx; nxk += k++)
-    {
-        yaflFloat a;
-        yaflFloat fk;
-        yaflFloat vk;
-
-        fk = f[k];
-        vk = v[k];
-        a = r + fk * vk;
-        d[k] *= r / a;
-#define p fk /*No need for separate p variable*/
-        p = - fk / r;
-        for (j = 0; j < k; j++)
-        {
-            yaflFloat ujk;
-            yaflFloat vj;
-
-            ujk = u[j + nxk];
-            vj  = v[j];
-
-            u[j + nxk] = ujk +   p * vj;
-            v[j]       = vj  + ujk * vk;
-        }
-#undef  p /*Don't need p any more...*/
-        r = a;
-    }
-    /*
-    Now we must do:
-    self.x += K * y[i]
-
-    Since:
-    r == a
-
-    then we have:
-    K == v / a == v / r
-
-    and so:
-    K * y[i] == (v / r) * y[i] == v / r * y[i] == v * (y[i] / r)
-
-    Finally we get:
-    self.x += v * (y[i] / r)
-    */
-    yafl_math_add_vxn(nx, self->x, v, self->y[i] / r);
+    /*!TODO: YAFL_EXEC*/
+    _bierman_update_body(nx, self->x, u, d, f, v, self->Dr[i], self->y[i], 1.0, 1.0);
 }
 
+/*---------------------------------------------------------------------------*/
 void yafl_ukf_bierman_update(yaflUKFBaseSt * self, yaflFloat * z)
 {
     yafl_ukf_base_update(self, z, _bierman_like_scalar_update);
@@ -1465,18 +1390,13 @@ void yafl_ukf_bierman_update(yaflUKFBaseSt * self, yaflFloat * z)
 =============================================================================*/
 static void _adaptive_bierman_like_scalar_update(yaflUKFBaseSt * self, yaflInt i)
 {
-    yaflInt j;
-    yaflInt k;
     yaflInt nx;
-    yaflInt nxk;
     yaflFloat * d;
     yaflFloat * u;
     yaflFloat * v;
     yaflFloat * f;
     yaflFloat nu;
     yaflFloat r;
-    yaflFloat c;
-    yaflFloat s;
     yaflFloat ac;
 
     YAFL_ASSERT(self);
@@ -1502,70 +1422,14 @@ static void _adaptive_bierman_like_scalar_update(yaflUKFBaseSt * self, yaflInt i
     nu = self->y[i];
     r  = self->Dr[i];
 
-    /* s = r + f.dot(v)*/
-    c = yafl_math_vtv(nx, f, v);
-    s = c + r;
+    ac = _adaptive_correction(nx, f, v, r, nu, 1.0, \
+                              ((yaflUKFAdaptivedSt *)self)->chi2, 0);
 
-    /* Divergence test */
-    ac = (nu * (nu / (((yaflUKFAdaptivedSt *)self)->chi2))) - s;
-    if (ac > 0.0)
-    {
-        /*Adaptive correction factor*/
-        ac = ac / c + 1.0;
-    }
-    else
-    {
-        ac = 1.0;
-    }
-
-    for (k = 0, nxk = 0; k < nx; nxk += k++)
-    {
-        yaflFloat a;
-        yaflFloat fk;
-        yaflFloat vk;
-
-        fk = f[k];
-        /*Correct v in place*/
-        vk = ac * v[k];
-        v[k] = vk;
-        a = r + fk * vk;
-        /*Correct d in place*/
-        d[k] *= ac * r / a;
-#define p fk /*No need for separate p variable*/
-        p = - fk / r;
-        for (j = 0; j < k; j++)
-        {
-            yaflFloat ujk;
-            yaflFloat vj;
-
-            ujk = u[j + nxk];
-            vj  = v[j];
-
-            u[j + nxk] = ujk +   p * vj;
-            v[j]       = vj  + ujk * vk;
-        }
-#undef  p /*Don't need p any more...*/
-        r = a;
-    }
-    /*
-    Now we must do:
-    self.x += K * nu
-
-    Since:
-    r == a
-
-    then we have:
-    K == v / a == v / r
-
-    and so:
-    K * nu == (v / r) * nu == v / r * nu == v * (nu / r)
-
-    Finally we get:
-    self.x += v * (nu / r)
-    */
-    yafl_math_add_vxn(nx, self->x, v, nu / r);
+    /*!TODO: YAFL_EXEC*/
+    _bierman_update_body(nx, self->x, u, d, f, v, r, self->y[i], ac, 1.0);
 }
 
+/*---------------------------------------------------------------------------*/
 void yafl_ukf_adaptive_bierman_update(yaflUKFAdaptivedSt * self, \
                                             yaflFloat * z)
 {
@@ -1626,6 +1490,7 @@ static void _merwe_compute_weights(yaflUKFBaseSt * self)
 #undef ALPHA2
 }
 
+/*---------------------------------------------------------------------------*/
 static inline void _add_delta(yaflUKFBaseSt * self, yaflUKFSigmaAddP addf, yaflInt sz, \
                               yaflFloat * delta, yaflFloat * pivot,  yaflFloat mult)
 {
@@ -1644,6 +1509,7 @@ static inline void _add_delta(yaflUKFBaseSt * self, yaflUKFSigmaAddP addf, yaflI
     }
 }
 
+/*---------------------------------------------------------------------------*/
 static void _merwe_generate_points(yaflUKFBaseSt * self)
 {
     yaflInt nx;
@@ -1691,6 +1557,7 @@ static void _merwe_generate_points(yaflUKFBaseSt * self)
     memcpy((void *)(sigmas_x + 2 * nx * nx), (void *)x, nx * sizeof(yaflFloat));
 }
 
+/*---------------------------------------------------------------------------*/
 const yaflUKFSigmaMethodsSt yafl_ukf_merwe_spm = {
     .wf   = _merwe_compute_weights,
     .spgf = _merwe_generate_points

@@ -57,7 +57,23 @@ typedef enum {
     YAFL_ST_INV_ARG_8    = 0x170,
     YAFL_ST_INV_ARG_9    = 0x180,
     YAFL_ST_INV_ARG_10   = 0x190,
+    YAFL_ST_INV_ARG_11   = 0x1a0,
 } yaflStatusEn;
+
+#define _YAFL_EXEC(status, exp, file, func, line)                          \
+do {                                                                       \
+    (status) |= (exp);                                                     \
+    if (YAFL_ST_ERR_THR <= (status))                                       \
+    {                                                                      \
+        YAFL_LOG("The expression (%s) gave an error in \n function: %s",   \
+                 #exp, func);                                              \
+        YAFL_LOG("\n file: %s\n line: %d\n will return: %d\n",             \
+                 file, line, status);                                      \
+        return status;                                                     \
+    }                                                                      \
+} while (0)
+
+#define YAFL_EXEC(status, exp) _YAFL_EXEC(status, exp, __FILE__, __func__, __LINE__)
 
 /*=======================================================================================
                                     Basic operations
