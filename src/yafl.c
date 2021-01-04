@@ -213,24 +213,37 @@ static inline yaflStatusEn \
 }
 
 /*---------------------------------------------------------------------------*/
-static void _bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
+#define _SCALAR_UPDATE_ARGS_CHECKS()              \
+do {                                              \
+    YAFL_CHECK(self,          YAFL_ST_INV_ARG_1); \
+} while (0)
+//    YAFL_CHECK(self->Nz < i, YAFL_ST_INV_ARG_2); \
+/*---------------------------------------------------------------------------*/
+#define _BIERMAN_SELF_INTERNALS_CHECKS()     \
+do {                                         \
+    YAFL_CHECK(nx > 1,   YAFL_ST_INV_ARG_1); \
+    YAFL_CHECK(self->Up, YAFL_ST_INV_ARG_1); \
+    YAFL_CHECK(self->Dp, YAFL_ST_INV_ARG_1); \
+    YAFL_CHECK(self->H,  YAFL_ST_INV_ARG_1); \
+    YAFL_CHECK(self->y,  YAFL_ST_INV_ARG_1); \
+    YAFL_CHECK(self->Dr, YAFL_ST_INV_ARG_1); \
+    YAFL_CHECK(self->D,  YAFL_ST_INV_ARG_1); \
+} while (0)
+
+/*---------------------------------------------------------------------------*/
+static yaflStatusEn _bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 {
+    yaflStatusEn status = YAFL_ST_OK;
     yaflInt nx;
     yaflFloat * d;
     yaflFloat * u;
     yaflFloat * h;
     yaflFloat * f;
 
-    YAFL_ASSERT(self);
+    _SCALAR_UPDATE_ARGS_CHECKS();
 
     nx = self->Nx;
-    YAFL_ASSERT(nx > 1);
-    YAFL_ASSERT(self->Up);
-    YAFL_ASSERT(self->Dp);
-    YAFL_ASSERT(self->H);
-    YAFL_ASSERT(self->y);
-    YAFL_ASSERT(self->Dr);
-    YAFL_ASSERT(self->D);
+    _BIERMAN_SELF_INTERNALS_CHECKS();
 
     u = self->Up;
     d = self->Dp;
@@ -239,16 +252,19 @@ static void _bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 
     /* f = h.dot(Up) */
     f = self->D;
-    yafl_math_set_vtu(nx, f, h, u);
+    YAFL_EXEC(status, yafl_math_set_vtu(nx, f, h, u));
 
     /* v = f.dot(Dp).T = Dp.dot(f.T).T */
 #define v h /*Don't need h any more, use it to store v*/
-    YAFL_MATH_SET_DV(nx, v, d, f);
+    YAFL_EXEC(status, YAFL_MATH_SET_DV(nx, v, d, f));
 
     /*!TODO: YAFL_EXEC*/
-    _bierman_update_body(nx, self->x, u, d, f, v, self->Dr[i], self->y[i], 1.0, 1.0);
+    YAFL_EXEC(status, \
+              _bierman_update_body(nx, self->x, u, d, f, v, self->Dr[i], \
+                                   self->y[i], 1.0, 1.0));
 
 #undef v /*Don't nee v any more*/
+    return status;
 }
 
 /*---------------------------------------------------------------------------*/
@@ -313,8 +329,22 @@ static inline yaflStatusEn \
 }
 
 /*---------------------------------------------------------------------------*/
-static void _joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
+#define _JOSEPH_SELF_INTERNALS_CHECKS()      \
+do {                                         \
+    YAFL_CHECK(nx > 1,   YAFL_ST_INV_ARG_1); \
+    YAFL_CHECK(self->Up, YAFL_ST_INV_ARG_1); \
+    YAFL_CHECK(self->Dp, YAFL_ST_INV_ARG_1); \
+    YAFL_CHECK(self->H,  YAFL_ST_INV_ARG_1); \
+    YAFL_CHECK(self->y,  YAFL_ST_INV_ARG_1); \
+    YAFL_CHECK(self->Dr, YAFL_ST_INV_ARG_1); \
+    YAFL_CHECK(self->W,  YAFL_ST_INV_ARG_1); \
+    YAFL_CHECK(self->D,  YAFL_ST_INV_ARG_1); \
+} while (0)
+
+/*---------------------------------------------------------------------------*/
+static yaflStatusEn _joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 {
+    yaflStatusEn status = YAFL_ST_OK;
     yaflInt nx;
     yaflFloat * d;
     yaflFloat * u;
@@ -324,17 +354,10 @@ static void _joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
     yaflFloat r;
     yaflFloat s;
 
-    YAFL_ASSERT(self);
+    _SCALAR_UPDATE_ARGS_CHECKS();
 
     nx = self->Nx;
-    YAFL_ASSERT(nx > 1);
-    YAFL_ASSERT(self->Up);
-    YAFL_ASSERT(self->Dp);
-    YAFL_ASSERT(self->H);
-    YAFL_ASSERT(self->y);
-    YAFL_ASSERT(self->Dr);
-    YAFL_ASSERT(self->W);
-    YAFL_ASSERT(self->D);
+    _JOSEPH_SELF_INTERNALS_CHECKS();
 
     d = self->Dp;
     u = self->Up;
@@ -345,10 +368,10 @@ static void _joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
     f = v + nx;
 
     /* f = h.dot(Up) */
-    yafl_math_set_vtu(nx, f, h, u);
+    YAFL_EXEC(status, yafl_math_set_vtu(nx, f, h, u));
 
     /* v = f.dot(Dp).T = Dp.dot(f.T).T */
-    YAFL_MATH_SET_DV(nx, v, d, f);
+    YAFL_EXEC(status, YAFL_MATH_SET_DV(nx, v, d, f));
 
     r = self->Dr[i];
 
@@ -358,9 +381,11 @@ static void _joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
     /*K = Up.dot(v/s) = Up.dot(v)/s*/
 #define K h /*Don't need h any more, use it to store K*/
     /*!TODO: YAFL_EXEC*/
-    _joseph_update_body(nx, self->x, u, d, f, v, K, self->W, self->y[i], \
-                        self->Dr[i], s, 1.0, 1.0);
+    YAFL_EXEC(status, \
+              _joseph_update_body(nx, self->x, u, d, f, v, K, self->W, \
+                                  self->y[i], self->Dr[i], s, 1.0, 1.0));
 #undef K /*Don't nee K any more*/
+    return status;
 }
 
 /*---------------------------------------------------------------------------*/
@@ -372,20 +397,24 @@ void yafl_ekf_joseph_update(yaflEKFBaseSt * self, yaflFloat * z)
 /*=============================================================================
                           Adaptive Bierman filter
 =============================================================================*/
-static inline yaflFloat \
-    _adaptive_correction(yaflInt    nx, yaflFloat * f, yaflFloat * v,    \
-                         yaflFloat   r, yaflFloat  nu, yaflFloat   gdot, \
-                         yaflFloat chi2, yaflFloat * s)
+static inline yaflStatusEn \
+    _adaptive_correction(yaflFloat * res, yaflInt    nx, yaflFloat * f, \
+                         yaflFloat * v,   yaflFloat   r, yaflFloat  nu, \
+                         yaflFloat   gdot, yaflFloat chi2, yaflFloat * s)
 {
+    yaflStatusEn status = YAFL_ST_OK;
     yaflFloat c;
     yaflFloat ac;
     yaflFloat _s;
 
-    YAFL_CHECK(f, 0.0);
-    YAFL_CHECK(v, 0.0);
+    YAFL_CHECK(res,  YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(f,    YAFL_ST_INV_ARG_3);
+    YAFL_CHECK(v,    YAFL_ST_INV_ARG_4);
+    YAFL_CHECK(chi2, YAFL_ST_INV_ARG_8);
 
     /* s = alpha**2 + gdot * f.dot(v)*/
     c = gdot * yafl_math_vtv(nx, f, v);
+
     _s = r + c;
 
     /* Divergence test */
@@ -408,12 +437,15 @@ static inline yaflFloat \
         *s = _s;
     }
 
-    return ac;
+    *res = ac;
+
+    return status;
 }
 
 /*---------------------------------------------------------------------------*/
-static void _adaptive_bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
+static yaflStatusEn _adaptive_bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 {
+    yaflStatusEn status = YAFL_ST_OK;
     yaflInt nx;
     yaflFloat * d;
     yaflFloat * u;
@@ -421,41 +453,36 @@ static void _adaptive_bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
     yaflFloat * f;
     yaflFloat nu;
     yaflFloat r;
-    yaflFloat ac;
+    yaflFloat ac = 1.0;
 
-    YAFL_ASSERT(self);
+    _SCALAR_UPDATE_ARGS_CHECKS();
 
     nx = self->Nx;
-    YAFL_ASSERT(nx > 1);
-    YAFL_ASSERT(self->Up);
-    YAFL_ASSERT(self->Dp);
-    YAFL_ASSERT(self->H);
-    YAFL_ASSERT(self->y);
-    YAFL_ASSERT(self->Dr);
-    YAFL_ASSERT(self->D);
+    _BIERMAN_SELF_INTERNALS_CHECKS();
 
-    u = self->Up;
-    d = self->Dp;
-
-    h = self->H + nx * i;
-
+    u  = self->Up;
+    d  = self->Dp;
+    h  = self->H + nx * i;
     nu = self->y[i];
     r  = self->Dr[i];
 
     /* f = h.dot(Up) */
     f = self->D;
-    yafl_math_set_vtu(nx, f, h, u);
+    YAFL_EXEC(status, yafl_math_set_vtu(nx, f, h, u));
 
     /* v = f.dot(Dp).T = Dp.dot(f.T).T */
 #define v h /*Don't need h any more, use it to store v*/
-    YAFL_MATH_SET_DV(nx, v, d, f);
+    YAFL_EXEC(status, YAFL_MATH_SET_DV(nx, v, d, f));
 
-    ac = _adaptive_correction(nx, f, v, r, nu, 1.0, \
-                              ((yaflEKFAdaptiveSt *)self)->chi2, 0);
+    YAFL_EXEC(status, \
+              _adaptive_correction(&ac, nx, f, v, r, nu, 1.0, \
+                                   ((yaflEKFAdaptiveSt *)self)->chi2, 0));
 
     /*!TODO: YAFL_EXEC*/
-    _bierman_update_body(nx, self->x, u, d, f, v, r, nu, ac, 1.0);
+    YAFL_EXEC(status, \
+              _bierman_update_body(nx, self->x, u, d, f, v, r, nu, ac, 1.0));
 #undef v /*Don't nee v any more*/
+    return status;
 }
 
 /*---------------------------------------------------------------------------*/
@@ -467,8 +494,9 @@ void yafl_ekf_adaptive_bierman_update(yaflEKFAdaptiveSt * self, yaflFloat * z)
 /*=============================================================================
                            Adaptive Joseph filter
 =============================================================================*/
-static void _adaptive_joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
+static yaflStatusEn _adaptive_joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 {
+    yaflStatusEn status = YAFL_ST_OK;
     yaflInt nx;
     yaflFloat * d;
     yaflFloat * u;
@@ -480,17 +508,10 @@ static void _adaptive_joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
     yaflFloat s = 1.0;
     yaflFloat ac;
 
-    YAFL_ASSERT(self);
+    _SCALAR_UPDATE_ARGS_CHECKS();
 
     nx = self->Nx;
-    YAFL_ASSERT(nx > 1);
-    YAFL_ASSERT(self->Up);
-    YAFL_ASSERT(self->Dp);
-    YAFL_ASSERT(self->H);
-    YAFL_ASSERT(self->y);
-    YAFL_ASSERT(self->Dr);
-    YAFL_ASSERT(self->W);
-    YAFL_ASSERT(self->D);
+    _JOSEPH_SELF_INTERNALS_CHECKS();
 
     d = self->Dp;
     u = self->Up;
@@ -504,21 +525,24 @@ static void _adaptive_joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
     r  = self->Dr[i];
 
     /* f = h.dot(Up) */
-    yafl_math_set_vtu(nx, f, h, u);
+    YAFL_EXEC(status, yafl_math_set_vtu(nx, f, h, u));
 
     /* v = f.dot(Dp).T = Dp.dot(f.T).T */
-    YAFL_MATH_SET_DV(nx, v, d, f);
+    YAFL_EXEC(status, YAFL_MATH_SET_DV(nx, v, d, f));
 
 
-    ac = _adaptive_correction(nx, f, v, r, nu, 1.0, \
-                              ((yaflEKFAdaptiveSt *)self)->chi2, &s);
+    YAFL_EXEC(status, \
+              _adaptive_correction(&ac, nx, f, v, r, nu, 1.0, \
+                              ((yaflEKFAdaptiveSt *)self)->chi2, &s));
 
     /* K = Up.dot(v * ac / s) = Up.dot(v) * (ac / s) */
 #define K h /*Don't need h any more, use it to store K*/
     /*!TODO: YAFL_EXEC*/
-    _joseph_update_body(nx, self->x, u, d, f, v, K, self->W, nu, \
-                        self->Dr[i], s, ac, 1.0);
+    YAFL_EXEC(status, \
+              _joseph_update_body(nx, self->x, u, d, f, v, K, self->W, nu, \
+                                  self->Dr[i], s, ac, 1.0));
 #undef K /*Don't nee K any more*/
+    return status;
 }
 
 /*---------------------------------------------------------------------------*/
@@ -534,8 +558,9 @@ void yafl_ekf_adaptive_joseph_update(yaflEKFAdaptiveSt * self, yaflFloat * z)
 
     It was implemented to show some flaws of the corresponding algorithm!
 =============================================================================*/
-static void _do_not_use_this_update(yaflEKFBaseSt * self, yaflInt i)
+static yaflStatusEn _do_not_use_this_update(yaflEKFBaseSt * self, yaflInt i)
 {
+    yaflStatusEn status = YAFL_ST_OK;
     yaflInt nx;
     yaflInt nx1;
     yaflFloat * d;
@@ -550,17 +575,10 @@ static void _do_not_use_this_update(yaflEKFBaseSt * self, yaflInt i)
     yaflFloat s;
     yaflFloat ac;
 
-    YAFL_ASSERT(self);
+    _SCALAR_UPDATE_ARGS_CHECKS();
 
     nx = self->Nx;
-    YAFL_ASSERT(nx > 1);
-    YAFL_ASSERT(self->Up);
-    YAFL_ASSERT(self->Dp);
-    YAFL_ASSERT(self->H);
-    YAFL_ASSERT(self->y);
-    YAFL_ASSERT(self->Dr);
-    YAFL_ASSERT(self->W);
-    YAFL_ASSERT(self->D);
+    _JOSEPH_SELF_INTERNALS_CHECKS();
 
     nx1 = nx + 1;
 
@@ -578,10 +596,10 @@ static void _do_not_use_this_update(yaflEKFBaseSt * self, yaflInt i)
     r  = self->Dr[i];
 
     /* f = h.dot(Up) */
-    yafl_math_set_vtu(nx, f, h, u);
+    YAFL_EXEC(status, yafl_math_set_vtu(nx, f, h, u));
 
     /* v = f.dot(Dp).T = Dp.dot(f.T).T */
-    YAFL_MATH_SET_DV(nx, v, d, f);
+    YAFL_EXEC(status, YAFL_MATH_SET_DV(nx, v, d, f));
 
     /* s = r + f.dot(v)*/
     c = yafl_math_vtv(nx, f, v);
@@ -592,15 +610,15 @@ static void _do_not_use_this_update(yaflEKFBaseSt * self, yaflInt i)
     if (ac > 0.0)
     {
         /*Adaptive correction with no limitations approach*/
-        yafl_math_set_uv(nx, f, u, v);
-        yafl_math_udu_up(nx, u, d, (ac / c) / c, f);
+        YAFL_EXEC(status, yafl_math_set_uv(nx, f, u, v));
+        YAFL_EXEC(status, yafl_math_udu_up(nx, u, d, (ac / c) / c, f));
 
         /*Recompute f,v,s*/
         /* f = h.dot(Up) */
-        yafl_math_set_vtu(nx, f, h, u);
+        YAFL_EXEC(status, yafl_math_set_vtu(nx, f, h, u));
 
         /* v = f.dot(Dp).T = Dp.dot(f.T).T */
-        YAFL_MATH_SET_DV(nx, v, d, f);
+        YAFL_EXEC(status, YAFL_MATH_SET_DV(nx, v, d, f));
 
         /* s = r + f.dot(v)*/
         s  = r + yafl_math_vtv(nx, f, v);;
@@ -609,15 +627,15 @@ static void _do_not_use_this_update(yaflEKFBaseSt * self, yaflInt i)
     /* K = Up.dot(v * ac / s) = Up.dot(v) * (ac / s) */
 #define K h /*Don't need h any more, use it to store K*/
 #define D v
-    yafl_math_set_uv(nx, K, u, v);
-    yafl_math_set_vrn(nx, K, K, s); /*May be used in place*/
+    YAFL_EXEC(status, yafl_math_set_uv(nx, K, u, v));
+    YAFL_EXEC(status, yafl_math_set_vrn(nx, K, K, s)); /*May be used in place*/
 
     /*Set W and D*/
-    yafl_math_bset_vvt(nx1, w, nx, K, f);
-    yafl_math_bsub_u(nx1, w, nx, u);
+    YAFL_EXEC(status, yafl_math_bset_vvt(nx1, w, nx, K, f));
+    YAFL_EXEC(status, yafl_math_bsub_u(nx1, w, nx, u));
 
     /* Now w is (Kf - Up|***) */
-    YAFL_MATH_BSET_V(nx1, 0, nx, w, nx, K);
+    YAFL_EXEC(status, YAFL_MATH_BSET_V(nx1, 0, nx, w, nx, K));
     /* Now w is (Kf - Up|K) */
 
     /* D = concatenate([Dp, np.array([r])]) */
@@ -625,12 +643,13 @@ static void _do_not_use_this_update(yaflEKFBaseSt * self, yaflInt i)
     D[nx] = r;
 
     /* Up, Dp = MWGSU(W, D)*/
-    yafl_math_mwgsu(nx, nx1, u, d, w, D);
+    YAFL_EXEC(status, yafl_math_mwgsu(nx, nx1, u, d, w, D));
 
     /* self.x += K * nu */
-    yafl_math_add_vxn(nx, self->x, K, nu);
+    YAFL_EXEC(status, yafl_math_add_vxn(nx, self->x, K, nu));
 #undef D /*Don't nee D any more*/
 #undef K /*Don't nee K any more*/
+    return status;
 }
 
 /*---------------------------------------------------------------------------*/
@@ -672,8 +691,9 @@ static inline yaflStatusEn \
 }
 
 /*---------------------------------------------------------------------------*/
-static void _robust_bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
+static yaflStatusEn _robust_bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 {
+    yaflStatusEn status = YAFL_ST_OK;
     yaflInt nx;
     yaflFloat * d;
     yaflFloat * u;
@@ -683,22 +703,16 @@ static void _robust_bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
     yaflFloat gdot;
     yaflFloat y;
 
-    YAFL_ASSERT(self);
+    _SCALAR_UPDATE_ARGS_CHECKS();
 
     nx = self->Nx;
-    YAFL_ASSERT(nx > 1);
-    YAFL_ASSERT(self->Up);
-    YAFL_ASSERT(self->Dp);
-    YAFL_ASSERT(self->H);
-    YAFL_ASSERT(self->y);
-    YAFL_ASSERT(self->Dr);
-    YAFL_ASSERT(self->D);
+    _BIERMAN_SELF_INTERNALS_CHECKS();
 
     r05 = self->Dr[i]; /* alpha = r**0.5 is stored in Dr*/
     y   = self->y[i];
 
     /*!TODO: YAFL_EXEC*/
-    _scalar_robustify(self, &gdot, &y, r05);
+    YAFL_EXEC(status, _scalar_robustify(self, &gdot, &y, r05));
 
     u = self->Up;
     d = self->Dp;
@@ -707,15 +721,17 @@ static void _robust_bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 
     /* f = h.dot(Up) */
     f = self->D;
-    yafl_math_set_vtu(nx, f, h, u);
+    YAFL_EXEC(status, yafl_math_set_vtu(nx, f, h, u));
 
     /* v = f.dot(Dp).T = Dp.dot(f.T).T */
 #define v h /*Don't need h any more, use it to store v*/
-    YAFL_MATH_SET_DV(nx, v, d, f);
+    YAFL_EXEC(status, YAFL_MATH_SET_DV(nx, v, d, f));
 
     /*!TODO: YAFL_EXEC*/
-    _bierman_update_body(nx, self->x, u, d, f, v, r05 * r05, y, 1.0, gdot);
+    YAFL_EXEC(status, _bierman_update_body(nx, self->x, u, d, f, v, \
+                                           r05 * r05, y, 1.0, gdot));
 #undef v  /*Don't nee v any more*/
+    return status;
 }
 
 /*---------------------------------------------------------------------------*/
@@ -727,8 +743,9 @@ void yafl_ekf_robust_bierman_update(yaflEKFRobustSt * self, yaflFloat * z)
 /*=============================================================================
                             Robust Joseph filter
 =============================================================================*/
-static void _robust_joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
+static yaflStatusEn _robust_joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 {
+    yaflStatusEn status = YAFL_ST_OK;
     yaflInt nx;
     yaflFloat * d;
     yaflFloat * u;
@@ -740,40 +757,29 @@ static void _robust_joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
     yaflFloat s;
     yaflFloat y;
 
-    YAFL_ASSERT(self);
+    _SCALAR_UPDATE_ARGS_CHECKS();
 
     nx = self->Nx;
-    YAFL_ASSERT(nx > 1);
-    YAFL_ASSERT(self->Up);
-    YAFL_ASSERT(self->Dp);
-    YAFL_ASSERT(self->H);
-    YAFL_ASSERT(self->y);
-    YAFL_ASSERT(self->Dr);
-    YAFL_ASSERT(self->W);
-    YAFL_ASSERT(self->D);
+    _JOSEPH_SELF_INTERNALS_CHECKS();
 
     r05 = self->Dr[i]; /* alpha = r**0.5 is stored in Dr*/
     y   = self->y[i];
 
-    /*!TODO: YAFL_EXEC*/
-    _scalar_robustify(self, &gdot, &y, r05);
+    YAFL_EXEC(status, _scalar_robustify(self, &gdot, &y, r05));
 
     r05 *= r05;
 #define A2 r05 /*Now it is r = alpha**2 */
-
     d = self->Dp;
     u = self->Up;
-
     h = self->H + nx * i;
-
     v = self->D;
     f = v + nx;
 
     /* f = h.dot(Up) */
-    yafl_math_set_vtu(nx, f, h, u);
+    YAFL_EXEC(status, yafl_math_set_vtu(nx, f, h, u));
 
     /* v = f.dot(Dp).T = Dp.dot(f.T).T */
-    YAFL_MATH_SET_DV(nx, v, d, f);
+    YAFL_EXEC(status, YAFL_MATH_SET_DV(nx, v, d, f));
 
     /* s = alpha**2 + gdot * f.dot(v)*/
     s = A2 + gdot * yafl_math_vtv(nx, f, v);
@@ -781,10 +787,12 @@ static void _robust_joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
     /*K = Up.dot(v/s) = Up.dot(v)/s*/
 #define K h /*Don't need h any more, use it to store K*/
     /*!TODO: YAFL_EXEC*/
-    _joseph_update_body(nx, self->x, u, d, f, v, K, self->W, y, \
-                        A2, s, 1.0, gdot);
+    YAFL_EXEC(status, \
+              _joseph_update_body(nx, self->x, u, d, f, v, K, self->W, y, \
+                                  A2, s, 1.0, gdot));
 #undef K  /*Don't nee K any more*/
 #undef A2 /*Don't nee A2 any more*/
+    return status;
 }
 
 /*---------------------------------------------------------------------------*/
@@ -796,8 +804,9 @@ void yafl_ekf_robust_joseph_update(yaflEKFRobustSt * self, yaflFloat * z)
 /*=============================================================================
                         Adaptive robust Bierman filter
 =============================================================================*/
-static void _ada_rob_bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
+static yaflStatusEn _ada_rob_bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 {
+    yaflStatusEn status = YAFL_ST_OK;
     yaflInt nx;
     yaflFloat * d;
     yaflFloat * u;
@@ -808,46 +817,39 @@ static void _ada_rob_bierman_scalar_update(yaflEKFBaseSt * self, yaflInt i)
     yaflFloat nu;
     yaflFloat ac;
 
-    YAFL_ASSERT(self);
+    _SCALAR_UPDATE_ARGS_CHECKS();
 
     nx = self->Nx;
-    YAFL_ASSERT(nx > 1);
-    YAFL_ASSERT(self->Up);
-    YAFL_ASSERT(self->Dp);
-    YAFL_ASSERT(self->H);
-    YAFL_ASSERT(self->y);
-    YAFL_ASSERT(self->Dr);
-    YAFL_ASSERT(self->D);
+    _BIERMAN_SELF_INTERNALS_CHECKS();
 
     r05 = self->Dr[i]; /* alpha = r**0.5 is stored in Dr*/
     nu   = self->y[i];
 
-    /*!TODO: YAFL_EXEC*/
-    _scalar_robustify(self, &gdot, &nu, r05);
+    YAFL_EXEC(status, _scalar_robustify(self, &gdot, &nu, r05));
 
     r05 *= r05;
 #define A2 r05 /*Now it is r = alpha**2 */
-
     u = self->Up;
     d = self->Dp;
-
     h = self->H + nx * i;
 
     /* f = h.dot(Up) */
     f = self->D;
-    yafl_math_set_vtu(nx, f, h, u);
+    YAFL_EXEC(status, yafl_math_set_vtu(nx, f, h, u));
 
     /* v = f.dot(Dp).T = Dp.dot(f.T).T */
 #define v h /*Don't need h any more, use it to store v*/
-    YAFL_MATH_SET_DV(nx, v, d, f);
+    YAFL_EXEC(status, YAFL_MATH_SET_DV(nx, v, d, f));
 
-    ac = _adaptive_correction(nx, f, v, A2, nu, gdot, \
-                              ((yaflEKFAdaptiveRobustSt *)self)->chi2, 0);
+    YAFL_EXEC(status, \
+              _adaptive_correction(&ac, nx, f, v, A2, nu, gdot, \
+                              ((yaflEKFAdaptiveRobustSt *)self)->chi2, 0));
 
-    /*!TODO: YAFL_EXEC*/
-    _bierman_update_body(nx, self->x, u, d, f, v, A2, nu, ac, gdot);
+    YAFL_EXEC(status, \
+              _bierman_update_body(nx, self->x, u, d, f, v, A2, nu, ac, gdot));
 #undef v  /*Don't nee v any more*/
 #undef A2 /*Don't nee A2 any more*/
+    return status;
 }
 
 /*---------------------------------------------------------------------------*/
@@ -859,68 +861,57 @@ void yafl_ekf_adaptive_robust_bierman_update(yaflEKFAdaptiveRobustSt * self, yaf
 /*=============================================================================
                         Adaptive robust Joseph filter
 =============================================================================*/
-static void _ada_rob_joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
+static yaflStatusEn _ada_rob_joseph_scalar_update(yaflEKFBaseSt * self, yaflInt i)
 {
+    yaflStatusEn status = YAFL_ST_OK;
     yaflInt nx;
-    //yaflInt nx1;
     yaflFloat * d;
     yaflFloat * u;
     yaflFloat * h;
     yaflFloat * f;
     yaflFloat * v;
-    //yaflFloat * w;
     yaflFloat r05;
     yaflFloat gdot;
     yaflFloat ac;
     yaflFloat s = 1.0;
     yaflFloat nu;
-    //yaflEKFRobFuncP g;
 
-    YAFL_ASSERT(self);
+    _SCALAR_UPDATE_ARGS_CHECKS();
 
     nx = self->Nx;
-    YAFL_ASSERT(nx > 1);
-    YAFL_ASSERT(self->Up);
-    YAFL_ASSERT(self->Dp);
-    YAFL_ASSERT(self->H);
-    YAFL_ASSERT(self->y);
-    YAFL_ASSERT(self->Dr);
-    YAFL_ASSERT(self->W);
-    YAFL_ASSERT(self->D);
+    _JOSEPH_SELF_INTERNALS_CHECKS();
 
     r05 = self->Dr[i]; /* alpha = r**0.5 is stored in Dr*/
     nu  = self->y[i];
 
-    /*!TODO: YAFL_EXEC*/
-    _scalar_robustify(self, &gdot, &nu, r05);
+    YAFL_EXEC(status, _scalar_robustify(self, &gdot, &nu, r05));
 
     r05 *= r05;
 #define A2 r05 /*Now it is r = alpha**2 */
-
     d = self->Dp;
     u = self->Up;
-
     h = self->H + nx * i;
-
     v = self->D;
     f = v + nx;
 
     /* f = h.dot(Up) */
-    yafl_math_set_vtu(nx, f, h, u);
+    YAFL_EXEC(status, yafl_math_set_vtu(nx, f, h, u));
 
     /* v = f.dot(Dp).T = Dp.dot(f.T).T */
-    YAFL_MATH_SET_DV(nx, v, d, f);
+    YAFL_EXEC(status, YAFL_MATH_SET_DV(nx, v, d, f));
 
-    ac = _adaptive_correction(nx, f, v, A2, nu, gdot, \
-                              ((yaflEKFAdaptiveRobustSt *)self)->chi2, &s);
+    YAFL_EXEC(status, \
+              _adaptive_correction(&ac, nx, f, v, A2, nu, gdot, \
+                              ((yaflEKFAdaptiveRobustSt *)self)->chi2, &s));
 
     /* K = Up.dot(v * ac / s) = Up.dot(v) * (ac / s) */
 #define K h /*Don't need h any more, use it to store K*/
-    /*!TODO: YAFL_EXEC*/
-    _joseph_update_body(nx, self->x, u, d, f, v, K, self->W, nu, \
-                        A2, s, ac, gdot);
+    YAFL_EXEC(status, \
+              _joseph_update_body(nx, self->x, u, d, f, v, K, self->W, nu, \
+                                  A2, s, ac, gdot));
 #undef K  /*Don't nee K any more*/
 #undef A2 /*Don't nee A2 any more*/
+    return status;
 }
 
 /*---------------------------------------------------------------------------*/
@@ -1347,36 +1338,45 @@ void yafl_ukf_base_update(yaflUKFBaseSt * self, yaflFloat * z, \
 }
 
 /*===========================================================================*/
-static void _bierman_like_scalar_update(yaflUKFBaseSt * self, yaflInt i)
+#define _BIERMAN_LIKE_SELF_INTERNALS_CHECKS() \
+do {                                          \
+    YAFL_CHECK(nx > 1,    YAFL_ST_INV_ARG_1); \
+    YAFL_CHECK(self->Up,  YAFL_ST_INV_ARG_1); \
+    YAFL_CHECK(self->Dp,  YAFL_ST_INV_ARG_1); \
+    YAFL_CHECK(self->Pzx, YAFL_ST_INV_ARG_1); \
+    YAFL_CHECK(self->Sx,  YAFL_ST_INV_ARG_1); \
+    YAFL_CHECK(self->y,   YAFL_ST_INV_ARG_1); \
+    YAFL_CHECK(self->Dr,  YAFL_ST_INV_ARG_1); \
+} while (0)
+
+/*---------------------------------------------------------------------------*/
+static yaflStatusEn _bierman_like_scalar_update(yaflUKFBaseSt * self, yaflInt i)
 {
+    yaflStatusEn status = YAFL_ST_OK;
     yaflInt nx;
     yaflFloat * d;
     yaflFloat * u;
     yaflFloat * v;
     yaflFloat * f;
 
-    YAFL_ASSERT(self);
+    _SCALAR_UPDATE_ARGS_CHECKS();
 
     nx = self->Nx;
-    YAFL_ASSERT(nx > 1);
-    YAFL_ASSERT(self->Up);
-    YAFL_ASSERT(self->Dp);
-    YAFL_ASSERT(self->Pzx);
-    YAFL_ASSERT(self->Sx);
-    YAFL_ASSERT(self->y);
-    YAFL_ASSERT(self->Dr);
+    _BIERMAN_LIKE_SELF_INTERNALS_CHECKS();
 
     u = self->Up;
     d = self->Dp;
-
     v = self->Pzx + nx * i;
 
     /* f = linalg.inv(Dp).dot(v)*/
     f = self->Sx;
-    YAFL_MATH_SET_RDV(nx, f, d, v);
+    YAFL_EXEC(status, YAFL_MATH_SET_RDV(nx, f, d, v));
 
     /*!TODO: YAFL_EXEC*/
-    _bierman_update_body(nx, self->x, u, d, f, v, self->Dr[i], self->y[i], 1.0, 1.0);
+    YAFL_EXEC(status, \
+              _bierman_update_body(nx, self->x, u, d, f, v, self->Dr[i], \
+                                   self->y[i], 1.0, 1.0));
+    return status;
 }
 
 /*---------------------------------------------------------------------------*/
@@ -1388,8 +1388,9 @@ void yafl_ukf_bierman_update(yaflUKFBaseSt * self, yaflFloat * z)
 /*=============================================================================
                         Adaptive Bierman-like filter
 =============================================================================*/
-static void _adaptive_bierman_like_scalar_update(yaflUKFBaseSt * self, yaflInt i)
+static yaflStatusEn _adaptive_bierman_like_scalar_update(yaflUKFBaseSt * self, yaflInt i)
 {
+    yaflStatusEn status = YAFL_ST_OK;
     yaflInt nx;
     yaflFloat * d;
     yaflFloat * u;
@@ -1399,34 +1400,30 @@ static void _adaptive_bierman_like_scalar_update(yaflUKFBaseSt * self, yaflInt i
     yaflFloat r;
     yaflFloat ac;
 
-    YAFL_ASSERT(self);
+    _SCALAR_UPDATE_ARGS_CHECKS();
 
     nx = self->Nx;
-    YAFL_ASSERT(nx > 1);
-    YAFL_ASSERT(self->Up);
-    YAFL_ASSERT(self->Dp);
-    YAFL_ASSERT(self->Pzx);
-    YAFL_ASSERT(self->Sx);
-    YAFL_ASSERT(self->y);
-    YAFL_ASSERT(self->Dr);
+    _BIERMAN_LIKE_SELF_INTERNALS_CHECKS();
 
     u = self->Up;
     d = self->Dp;
-
     v = self->Pzx + nx * i;
 
     /* f = linalg.inv(Dp).dot(v)*/
     f = self->Sx;
-    YAFL_MATH_SET_RDV(nx, f, d, v);
+    YAFL_EXEC(status, YAFL_MATH_SET_RDV(nx, f, d, v));
 
     nu = self->y[i];
     r  = self->Dr[i];
 
-    ac = _adaptive_correction(nx, f, v, r, nu, 1.0, \
-                              ((yaflUKFAdaptivedSt *)self)->chi2, 0);
+    YAFL_EXEC(status, \
+              _adaptive_correction(&ac, nx, f, v, r, nu, 1.0, \
+                              ((yaflUKFAdaptivedSt *)self)->chi2, 0));
 
-    /*!TODO: YAFL_EXEC*/
-    _bierman_update_body(nx, self->x, u, d, f, v, r, self->y[i], ac, 1.0);
+    YAFL_EXEC(status, \
+              _bierman_update_body(nx, self->x, u, d, f, v, r, \
+                                   self->y[i], ac, 1.0));
+    return status;
 }
 
 /*---------------------------------------------------------------------------*/

@@ -28,7 +28,7 @@ typedef struct _yaflEKFBaseSt yaflEKFBaseSt;
 
 typedef void (* yaflEKFFuncP)(yaflEKFBaseSt *);
 typedef void (* yaflEKFResFuncP)(yaflEKFBaseSt *, yaflFloat *);
-typedef void (* yaflEKFScalarUpdateP)(yaflEKFBaseSt *, yaflInt);
+typedef yaflStatusEn (* yaflEKFScalarUpdateP)(yaflEKFBaseSt *, yaflInt);
 
 struct _yaflEKFBaseSt {
     yaflEKFFuncP f;    /*A state transition function*/
@@ -282,7 +282,7 @@ typedef struct _yaflUKFSigmaMethodsSt {
 } yaflUKFSigmaMethodsSt;
 
 /*---------------------------------------------------------------------------*/
-typedef void (* yaflUKFScalarUpdateP)(yaflUKFBaseSt *, yaflInt);
+typedef yaflStatusEn (* yaflUKFScalarUpdateP)(yaflUKFBaseSt *, yaflInt);
 
 typedef void (* yaflUKFFuncP)(yaflUKFBaseSt *, yaflFloat *, yaflFloat *);
 

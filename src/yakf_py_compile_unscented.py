@@ -18,7 +18,7 @@
 import time
 import numpy as np
 import matplotlib.pyplot as plt
-from filterpy.kalman import UnscentedKalmanFilter, MerweScaledSigmaPoints
+#from filterpy.kalman import UnscentedKalmanFilter, MerweScaledSigmaPoints
 
 import pyximport
 pyximport.install(
@@ -32,6 +32,7 @@ pyximport.install(
     )
 
 from yakf_py import MerweSigmaPoints as SP
+#from yakf_py import UnscentedBierman as KF
 from yakf_py import UnscentedAdaptiveBierman as KF
 
 

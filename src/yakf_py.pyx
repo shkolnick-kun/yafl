@@ -60,7 +60,7 @@ cdef extern from "yafl.c":
 
     ctypedef void (* yaflEKFFuncP)(yaflEKFBaseSt *)
     ctypedef void (* yaflEKFResFuncP)(yaflEKFBaseSt *, yaflFloat *)
-    ctypedef void (* yaflEKFScalarUpdateP)(yaflEKFBaseSt *, yaflInt)
+    ctypedef yaflStatusEn (* yaflEKFScalarUpdateP)(yaflEKFBaseSt *, yaflInt)
 
     ctypedef struct _yaflEKFBaseSt:
         yaflEKFFuncP f      #
@@ -149,7 +149,7 @@ cdef extern from "yafl.c":
         yaflUKFSigmaAddP addf
 
     #--------------------------------------------------------------------------
-    ctypedef void (* yaflUKFScalarUpdateP)(yaflUKFBaseSt *, yaflInt)
+    ctypedef yaflStatusEn (* yaflUKFScalarUpdateP)(yaflUKFBaseSt *, yaflInt)
     ctypedef void (* yaflUKFSigmaGenWeigthsP)(yaflUKFBaseSt *)
     ctypedef void (* yaflUKFSigmaGenSigmasP)(yaflUKFBaseSt *)
 
