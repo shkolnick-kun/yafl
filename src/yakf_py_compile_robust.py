@@ -30,8 +30,8 @@ pyximport.install(
 
 #from yakf_py import RobustJoseph as KF
 #from yakf_py import RobustBierman as KF
-from yakf_py import AdaptiveRobustJoseph as KF
-#from yakf_py import AdaptiveRobustBierman as KF
+#from yakf_py import AdaptiveRobustJoseph as KF
+from yakf_py import AdaptiveRobustBierman as KF
 
 def _fx(x, dt, **fx_args):
     x = x.copy()
