@@ -215,9 +215,9 @@ static inline yaflStatusEn \
 /*---------------------------------------------------------------------------*/
 #define _SCALAR_UPDATE_ARGS_CHECKS()              \
 do {                                              \
+    YAFL_CHECK(self->Nz > i, YAFL_ST_INV_ARG_2);  \
     YAFL_CHECK(self,          YAFL_ST_INV_ARG_1); \
 } while (0)
-//    YAFL_CHECK(self->Nz < i, YAFL_ST_INV_ARG_2); \
 /*---------------------------------------------------------------------------*/
 #define _BIERMAN_SELF_INTERNALS_CHECKS()     \
 do {                                         \
