@@ -143,7 +143,7 @@ nr - number of rows in a matrix
 -----------------------------------------------------------------------------------------------------------------------------------------------
                                    Function/Macro                                                                          NumPy expr
 ---------------------------------------------------------------------------------------------------------------------------------------------*/
-yaflFloat yafl_math_vtv(yaflInt sz, yaflFloat *a, yaflFloat *b);                                                   /* a.T.dot(b)             */
+yaflStatusEn yafl_math_vtv(yaflInt sz, yaflFloat *res, yaflFloat *a, yaflFloat *b);                                                   /* a.T.dot(b)             */
 
 yaflStatusEn yafl_math_set_vvt(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloat *b);                /* res  = outer(a, b)     */
 yaflStatusEn yafl_math_add_vvt(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloat *b);                /* res += outer(a, b)     */

@@ -96,20 +96,22 @@ _DO_VRV(yafl_math_set_vrv,  =)
 _DO_VRV(yafl_math_add_vrv, +=)
 _DO_VRV(yafl_math_sub_vrv, -=)
 
-yaflFloat yafl_math_vtv(yaflInt sz, yaflFloat *a, yaflFloat *b)
+yaflStatusEn yafl_math_vtv(yaflInt sz, yaflFloat *res, yaflFloat *a, yaflFloat *b)
 {
     yaflInt k;
-    yaflFloat res;
+    yaflFloat r;
 
-    YAFL_CHECK(a, 0.0);
-    YAFL_CHECK(b, 0.0);
+    YAFL_CHECK(res, YAFL_ST_INV_ARG_2);
+    YAFL_CHECK(a,   YAFL_ST_INV_ARG_3);
+    YAFL_CHECK(b,   YAFL_ST_INV_ARG_4);
 
-    res = a[0] * b[0];
+    r = a[0] * b[0];
     for (k = 1; k < sz; k++)
     {
-        res += a[k] * b[k];
+        r += a[k] * b[k];
     }
-    return res;
+    *res = r;
+    return YAFL_ST_OK;
 }
 
 #define _DO_VVT(name, op)                                                             \

@@ -113,7 +113,7 @@ for i in range(1, len(clean)//2):
     t[i] = i
 
 for i in range(i, len(clean)):
-    clean[i] = clean[i-1] + np.array([1.,10.])
+    clean[i] = clean[i-1] + np.array([1.,3.])
     noisy[i] = clean[i]   + np.random.normal(scale=STD, size=2)
     t[i] = i
 

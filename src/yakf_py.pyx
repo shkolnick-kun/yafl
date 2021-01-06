@@ -49,7 +49,7 @@ cdef extern from "yafl_math.c":
         YAFL_ST_INV_AGR_7    = 0x160
 
     #--------------------------------------------------------------------------
-    cdef yaflStatusEn yafl_math_set_u(yaflInt sz, yaflFloat *res, yaflFloat *u)
+    #cdef yaflStatusEn yafl_math_set_u(yaflInt sz, yaflFloat *res, yaflFloat *u)
 
 #------------------------------------------------------------------------------
 cdef extern from "yafl.c":
