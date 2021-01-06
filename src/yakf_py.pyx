@@ -29,14 +29,29 @@ cdef extern from "yafl_config.h":
 #------------------------------------------------------------------------------
 cdef extern from "yafl_math.c":
     cdef enum yaflStatusEn:
+        #Warning flag masks
+        YAFL_ST_REGULARIZED  = 0x01 #YAFL_ST_R
+        YAFL_ST_GLITCH_SMALL = 0x02 #YAFL_ST_S
+        YAFL_ST_GLITCH_LARGE = 0x04 #YAFL_ST_L
+        YAFL_ST_ANOMALY      = 0x08 #YAFL_ST_A
+        #Everthing is OK
         YAFL_ST_OK           = 0x00
-        YAFL_ST_REGULARIZED  = 0x01
-        YAFL_ST_GLITCH_SMALL = 0x02
-        YAFL_ST_GSR          = 0x03
-        YAFL_ST_GLITCH_LARGE = 0x04
-        YAFL_ST_GLR          = 0x05
-        YAFL_ST_GLITCH_ALL   = 0x06
-        YAFL_ST_GAR          = 0x07
+        #Wagnings
+        YAFL_ST_R            = 0x01
+        YAFL_ST_S            = 0x02
+        YAFL_ST_SR           = 0x03
+        YAFL_ST_L            = 0x04
+        YAFL_ST_LR           = 0x05
+        YAFL_ST_SL           = 0x06
+        YAFL_ST_SLR          = 0x07
+        YAFL_ST_A            = 0x08
+        YAFL_ST_AR           = 0x09
+        YAFL_ST_SA           = 0x0a
+        YAFL_ST_SAR          = 0x0b
+        YAFL_ST_LA           = 0x0c
+        YAFL_ST_LAR          = 0x0d
+        YAFL_ST_SLA          = 0x0e
+        YAFL_ST_SLAR         = 0x0f
         # Error threshold value (greater values are errors)
         YAFL_ST_ERR_THR      = 0x100
         # Invalid argument numer

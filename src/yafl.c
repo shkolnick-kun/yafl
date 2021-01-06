@@ -428,7 +428,7 @@ static inline yaflStatusEn \
         /*Corrected s*/
         s = ac * c + r;
 
-        status |= YAFL_ST_ANOMALY;
+        status |= YAFL_ST_ANOMALY; /*Anomaly detected!*/
     }
     else
     {
@@ -695,12 +695,13 @@ static inline yaflStatusEn \
 
     *gdot_res = gdot;
 
+    /*Detect glitches and return*/
     if (gdot < YAFL_EPS)
     {
         return YAFL_ST_GLITCH_LARGE;
     }
 
-    if (gdot < 1.0)
+    if (gdot < (1.0 - 2.0*YAFL_EPS))
     {
         return YAFL_ST_GLITCH_SMALL;
     }

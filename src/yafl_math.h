@@ -36,14 +36,14 @@ do {                                                                       \
 #define YAFL_CHECK(cond, err) _YAFL_CHECK(cond, err, __FILE__, __func__, __LINE__)
 
 typedef enum {
-    /*Notification flag masks*/
+    /*Warning flag masks*/
     YAFL_ST_REGULARIZED  = 0x01,
     YAFL_ST_GLITCH_SMALL = 0x02,
     YAFL_ST_GLITCH_LARGE = 0x04,
     YAFL_ST_ANOMALY      = 0x08,
     /*Everything is OK*/
     YAFL_ST_OK           = 0x00,
-    /*Statuses with different flags (Warnings!)*/
+    /*Warning statuses (see Warning flag masks)*/
     YAFL_ST_R            = 0x01,
     YAFL_ST_S            = 0x02,
     YAFL_ST_SR           = 0x03,
@@ -72,9 +72,7 @@ typedef enum {
     YAFL_ST_INV_ARG_8    = 0x170,
     YAFL_ST_INV_ARG_9    = 0x180,
     YAFL_ST_INV_ARG_10   = 0x190,
-    YAFL_ST_INV_ARG_11   = 0x1a0,
-    /**/
-    YAFL_ST_FORCE_NZ     = 0x200, /*Zero result detected!*/
+    YAFL_ST_INV_ARG_11   = 0x1a0
 } yaflStatusEn;
 
 #define _YAFL_EXEC(status, exp, file, func, line)                          \
