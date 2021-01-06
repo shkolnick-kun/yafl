@@ -766,6 +766,7 @@ yaflStatusEn yafl_math_rum(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *u)
 
 yaflStatusEn yafl_math_mwgsu(yaflInt nr, yaflInt nc, yaflFloat *res_u, yaflFloat *res_d, yaflFloat *w, yaflFloat *d)
 {
+    yaflStatusEn status = YAFL_ST_OK;
     yaflInt j;
     yaflInt nrj;
 
@@ -803,6 +804,8 @@ yaflStatusEn yafl_math_mwgsu(yaflInt nr, yaflInt nc, yaflFloat *res_u, yaflFloat
             {
                 res_u[k + nrj] = 0;
             }
+
+            status |= YAFL_ST_REGULARIZED;
             continue;
         }
 
@@ -833,11 +836,12 @@ yaflStatusEn yafl_math_mwgsu(yaflInt nr, yaflInt nc, yaflFloat *res_u, yaflFloat
             }
         }
     }
-    return YAFL_ST_OK;
+    return status;
 }
 
 yaflStatusEn yafl_math_udu_up(yaflInt sz, yaflFloat *res_u, yaflFloat *res_d, yaflFloat alpha, yaflFloat *v)
 {
+    yaflStatusEn status = YAFL_ST_OK;
     yaflInt j;
     yaflInt szj;
 
@@ -860,7 +864,8 @@ yaflStatusEn yafl_math_udu_up(yaflInt sz, yaflFloat *res_u, yaflFloat *res_d, ya
         res_dj = dj + alpha * pj * pj;
         if (res_dj < YAFL_UDU_EPS)
         {
-            res_dj = YAFL_UDU_EPS;
+            res_dj  = YAFL_UDU_EPS;
+            status |= YAFL_ST_REGULARIZED;
         }
 
         betaj = alpha * pj / res_dj;
@@ -884,11 +889,12 @@ yaflStatusEn yafl_math_udu_up(yaflInt sz, yaflFloat *res_u, yaflFloat *res_d, ya
         }
         alpha *= dj / res_dj;
     }
-    return YAFL_ST_OK;
+    return status;
 }
 
 yaflStatusEn yafl_math_udu_down(yaflInt sz, yaflFloat *res_u, yaflFloat *res_d, yaflFloat alpha, yaflFloat *v)
 {
+    yaflStatusEn status = YAFL_ST_OK;
     yaflInt j;
     yaflInt szj;
     yaflFloat pj;
@@ -910,6 +916,7 @@ yaflStatusEn yafl_math_udu_down(yaflInt sz, yaflFloat *res_u, yaflFloat *res_d, 
         if (res_d[j] < YAFL_UDU_EPS)
         {
             res_d[j] = YAFL_UDU_EPS;
+            status  |= YAFL_ST_REGULARIZED;
         }
 
         pj  = v[j];
@@ -920,7 +927,8 @@ yaflStatusEn yafl_math_udu_down(yaflInt sz, yaflFloat *res_u, yaflFloat *res_d, 
 
     if (dj < YAFL_UDU_EPS)
     {
-        dj = YAFL_UDU_EPS;
+        dj      = YAFL_UDU_EPS;
+        status |= YAFL_ST_REGULARIZED;
     }
 
     alpha /= dj;
@@ -956,5 +964,5 @@ yaflStatusEn yafl_math_udu_down(yaflInt sz, yaflFloat *res_u, yaflFloat *res_d, 
         }
         alpha *= res_dj / dj;
     }
-    return YAFL_ST_OK;
+    return status;
 }
