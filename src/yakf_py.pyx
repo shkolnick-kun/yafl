@@ -28,7 +28,7 @@ cdef extern from "yafl_config.h":
 
 #------------------------------------------------------------------------------
 cdef extern from "yafl_math.c":
-    cdef enum yaflStatusEn:
+    ctypedef enum yaflStatusEn:
         #Warning flag masks
         YAFL_ST_REGULARIZED  = 0x01 #YAFL_ST_R
         YAFL_ST_GLITCH_SMALL = 0x02 #YAFL_ST_S
@@ -73,8 +73,8 @@ cdef extern from "yafl.c":
     #==========================================================================
     ctypedef _yaflEKFBaseSt yaflEKFBaseSt
 
-    ctypedef void (* yaflEKFFuncP)(yaflEKFBaseSt *)
-    ctypedef void (* yaflEKFResFuncP)(yaflEKFBaseSt *, yaflFloat *)
+    ctypedef yaflStatusEn (* yaflEKFFuncP)(yaflEKFBaseSt *)
+    ctypedef yaflStatusEn (* yaflEKFResFuncP)(yaflEKFBaseSt *, yaflFloat *)
     ctypedef yaflStatusEn (* yaflEKFScalarUpdateP)(yaflEKFBaseSt *, yaflInt)
 
     ctypedef struct _yaflEKFBaseSt:
@@ -104,28 +104,35 @@ cdef extern from "yafl.c":
         yaflInt   Nx     #
         yaflInt   Nz     #
 
-    cdef void yafl_ekf_base_predict(yaflEKFBaseSt * self)
-    cdef void yafl_ekf_base_update(yaflEKFBaseSt * self, yaflFloat * z, \
-                               yaflEKFScalarUpdateP scalar_update)
+    cdef yaflStatusEn \
+        yafl_ekf_base_predict(yaflEKFBaseSt * self)
+    cdef yaflStatusEn \
+        yafl_ekf_base_update(yaflEKFBaseSt * self, yaflFloat * z, \
+                             yaflEKFScalarUpdateP scalar_update)
 
-    cdef void yafl_ekf_bierman_update(yaflEKFBaseSt * self, yaflFloat * z)
+    cdef yaflStatusEn \
+        yafl_ekf_bierman_update(yaflEKFBaseSt * self, yaflFloat * z)
 
-    cdef void yafl_ekf_joseph_update(yaflEKFBaseSt * self, yaflFloat * z)
+    cdef yaflStatusEn \
+        yafl_ekf_joseph_update(yaflEKFBaseSt * self, yaflFloat * z)
 
     #--------------------------------------------------------------------------
     ctypedef struct yaflEKFAdaptiveSt:
         yaflEKFBaseSt base
         yaflFloat  chi2
 
-    cdef void yafl_ekf_adaptive_bierman_update(yaflEKFAdaptiveSt * self, \
-                                               yaflFloat * z)
+    cdef yaflStatusEn \
+        yafl_ekf_adaptive_bierman_update(yaflEKFAdaptiveSt * self, \
+                                         yaflFloat * z)
 
-    cdef void yafl_ekf_adaptive_joseph_update(yaflEKFAdaptiveSt * self, \
-                                              yaflFloat * z)
+    cdef yaflStatusEn \
+        yafl_ekf_adaptive_joseph_update(yaflEKFAdaptiveSt * self, \
+                                        yaflFloat * z)
 
     # For demonstration purposes only
-    cdef void yafl_ekf_do_not_use_this_update(yaflEKFAdaptiveSt * self, \
-                                              yaflFloat * z)
+    cdef yaflStatusEn \
+        yafl_ekf_do_not_use_this_update(yaflEKFAdaptiveSt * self, \
+                                        yaflFloat * z)
 
     #--------------------------------------------------------------------------
     ctypedef yaflFloat (* yaflEKFRobFuncP)(yaflEKFBaseSt *, yaflFloat)
@@ -135,29 +142,31 @@ cdef extern from "yafl.c":
         yaflEKFRobFuncP g
         yaflEKFRobFuncP gdot
 
-    cdef void yafl_ekf_robust_bierman_update(yaflEKFRobustSt * self, \
-                                             yaflFloat * z)
+    cdef yaflStatusEn yafl_ekf_robust_bierman_update(yaflEKFRobustSt * self, \
+                                                     yaflFloat * z)
 
-    cdef void yafl_ekf_robust_joseph_update(yaflEKFRobustSt * self, \
-                                            yaflFloat * z)
+    cdef yaflStatusEn yafl_ekf_robust_joseph_update(yaflEKFRobustSt * self, \
+                                                    yaflFloat * z)
     #--------------------------------------------------------------------------
     ctypedef struct yaflEKFAdaptiveRobustSt:
         yaflEKFRobustSt base
         yaflFloat  chi2
 
-    cdef void yafl_ekf_adaptive_robust_bierman_update(yaflEKFAdaptiveRobustSt * self,\
-                                                  yaflFloat * z)
+    cdef yaflStatusEn \
+        yafl_ekf_adaptive_robust_bierman_update(yaflEKFAdaptiveRobustSt * self,\
+                                                yaflFloat * z)
 
-    cdef void yafl_ekf_adaptive_robust_joseph_update(yaflEKFAdaptiveRobustSt * self, \
-                                                 yaflFloat * z)
+    cdef yaflStatusEn \
+        yafl_ekf_adaptive_robust_joseph_update(yaflEKFAdaptiveRobustSt * self, \
+                                               yaflFloat * z)
 
     #==========================================================================
     #                     UD-factorized UKF definitions
     #==========================================================================
     ctypedef _yaflUKFBaseSt yaflUKFBaseSt
 
-    ctypedef void (* yaflUKFSigmaAddP)(yaflUKFBaseSt *, yaflFloat *, \
-                                       yaflFloat *, yaflFloat)
+    ctypedef yaflStatusEn (* yaflUKFSigmaAddP)(yaflUKFBaseSt *, yaflFloat *, \
+                                               yaflFloat *, yaflFloat)
 
     ctypedef struct yaflUKFSigmaSt:
         yaflInt     np
@@ -165,18 +174,19 @@ cdef extern from "yafl.c":
 
     #--------------------------------------------------------------------------
     ctypedef yaflStatusEn (* yaflUKFScalarUpdateP)(yaflUKFBaseSt *, yaflInt)
-    ctypedef void (* yaflUKFSigmaGenWeigthsP)(yaflUKFBaseSt *)
-    ctypedef void (* yaflUKFSigmaGenSigmasP)(yaflUKFBaseSt *)
+    ctypedef yaflStatusEn (* yaflUKFSigmaGenWeigthsP)(yaflUKFBaseSt *)
+    ctypedef yaflStatusEn (* yaflUKFSigmaGenSigmasP)(yaflUKFBaseSt *)
 
     ctypedef struct yaflUKFSigmaMethodsSt:
         yaflUKFSigmaGenWeigthsP   wf
         yaflUKFSigmaGenSigmasP  spgf
 
     #--------------------------------------------------------------------------
-    ctypedef void (* yaflUKFFuncP)(yaflUKFBaseSt *, yaflFloat *, yaflFloat *)
+    ctypedef yaflStatusEn (* yaflUKFFuncP)(yaflUKFBaseSt *, yaflFloat *, \
+                                           yaflFloat *)
 
-    ctypedef void (* yaflUKFResFuncP)(yaflUKFBaseSt *, yaflFloat *, \
-                                      yaflFloat *, yaflFloat *)
+    ctypedef yaflStatusEn (* yaflUKFResFuncP)(yaflUKFBaseSt *, yaflFloat *, \
+                                              yaflFloat *, yaflFloat *)
 
     ctypedef struct _yaflUKFBaseSt:
         yaflUKFSigmaSt              * sp_info
@@ -219,28 +229,31 @@ cdef extern from "yafl.c":
         yaflInt   Nz
 
     #--------------------------------------------------------------------------
-    cdef void yafl_ukf_post_init(yaflUKFBaseSt * self)  #static inline
+    cdef yaflStatusEn yafl_ukf_post_init(yaflUKFBaseSt * self)  #static inline
 
-    cdef void yafl_ukf_gen_sigmas(yaflUKFBaseSt * self) #static inline
+    cdef yaflStatusEn yafl_ukf_gen_sigmas(yaflUKFBaseSt * self) #static inline
 
-    cdef void yafl_ukf_predict(yaflUKFBaseSt * self)
+    cdef yaflStatusEn yafl_ukf_predict(yaflUKFBaseSt * self)
 
-    cdef void yafl_ukf_update(yaflUKFBaseSt * self, yaflFloat * z)
-
-    #--------------------------------------------------------------------------
-    cdef void yafl_ukf_base_update(yaflUKFBaseSt * self, yaflFloat * z, \
-                                   yaflUKFScalarUpdateP scalar_update)
+    cdef yaflStatusEn yafl_ukf_update(yaflUKFBaseSt * self, yaflFloat * z)
 
     #--------------------------------------------------------------------------
-    cdef void yafl_ukf_bierman_update(yaflUKFBaseSt * self, yaflFloat * z)
+    cdef yaflStatusEn \
+        yafl_ukf_base_update(yaflUKFBaseSt * self, yaflFloat * z, \
+                             yaflUKFScalarUpdateP scalar_update)
+
+    #--------------------------------------------------------------------------
+    cdef yaflStatusEn \
+        yafl_ukf_bierman_update(yaflUKFBaseSt * self, yaflFloat * z)
 
     #==========================================================================
     ctypedef struct yaflUKFAdaptivedSt:
         yaflUKFBaseSt base
         yaflFloat  chi2
 
-    cdef void yafl_ukf_adaptive_bierman_update(yaflUKFAdaptivedSt * self,\
-                                               yaflFloat * z)
+    cdef yaflStatusEn \
+        yafl_ukf_adaptive_bierman_update(yaflUKFAdaptivedSt * self,\
+                                         yaflFloat * z)
     #--------------------------------------------------------------------------
     #                  Van der Merwe sigma point generator
     #--------------------------------------------------------------------------
@@ -530,7 +543,7 @@ cdef class yaflExtendedBase:
 #                             Basic C-callbacks
 #==============================================================================
 # State transition function 
-cdef void yafl_py_ekf_fx(yaflPyEkfBaseSt * self):
+cdef yaflStatusEn yafl_py_ekf_fx(yaflPyEkfBaseSt * self):
     
     py_self = <yaflExtendedBase>(self.py_self)
     if not isinstance(py_self, yaflExtendedBase):
@@ -551,9 +564,11 @@ cdef void yafl_py_ekf_fx(yaflPyEkfBaseSt * self):
     #How about handling exceptions here???
     py_self._x[:] = fx(py_self._x, dt, **fx_args)
 
+    return YAFL_ST_OK
+
 #------------------------------------------------------------------------------
 # State transition function Jacobian
-cdef void yafl_py_ekf_jfx(yaflPyEkfBaseSt * self):
+cdef yaflStatusEn yafl_py_ekf_jfx(yaflPyEkfBaseSt * self):
     
     py_self = <yaflExtendedBase>(self.py_self)
     if not isinstance(py_self, yaflExtendedBase):
@@ -574,9 +589,11 @@ cdef void yafl_py_ekf_jfx(yaflPyEkfBaseSt * self):
     #How about handling exceptions here???
     py_self._W[:, :self.base.base.Nx] = jfx(py_self._x, dt, **fx_args)
 
+    return YAFL_ST_OK
+
 #------------------------------------------------------------------------------
 # State transition function 
-cdef void yafl_py_ekf_hx(yaflPyEkfBaseSt * self):
+cdef yaflStatusEn yafl_py_ekf_hx(yaflPyEkfBaseSt * self):
     
     py_self = <yaflExtendedBase>(self.py_self)
     if not isinstance(py_self, yaflExtendedBase):
@@ -593,9 +610,11 @@ cdef void yafl_py_ekf_hx(yaflPyEkfBaseSt * self):
     #How about handling exceptions here???
     py_self._y[:] = hx(py_self._x, **hx_args)
 
+    return YAFL_ST_OK
+
 #------------------------------------------------------------------------------
 # State transition function Jacobian
-cdef void yafl_py_ekf_jhx(yaflPyEkfBaseSt * self):
+cdef yaflStatusEn yafl_py_ekf_jhx(yaflPyEkfBaseSt * self):
     
     py_self = <yaflExtendedBase>(self.py_self)
     if not isinstance(py_self, yaflExtendedBase):
@@ -612,9 +631,11 @@ cdef void yafl_py_ekf_jhx(yaflPyEkfBaseSt * self):
     #How about handling exceptions here???
     py_self._H[:,:] = jhx(py_self._x, **hx_args)
 
+    return YAFL_ST_OK
+
 #------------------------------------------------------------------------------
 # Measurement residual function
-cdef void yafl_py_ekf_zrf(yaflPyEkfBaseSt * self, yaflFloat * zp):
+cdef yaflStatusEn yafl_py_ekf_zrf(yaflPyEkfBaseSt * self, yaflFloat * zp):
     
     py_self = <yaflExtendedBase>(self.py_self)
     if not isinstance(py_self, yaflExtendedBase):
@@ -626,16 +647,18 @@ cdef void yafl_py_ekf_zrf(yaflPyEkfBaseSt * self, yaflFloat * zp):
     
     #How about handling exceptions here???
     py_self._y[:] = zrf(py_self._z, py_self._y)
+
+    return YAFL_ST_OK
     
 #==============================================================================
 cdef class Bierman(yaflExtendedBase):
     def _update(self):
-        yafl_ekf_bierman_update(&self.c_self.base.base, &self.v_z[0])
+        return yafl_ekf_bierman_update(&self.c_self.base.base, &self.v_z[0])
 
 #------------------------------------------------------------------------------
 cdef class Joseph(yaflExtendedBase):
     def _update(self):
-        yafl_ekf_joseph_update(&self.c_self.base.base, &self.v_z[0])
+        return yafl_ekf_joseph_update(&self.c_self.base.base, &self.v_z[0])
 
 #==============================================================================
 #                        Adaptive filter basic class
@@ -660,12 +683,14 @@ cdef class yakfAdaptiveBase(yaflExtendedBase):
 #==============================================================================
 cdef class AdaptiveBierman(yakfAdaptiveBase):
     def _update(self):
-        yafl_ekf_adaptive_bierman_update(&self.c_self.base.adaptive, &self.v_z[0])
+        return yafl_ekf_adaptive_bierman_update(&self.c_self.base.adaptive, \
+                                                &self.v_z[0])
 
 #------------------------------------------------------------------------------
 cdef class AdaptiveJoseph(yakfAdaptiveBase):
     def _update(self):
-        yafl_ekf_adaptive_joseph_update(&self.c_self.base.adaptive, &self.v_z[0])
+        return yafl_ekf_adaptive_joseph_update(&self.c_self.base.adaptive, \
+                                               &self.v_z[0])
 
 #------------------------------------------------------------------------------
 cdef class DoNotUseThisFilter(yakfAdaptiveBase):
@@ -675,7 +700,8 @@ cdef class DoNotUseThisFilter(yakfAdaptiveBase):
     It was implemented to show some flaws of the corresponding algorithm!
     """
     def _update(self):
-        yafl_ekf_do_not_use_this_update(&self.c_self.base.adaptive, &self.v_z[0])
+        return yafl_ekf_do_not_use_this_update(&self.c_self.base.adaptive, \
+                                               &self.v_z[0])
 
 #==============================================================================
 #                        Robust filter basic class
@@ -759,12 +785,14 @@ cdef yaflFloat yafl_py_ekf_rob_gdotz(yaflPyEkfBaseSt * self, yaflFloat nu):
 #==============================================================================
 cdef class RobustBierman(yakfRobustBase):
     def _update(self):
-        yafl_ekf_robust_bierman_update(&self.c_self.base.robust, &self.v_z[0])
+        return yafl_ekf_robust_bierman_update(&self.c_self.base.robust, \
+                                              &self.v_z[0])
 
 #------------------------------------------------------------------------------
 cdef class RobustJoseph(yakfRobustBase):
     def _update(self):
-        yafl_ekf_robust_joseph_update(&self.c_self.base.robust, &self.v_z[0])
+        return yafl_ekf_robust_joseph_update(&self.c_self.base.robust, \
+                                             &self.v_z[0])
 
 #==============================================================================
 #                        Robust filter basic class
@@ -792,14 +820,16 @@ cdef class yakfAdaptiveRobustBase(yakfRobustBase):
 #==============================================================================
 cdef class AdaptiveRobustBierman(yakfAdaptiveRobustBase):
     def _update(self):
-        yafl_ekf_adaptive_robust_bierman_update(&self.c_self.base.ada_rob, \
-                                            &self.v_z[0])
+        return \
+            yafl_ekf_adaptive_robust_bierman_update(&self.c_self.base.ada_rob, \
+                                                    &self.v_z[0])
 
 #------------------------------------------------------------------------------
 cdef class AdaptiveRobustJoseph(yakfAdaptiveRobustBase):
     def _update(self):
-        yafl_ekf_adaptive_robust_joseph_update(&self.c_self.base.ada_rob, \
-                                           &self.v_z[0])
+        return \
+            yafl_ekf_adaptive_robust_joseph_update(&self.c_self.base.ada_rob, \
+                                                   &self.v_z[0])
 
 #==============================================================================
 #                          UD-factorized UKF API
@@ -1245,7 +1275,7 @@ cdef class yakfUnscentedBase:
         self._update()
 
 #==============================================================================
-cdef void yafl_py_sigma_addf(yakfPyUnscentedSt * self, yaflFloat * delta, \
+cdef yaflStatusEn yafl_py_sigma_addf(yakfPyUnscentedSt * self, yaflFloat * delta, \
                              yaflFloat * pivot, yaflFloat mult):
 
     py_self = <yakfUnscentedBase>(self.py_self)
@@ -1265,8 +1295,10 @@ cdef void yafl_py_sigma_addf(yakfPyUnscentedSt * self, yaflFloat * delta, \
 
     _delta[:] = _addf(_delta, _pivot, mult)
 
+    return YAFL_ST_OK
+
 #==============================================================================
-cdef void yafl_py_ukf_fx(yakfPyUnscentedSt * self, \
+cdef yaflStatusEn yafl_py_ukf_fx(yakfPyUnscentedSt * self, \
                          yaflFloat * new_x, yaflFloat * old_x):
 
     py_self = <yakfUnscentedBase>(self.py_self)
@@ -1294,8 +1326,10 @@ cdef void yafl_py_ukf_fx(yakfPyUnscentedSt * self, \
 
     _new_x[:] = fx(_old_x, dt, **fx_args)
 
+    return YAFL_ST_OK
+
 #------------------------------------------------------------------------------
-cdef void yafl_py_ukf_xmf(yakfPyUnscentedSt * self, \
+cdef yaflStatusEn yafl_py_ukf_xmf(yakfPyUnscentedSt * self, \
                           yaflFloat * res, yaflFloat * sigmas):
 
     py_self = <yakfUnscentedBase>(self.py_self)
@@ -1323,8 +1357,10 @@ cdef void yafl_py_ukf_xmf(yakfPyUnscentedSt * self, \
 
     _res[:] = mean_x(_sigmas, _points._wm)
 
+    return YAFL_ST_OK
+
 #------------------------------------------------------------------------------
-cdef void yafl_py_ukf_xrf(yakfPyUnscentedSt * self, yaflFloat * res, \
+cdef yaflStatusEn yafl_py_ukf_xrf(yakfPyUnscentedSt * self, yaflFloat * res, \
                              yaflFloat * sigma, yaflFloat * pivot):
 
     py_self = <yakfUnscentedBase>(self.py_self)
@@ -1345,8 +1381,10 @@ cdef void yafl_py_ukf_xrf(yakfPyUnscentedSt * self, yaflFloat * res, \
 
     _res[:] = residual_x(_sigma, _pivot)
 
+    return YAFL_ST_OK
+
 #==============================================================================
-cdef void yafl_py_ukf_hx(yakfPyUnscentedSt * self, \
+cdef yaflStatusEn yafl_py_ukf_hx(yakfPyUnscentedSt * self, \
                          yaflFloat * z, yaflFloat * x):
 
     py_self = <yakfUnscentedBase>(self.py_self)
@@ -1376,8 +1414,10 @@ cdef void yafl_py_ukf_hx(yakfPyUnscentedSt * self, \
 
     _z[:] = hx(_x, **hx_args)
 
+    return YAFL_ST_OK
+
 #------------------------------------------------------------------------------
-cdef void yafl_py_ukf_zmf(yakfPyUnscentedSt * self, \
+cdef yaflStatusEn yafl_py_ukf_zmf(yakfPyUnscentedSt * self, \
                           yaflFloat * res, yaflFloat * sigmas):
 
     py_self = <yakfUnscentedBase>(self.py_self)
@@ -1405,8 +1445,10 @@ cdef void yafl_py_ukf_zmf(yakfPyUnscentedSt * self, \
 
     _res[:] = mean_z(_sigmas, _points._wm)
 
+    return YAFL_ST_OK
+
 #------------------------------------------------------------------------------
-cdef void yafl_py_ukf_zrf(yakfPyUnscentedSt * self, yaflFloat * res, \
+cdef yaflStatusEn yafl_py_ukf_zrf(yakfPyUnscentedSt * self, yaflFloat * res, \
                              yaflFloat * sigma, yaflFloat * pivot):
 
     py_self = <yakfUnscentedBase>(self.py_self)
@@ -1427,13 +1469,15 @@ cdef void yafl_py_ukf_zrf(yakfPyUnscentedSt * self, yaflFloat * res, \
 
     _res[:] = residual_z(_sigma, _pivot)
 
+    return YAFL_ST_OK
+
 #==============================================================================
 cdef class Unscented(yakfUnscentedBase):
     """
     UD-factorized UKF implementation
     """
     def _update(self):
-        yafl_ukf_update(&self.c_self.base.base, &self.v_z[0])
+        return yafl_ukf_update(&self.c_self.base.base, &self.v_z[0])
 
 #------------------------------------------------------------------------------
 cdef class UnscentedBierman(yakfUnscentedBase):
@@ -1441,7 +1485,7 @@ cdef class UnscentedBierman(yakfUnscentedBase):
     UD-factorized UKF implementation
     """
     def _update(self):
-        yafl_ukf_bierman_update(&self.c_self.base.base, &self.v_z[0])
+        return yafl_ukf_bierman_update(&self.c_self.base.base, &self.v_z[0])
 
 #------------------------------------------------------------------------------
 cdef class UnscentedAdaptiveBierman(yakfUnscentedBase):
@@ -1457,7 +1501,8 @@ cdef class UnscentedAdaptiveBierman(yakfUnscentedBase):
     UD-factorized UKF implementation
     """
     def _update(self):
-        yafl_ukf_adaptive_bierman_update(&self.c_self.base.adaptive, &self.v_z[0])
+        return yafl_ukf_adaptive_bierman_update(&self.c_self.base.adaptive, \
+                                                &self.v_z[0])
 
 #------------------------------------------------------------------------------
 cdef class MerweSigmaPoints(yakfSigmaBase):

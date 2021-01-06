@@ -28,28 +28,29 @@
 #define NX 4
 #define NZ 2
 
-void fx(yaflEKFBaseSt * self)
+yaflStatusEn fx(yaflEKFBaseSt * self)
 {
     yaflFloat * x;
-    YAFL_ASSERT(self);
-    YAFL_ASSERT(self->x);
-    YAFL_ASSERT(4 == self->Nx);
+    YAFL_CHECK(self,          YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->x,       YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(4 == self->Nx, YAFL_ST_INV_ARG_1);
 
     x = self->x;
     x[0] += 0.1 * x[2];
     x[1] += 0.1 * x[3];
+    return YAFL_ST_OK;
 }
 
-void jfx(yaflEKFBaseSt * self)
+yaflStatusEn jfx(yaflEKFBaseSt * self)
 {
     yaflInt i;
     yaflInt nx;
     yaflInt nx2;
     yaflFloat * w;
 
-    YAFL_ASSERT(self);
-    YAFL_ASSERT(self->W);
-    YAFL_ASSERT(4 == self->Nx);
+    YAFL_CHECK(self,          YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->W,       YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(4 == self->Nx, YAFL_ST_INV_ARG_1);
 
     w   = self->W;
     nx  = self->Nx;
@@ -69,33 +70,37 @@ void jfx(yaflEKFBaseSt * self)
 
     w[nx2*0 + 2] = 0.1;
     w[nx2*1 + 3] = 0.1;
+    return YAFL_ST_OK;
 }
 
-void hx(yaflEKFBaseSt * self)
+yaflStatusEn hx(yaflEKFBaseSt * self)
 {
     yaflFloat * x;
     yaflFloat * y;
-    YAFL_ASSERT(self);
-    YAFL_ASSERT(self->x);
-    YAFL_ASSERT(2 == self->Nz);
+
+    YAFL_CHECK(self,          YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->x,       YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->y,       YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(2 == self->Nz, YAFL_ST_INV_ARG_1);
 
     x = self->x;
     y = self->y;
     y[0] = x[0];
     y[1] = x[1];
+    return YAFL_ST_OK;
 }
 
-void jhx(yaflEKFBaseSt * self)
+yaflStatusEn jhx(yaflEKFBaseSt * self)
 {
     yaflInt i;
     yaflInt nx;
     yaflInt nz;
     yaflFloat * h;
 
-    YAFL_ASSERT(self);
-    YAFL_ASSERT(self->H);
-    YAFL_ASSERT(4 == self->Nx);
-    YAFL_ASSERT(2 == self->Nz);
+    YAFL_CHECK(self,          YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->H,       YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(4 == self->Nx, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(2 == self->Nz, YAFL_ST_INV_ARG_1);
 
     nx = self->Nx;
     nz = self->Nz;
@@ -115,6 +120,7 @@ void jhx(yaflEKFBaseSt * self)
 
     h[nx*0 + 0] = 1.0;
     h[nx*1 + 1] = 1.0;
+    return YAFL_ST_OK;
 }
 /*---------------------------------------------------------------------------*/
 typedef struct{

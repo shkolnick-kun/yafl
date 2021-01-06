@@ -17,6 +17,12 @@
 			</Target>
 		</Build>
 		<Compiler>
+			<Add option="-Wcast-align" />
+			<Add option="-Wfloat-equal" />
+			<Add option="-Wunreachable-code" />
+			<Add option="-Wzero-as-null-pointer-constant" />
+			<Add option="-pedantic" />
+			<Add option="-Wextra" />
 			<Add option="-Wall" />
 			<Add option="-g" />
 			<Add directory="../src" />

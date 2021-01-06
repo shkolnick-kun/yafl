@@ -26,8 +26,8 @@
 =============================================================================*/
 typedef struct _yaflEKFBaseSt yaflEKFBaseSt;
 
-typedef void (* yaflEKFFuncP)(yaflEKFBaseSt *);
-typedef void (* yaflEKFResFuncP)(yaflEKFBaseSt *, yaflFloat *);
+typedef yaflStatusEn (* yaflEKFFuncP)(yaflEKFBaseSt *);
+typedef yaflStatusEn (* yaflEKFResFuncP)(yaflEKFBaseSt *, yaflFloat *);
 typedef yaflStatusEn (* yaflEKFScalarUpdateP)(yaflEKFBaseSt *, yaflInt);
 
 struct _yaflEKFBaseSt {
@@ -75,7 +75,7 @@ struct _yaflEKFBaseSt {
     yaflFloat Dr[nz];                  \
                                        \
     yaflFloat W[2 * nx * nx];          \
-    yaflFloat D[2 * nx];
+    yaflFloat D[2 * nx]
 
 /*---------------------------------------------------------------------------*/
 #define YAFL_EKF_BASE_INITIALIZER(_f, _jf, _h, _jh, _zrf, _nx, _nz, _mem)\
@@ -109,20 +109,20 @@ struct _yaflEKFBaseSt {
 }
 
 /*---------------------------------------------------------------------------*/
-void yafl_ekf_base_predict(yaflEKFBaseSt * self);
-void yafl_ekf_base_update(yaflEKFBaseSt * self, yaflFloat * z, yaflEKFScalarUpdateP scalar_update);
+yaflStatusEn yafl_ekf_base_predict(yaflEKFBaseSt * self);
+yaflStatusEn yafl_ekf_base_update(yaflEKFBaseSt * self, yaflFloat * z, yaflEKFScalarUpdateP scalar_update);
 
 /*-----------------------------------------------------------------------------
                                Bierman filter
 -----------------------------------------------------------------------------*/
 #define YAFL_EKF_BIERMAN_PREDICT yafl_ekf_base_predict
-void yafl_ekf_bierman_update(yaflEKFBaseSt * self, yaflFloat * z);
+yaflStatusEn yafl_ekf_bierman_update(yaflEKFBaseSt * self, yaflFloat * z);
 
 /*-----------------------------------------------------------------------------
                                Joseph filter
 -----------------------------------------------------------------------------*/
 #define YAFL_EKF_JOSEPH_PREDICT yafl_ekf_base_predict
-void yafl_ekf_joseph_update(yaflEKFBaseSt * self, yaflFloat * z);
+yaflStatusEn yafl_ekf_joseph_update(yaflEKFBaseSt * self, yaflFloat * z);
 
 /*=============================================================================
                     Adaptive UD-factorized EKF definitions
@@ -147,13 +147,13 @@ Default value for chi2 is:
                            Adaptive Bierman filter
 -----------------------------------------------------------------------------*/
 #define YAFL_EKF_ADAPTIVE_BIERAMN_PREDICT(self) yafl_ekf_base_predict((yaflEKFBaseSt *)self)
-void yafl_ekf_adaptive_bierman_update(yaflEKFAdaptiveSt * self, yaflFloat * z);
+yaflStatusEn yafl_ekf_adaptive_bierman_update(yaflEKFAdaptiveSt * self, yaflFloat * z);
 
 /*-----------------------------------------------------------------------------
                            Adaptive Joseph filter
 -----------------------------------------------------------------------------*/
 #define YAFL_EKF_ADAPTIVE_JOSEPH_PREDICT(self) yafl_ekf_base_predict((yaflEKFBaseSt *)self)
-void yafl_ekf_adaptive_joseph_update(yaflEKFAdaptiveSt * self, yaflFloat * z);
+yaflStatusEn yafl_ekf_adaptive_joseph_update(yaflEKFAdaptiveSt * self, yaflFloat * z);
 
 /*-----------------------------------------------------------------------------
                                  WARNING!!!
@@ -162,7 +162,7 @@ void yafl_ekf_adaptive_joseph_update(yaflEKFAdaptiveSt * self, yaflFloat * z);
 
      It was implemented to show some flaws of the corresponding algorithm!
 -----------------------------------------------------------------------------*/
-void yafl_ekf_do_not_use_this_update(yaflEKFAdaptiveSt * self, yaflFloat * z);
+yaflStatusEn yafl_ekf_do_not_use_this_update(yaflEKFAdaptiveSt * self, yaflFloat * z);
 
 /*=============================================================================
                     Robust UD-factorized EKF definitions
@@ -196,13 +196,13 @@ typedef struct {
                            Adaptive Bierman filter
 -----------------------------------------------------------------------------*/
 #define YAFL_EKF_ROBUST_BIERAMN_PREDICT(self) yafl_ekf_base_predict((yaflEKFBaseSt *)self)
-void yafl_ekf_robust_bierman_update(yaflEKFRobustSt * self, yaflFloat * z);
+yaflStatusEn yafl_ekf_robust_bierman_update(yaflEKFRobustSt * self, yaflFloat * z);
 
 /*-----------------------------------------------------------------------------
                            Adaptive Joseph filter
 -----------------------------------------------------------------------------*/
 #define YAFL_EKF_ROBUST_JOSEPH_PREDICT(self) yafl_ekf_base_predict((yaflEKFBaseSt *)self)
-void yafl_ekf_robust_joseph_update(yaflEKFRobustSt * self, yaflFloat * z);
+yaflStatusEn yafl_ekf_robust_joseph_update(yaflEKFRobustSt * self, yaflFloat * z);
 
 /*=============================================================================
                  Adaptive robust UD-factorized EKF definitions
@@ -228,7 +228,7 @@ Default value for chi2 is:
 #define YAFL_EKF_ADAPTIVE_ROBUST_BIERAMN_PREDICT(self) \
     yafl_ekf_base_predict((yaflEKFBaseSt *)self)
 
-void yafl_ekf_adaptive_robust_bierman_update(yaflEKFAdaptiveRobustSt * self, \
+yaflStatusEn yafl_ekf_adaptive_robust_bierman_update(yaflEKFAdaptiveRobustSt * self, \
                                          yaflFloat * z);
 
 /*-----------------------------------------------------------------------------
@@ -237,7 +237,7 @@ void yafl_ekf_adaptive_robust_bierman_update(yaflEKFAdaptiveRobustSt * self, \
 #define YAFL_EKF_ADAPTIVE_ROBUST_JOSEPH_PREDICT(self) \
     yafl_ekf_base_predict((yaflEKFBaseSt *)self)
 
-void yafl_ekf_adaptive_robust_joseph_update(yaflEKFAdaptiveRobustSt * self, \
+yaflStatusEn yafl_ekf_adaptive_robust_joseph_update(yaflEKFAdaptiveRobustSt * self, \
                                         yaflFloat * z);
 
 /*=============================================================================
@@ -254,7 +254,7 @@ yaflFloat factor
 Does:
 delta_x = x0 + factor * delta_x
 */
-typedef void (* yaflUKFSigmaAddP)(yaflUKFBaseSt *, yaflFloat *, yaflFloat *, yaflFloat);
+typedef yaflStatusEn (* yaflUKFSigmaAddP)(yaflUKFBaseSt *, yaflFloat *, yaflFloat *, yaflFloat);
 
 /*Sigma point generator info base type*/
 typedef struct _yaflUKFSigmaSt {
@@ -271,10 +271,10 @@ typedef struct _yaflUKFSigmaSt {
 
 /*---------------------------------------------------------------------------*/
 /* Computes sigma points weights */
-typedef void (* yafkUKFSigmaGenWeigthsP)(yaflUKFBaseSt *);
+typedef yaflStatusEn (* yafkUKFSigmaGenWeigthsP)(yaflUKFBaseSt *);
 
 /* Generates sigma points */
-typedef void (* yaflUKFSigmaGenSigmasP)(yaflUKFBaseSt *);
+typedef yaflStatusEn (* yaflUKFSigmaGenSigmasP)(yaflUKFBaseSt *);
 
 typedef struct _yaflUKFSigmaMethodsSt {
     yafkUKFSigmaGenWeigthsP   wf; /* Weight function                */
@@ -284,10 +284,11 @@ typedef struct _yaflUKFSigmaMethodsSt {
 /*---------------------------------------------------------------------------*/
 typedef yaflStatusEn (* yaflUKFScalarUpdateP)(yaflUKFBaseSt *, yaflInt);
 
-typedef void (* yaflUKFFuncP)(yaflUKFBaseSt *, yaflFloat *, yaflFloat *);
+typedef yaflStatusEn (* yaflUKFFuncP)(yaflUKFBaseSt *, yaflFloat *, \
+                                      yaflFloat *);
 
-typedef void (* yaflUKFResFuncP)(yaflUKFBaseSt *, yaflFloat *, yaflFloat *, \
-                                 yaflFloat *);
+typedef yaflStatusEn (* yaflUKFResFuncP)(yaflUKFBaseSt *, yaflFloat *, \
+                                         yaflFloat *, yaflFloat *);
 
 struct _yaflUKFBaseSt {
     /* A pointer to the sigma point generator structure */
@@ -406,31 +407,32 @@ Warning: sigmas_x and _sigmas_z aren't defined in this mixin, see
 }
 
 /*---------------------------------------------------------------------------*/
-static inline void yafl_ukf_post_init(yaflUKFBaseSt * self)
+static inline yaflStatusEn yafl_ukf_post_init(yaflUKFBaseSt * self)
 {
-    YAFL_ASSERT(self);
-    YAFL_ASSERT(self->sp_meth);
-    YAFL_ASSERT(self->sp_meth->wf);
-    self->sp_meth->wf(self); /*Need to compute weights before start*/
+    YAFL_CHECK(self,              YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->sp_meth,     YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->sp_meth->wf, YAFL_ST_INV_ARG_1);
+    return self->sp_meth->wf(self); /*Need to compute weights before start*/
 }
 
-static inline void yafl_ukf_gen_sigmas(yaflUKFBaseSt * self)
+static inline yaflStatusEn yafl_ukf_gen_sigmas(yaflUKFBaseSt * self)
 {
-    YAFL_ASSERT(self);
-    YAFL_ASSERT(self->sp_meth);
-    YAFL_ASSERT(self->sp_meth->spgf);
+    YAFL_CHECK(self,                YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->sp_meth,       YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->sp_meth->spgf, YAFL_ST_INV_ARG_1);
     self->sp_meth->spgf(self);
+    return self->sp_meth->wf(self);
 }
 
-void yafl_ukf_predict(yaflUKFBaseSt * self);
-void yafl_ukf_update(yaflUKFBaseSt * self, yaflFloat * z);
+yaflStatusEn yafl_ukf_predict(yaflUKFBaseSt * self);
+yaflStatusEn yafl_ukf_update(yaflUKFBaseSt * self, yaflFloat * z);
 
 /*===========================================================================*/
-void yafl_ukf_base_update(yaflUKFBaseSt * self, yaflFloat * z, \
-                               yaflUKFScalarUpdateP scalar_update);
+yaflStatusEn yafl_ukf_base_update(yaflUKFBaseSt * self, yaflFloat * z, \
+                                  yaflUKFScalarUpdateP scalar_update);
 
 /*===========================================================================*/
-void yafl_ukf_bierman_update(yaflUKFBaseSt * self, yaflFloat * z);
+yaflStatusEn yafl_ukf_bierman_update(yaflUKFBaseSt * self, yaflFloat * z);
 
 
 /*===========================================================================*/
@@ -448,7 +450,8 @@ typedef struct {
     .chi2 = 10.8275662                                                   \
 }
 
-void yafl_ukf_adaptive_bierman_update(yaflUKFAdaptivedSt * self, yaflFloat * z);
+yaflStatusEn yafl_ukf_adaptive_bierman_update(yaflUKFAdaptivedSt * self, \
+                                              yaflFloat * z);
 
 /*=============================================================================
                      Van der Merwe sigma point generator
