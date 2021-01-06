@@ -427,6 +427,8 @@ static inline yaflStatusEn \
 
         /*Corrected s*/
         s = ac * c + r;
+
+        status |= YAFL_ST_ANOMALY;
     }
     else
     {
@@ -664,31 +666,45 @@ void yafl_ekf_do_not_use_this_update(yaflEKFAdaptiveSt * self, yaflFloat * z)
                             Robust Bierman filter
 =============================================================================*/
 static inline yaflStatusEn \
-    _scalar_robustify(yaflEKFBaseSt * self, yaflFloat * gdot, \
+    _scalar_robustify(yaflEKFBaseSt * self, yaflFloat * gdot_res, \
                       yaflFloat * nu, yaflFloat r05)
 {
     yaflEKFRobFuncP g;
+    yaflFloat gdot;
 
-    YAFL_CHECK(self, YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(gdot, YAFL_ST_INV_ARG_3);
-    YAFL_CHECK(nu,   YAFL_ST_INV_ARG_4);
+    YAFL_CHECK(self,     YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(gdot_res, YAFL_ST_INV_ARG_3);
+    YAFL_CHECK(nu,       YAFL_ST_INV_ARG_4);
 
     g = ((yaflEKFRobustSt *)self)->g;
 
     if (g)
     {
-        *gdot = *nu / r05; /*Use gdot as temp variable*/
-        *nu = r05 * g(self, *gdot);
+        gdot = *nu / r05; /*Use gdot as temp variable*/
+        *nu = r05 * g(self, gdot);
 
         g = ((yaflEKFRobustSt *)self)->gdot;
         YAFL_CHECK(g, YAFL_ST_INV_ARG_1);
 
-        *gdot = g(self, *gdot);
+        gdot = g(self, gdot);
     }
     else
     {
-        *gdot = 1.0;
+        gdot = 1.0;
     }
+
+    *gdot_res = gdot;
+
+    if (gdot < YAFL_EPS)
+    {
+        return YAFL_ST_GLITCH_LARGE;
+    }
+
+    if (gdot < 1.0)
+    {
+        return YAFL_ST_GLITCH_SMALL;
+    }
+
     return YAFL_ST_OK;
 }
 

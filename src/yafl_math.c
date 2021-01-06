@@ -796,9 +796,9 @@ yaflStatusEn yafl_math_mwgsu(yaflInt nr, yaflInt nc, yaflFloat *res_u, yaflFloat
         }
 
         /*Bad Eigenvalue workaround*/
-        if (res_dj < YAFL_UDU_EPS)
+        if (res_dj < YAFL_EPS)
         {
-            res_d[j] = YAFL_UDU_EPS;
+            res_d[j] = YAFL_EPS;
 
             for (k = j - 1; k >= 0; k--)
             {
@@ -862,9 +862,9 @@ yaflStatusEn yafl_math_udu_up(yaflInt sz, yaflFloat *res_u, yaflFloat *res_d, ya
 
         pj = v[j];
         res_dj = dj + alpha * pj * pj;
-        if (res_dj < YAFL_UDU_EPS)
+        if (res_dj < YAFL_EPS)
         {
-            res_dj  = YAFL_UDU_EPS;
+            res_dj  = YAFL_EPS;
             status |= YAFL_ST_REGULARIZED;
         }
 
@@ -913,9 +913,9 @@ yaflStatusEn yafl_math_udu_down(yaflInt sz, yaflFloat *res_u, yaflFloat *res_d, 
     dj = pj * pj / res_d[0];
     for (j = 1; j < sz; j++)
     {
-        if (res_d[j] < YAFL_UDU_EPS)
+        if (res_d[j] < YAFL_EPS)
         {
-            res_d[j] = YAFL_UDU_EPS;
+            res_d[j] = YAFL_EPS;
             status  |= YAFL_ST_REGULARIZED;
         }
 
@@ -925,9 +925,9 @@ yaflStatusEn yafl_math_udu_down(yaflInt sz, yaflFloat *res_u, yaflFloat *res_d, 
 
     dj = 1 - alpha * dj;
 
-    if (dj < YAFL_UDU_EPS)
+    if (dj < YAFL_EPS)
     {
-        dj      = YAFL_UDU_EPS;
+        dj      = YAFL_EPS;
         status |= YAFL_ST_REGULARIZED;
     }
 

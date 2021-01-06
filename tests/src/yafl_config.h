@@ -30,7 +30,7 @@ typedef double  yaflFloat;
 typedef int32_t yaflInt;
 
 /*TODO: уточнить*/
-#define YAFL_UDU_EPS  (1.0e-15)
+#define YAFL_EPS  (1.0e-15)
 
 #define YAFL_SQRT sqrt
 

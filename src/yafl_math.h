@@ -44,6 +44,14 @@ typedef enum {
     YAFL_ST_GLR          = 0x05,
     YAFL_ST_GLITCH_ALL   = 0x06,
     YAFL_ST_GAR          = 0x07,
+    YAFL_ST_ANOMALY      = 0x08,
+    YAFL_ST_AR           = 0x09,
+    YAFL_ST_GSA          = 0x0a,
+    YAFL_ST_GSAR         = 0x0b,
+    YAFL_ST_GLA          = 0x0c,
+    YAFL_ST_GLAR         = 0x0d,
+    YAFL_ST_GAA          = 0x0e,
+    YAFL_ST_GAAR         = 0x0f,
     /*Error threshold value (greater values are errors)*/
     YAFL_ST_ERR_THR      = 0x100,
     /*Invalid argument numer*/
