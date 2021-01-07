@@ -37,10 +37,10 @@ do {                                                                       \
 
 typedef enum {
     /*Warning flag masks*/
-    YAFL_ST_REGULARIZED  = 0x01,
-    YAFL_ST_GLITCH_SMALL = 0x02,
-    YAFL_ST_GLITCH_LARGE = 0x04,
-    YAFL_ST_ANOMALY      = 0x08,
+    YAFL_ST_MSK_REGULARIZED  = 0x01,
+    YAFL_ST_MSK_GLITCH_SMALL = 0x02,
+    YAFL_ST_MSK_GLITCH_LARGE = 0x04,
+    YAFL_ST_MSK_ANOMALY      = 0x08,
     /*Everything is OK*/
     YAFL_ST_OK           = 0x00,
     /*Warning statuses (see Warning flag masks)*/
@@ -60,7 +60,7 @@ typedef enum {
     YAFL_ST_SLA          = 0x0e,
     YAFL_ST_SLAR         = 0x0f,
     /*Error threshold value (greater values are errors)*/
-    YAFL_ST_ERR_THR      = 0x100,
+    YAFL_ST_ERR_THR      = 0x010,
     /*Invalid argument numer*/
     YAFL_ST_INV_ARG_1    = 0x100,
     YAFL_ST_INV_ARG_2    = 0x110,

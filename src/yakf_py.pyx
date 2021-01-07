@@ -30,10 +30,10 @@ cdef extern from "yafl_config.h":
 cdef extern from "yafl_math.c":
     ctypedef enum yaflStatusEn:
         #Warning flag masks
-        YAFL_ST_REGULARIZED  = 0x01 #YAFL_ST_R
-        YAFL_ST_GLITCH_SMALL = 0x02 #YAFL_ST_S
-        YAFL_ST_GLITCH_LARGE = 0x04 #YAFL_ST_L
-        YAFL_ST_ANOMALY      = 0x08 #YAFL_ST_A
+        YAFL_ST_MSK_REGULARIZED  = 0x01 #YAFL_ST_R
+        YAFL_ST_MSK_GLITCH_SMALL = 0x02 #YAFL_ST_S
+        YAFL_ST_MSK_GLITCH_LARGE = 0x04 #YAFL_ST_L
+        YAFL_ST_MSK_ANOMALY      = 0x08 #YAFL_ST_A
         #Everthing is OK
         YAFL_ST_OK           = 0x00
         #Wagnings
@@ -53,15 +53,19 @@ cdef extern from "yafl_math.c":
         YAFL_ST_SLA          = 0x0e
         YAFL_ST_SLAR         = 0x0f
         # Error threshold value (greater values are errors)
-        YAFL_ST_ERR_THR      = 0x100
+        YAFL_ST_ERR_THR      = 0x010
         # Invalid argument numer
-        YAFL_ST_INV_AGR_1    = 0x100
-        YAFL_ST_INV_AGR_2    = 0x110
-        YAFL_ST_INV_AGR_3    = 0x120
-        YAFL_ST_INV_AGR_4    = 0x130
-        YAFL_ST_INV_AGR_5    = 0x140
-        YAFL_ST_INV_AGR_6    = 0x150
-        YAFL_ST_INV_AGR_7    = 0x160
+        YAFL_ST_INV_ARG_1    = 0x100
+        YAFL_ST_INV_ARG_2    = 0x110
+        YAFL_ST_INV_ARG_3    = 0x120
+        YAFL_ST_INV_ARG_4    = 0x130
+        YAFL_ST_INV_ARG_5    = 0x140
+        YAFL_ST_INV_ARG_6    = 0x150
+        YAFL_ST_INV_ARG_7    = 0x160
+        YAFL_ST_INV_ARG_8    = 0x170
+        YAFL_ST_INV_ARG_9    = 0x180
+        YAFL_ST_INV_ARG_10   = 0x190
+        YAFL_ST_INV_ARG_11   = 0x1a0
 
     #--------------------------------------------------------------------------
     cdef yaflStatusEn yafl_math_set_u(yaflInt sz, yaflFloat *res, yaflFloat *u)
@@ -271,6 +275,33 @@ cdef extern from "yafl.c":
 # We need numpy for Pythonic interfaces
 cimport numpy as np
 import  numpy as np
+
+#Status masks
+ST_MSK_REGULARIZED  = YAFL_ST_MSK_REGULARIZED
+ST_MSK_GLITCH_SMALL = YAFL_ST_MSK_GLITCH_SMALL
+ST_MSK_GLITCH_LARGE = YAFL_ST_MSK_GLITCH_LARGE
+ST_MSK_ANOMALY      = YAFL_ST_MSK_ANOMALY
+ST_MSK_ERROR        = 0xFF0
+ST_MSK_WARNING      = 0xF
+
+#Everthing is OK
+ST_OK = YAFL_ST_OK
+
+#Error threshold
+ST_ERR_THR = YAFL_ST_ERR_THR
+#Errors:
+# Invalid argument numer
+ST_INV_ARG_1  = YAFL_ST_INV_ARG_1
+ST_INV_ARG_2  = YAFL_ST_INV_ARG_2
+ST_INV_ARG_3  = YAFL_ST_INV_ARG_3
+ST_INV_ARG_4  = YAFL_ST_INV_ARG_4
+ST_INV_ARG_5  = YAFL_ST_INV_ARG_5
+ST_INV_ARG_6  = YAFL_ST_INV_ARG_6
+ST_INV_ARG_7  = YAFL_ST_INV_ARG_7
+ST_INV_ARG_8  = YAFL_ST_INV_ARG_8
+ST_INV_ARG_9  = YAFL_ST_INV_ARG_9
+ST_INV_ARG_10 = YAFL_ST_INV_ARG_10
+ST_INV_ARG_11 = YAFL_ST_INV_ARG_11
 
 #==============================================================================
 #                          UD-factorized EKF API
@@ -537,7 +568,7 @@ cdef class yaflExtendedBase:
 
         self._z[:] = z           
         self._hx_args = hx_args
-        self._update()
+        return self._update()
         
 #==============================================================================
 #                             Basic C-callbacks
@@ -1272,7 +1303,7 @@ cdef class yakfUnscentedBase:
 
         self._z[:] = z
         self._hx_args = hx_args
-        self._update()
+        return self._update()
 
 #==============================================================================
 cdef yaflStatusEn yafl_py_sigma_addf(yakfPyUnscentedSt * self, yaflFloat * delta, \

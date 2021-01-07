@@ -805,7 +805,7 @@ yaflStatusEn yafl_math_mwgsu(yaflInt nr, yaflInt nc, yaflFloat *res_u, yaflFloat
                 res_u[k + nrj] = 0;
             }
 
-            status |= YAFL_ST_REGULARIZED;
+            status |= YAFL_ST_MSK_REGULARIZED;
             continue;
         }
 
@@ -865,7 +865,7 @@ yaflStatusEn yafl_math_udu_up(yaflInt sz, yaflFloat *res_u, yaflFloat *res_d, ya
         if (res_dj < YAFL_EPS)
         {
             res_dj  = YAFL_EPS;
-            status |= YAFL_ST_REGULARIZED;
+            status |= YAFL_ST_MSK_REGULARIZED;
         }
 
         betaj = alpha * pj / res_dj;
@@ -916,7 +916,7 @@ yaflStatusEn yafl_math_udu_down(yaflInt sz, yaflFloat *res_u, yaflFloat *res_d, 
         if (res_d[j] < YAFL_EPS)
         {
             res_d[j] = YAFL_EPS;
-            status  |= YAFL_ST_REGULARIZED;
+            status  |= YAFL_ST_MSK_REGULARIZED;
         }
 
         pj  = v[j];
@@ -928,7 +928,7 @@ yaflStatusEn yafl_math_udu_down(yaflInt sz, yaflFloat *res_u, yaflFloat *res_d, 
     if (dj < YAFL_EPS)
     {
         dj      = YAFL_EPS;
-        status |= YAFL_ST_REGULARIZED;
+        status |= YAFL_ST_MSK_REGULARIZED;
     }
 
     alpha /= dj;

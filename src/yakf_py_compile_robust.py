@@ -28,6 +28,8 @@ pyximport.install(
         }
     )
 
+import yakf_py
+
 #from yakf_py import RobustJoseph as KF
 #from yakf_py import RobustBierman as KF
 #from yakf_py import AdaptiveRobustJoseph as KF
@@ -107,6 +109,7 @@ N = 12000
 clean = np.zeros((N, 2))
 noisy = np.zeros((N, 2))
 t     = np.zeros((N,), dtype=np.float)
+st    = np.zeros((N,), dtype=np.int)
 for i in range(1, len(clean)//2):
     clean[i] = clean[i-1] + np.array([1.5,1.])
     noisy[i] = clean[i]   + np.random.normal(scale=STD, size=2)
@@ -124,7 +127,7 @@ import time
 start = time.time()
 for i, z in enumerate(noisy):
     kf.predict()
-    kf.update(z)
+    st[i] = kf.update(z)
     kf_out[i] = kf.x[::2]
 end = time.time()
 print(end - start)
@@ -148,5 +151,18 @@ plt.show()
 
 plt.plot(t, noisy[:,0], "x", t, kf_out[:,0], t, clean[:,0])
 plt.show()
+
+plt.plot(t, [st[i] & yakf_py.ST_MSK_ANOMALY for i in range(N)])
+plt.show()
+
+plt.plot(t, [st[i] & yakf_py.ST_MSK_REGULARIZED for i in range(N)])
+plt.show()
+
+plt.plot(t, [st[i] & yakf_py.ST_MSK_GLITCH_SMALL for i in range(N)])
+plt.show()
+
+plt.plot(t, [st[i] & yakf_py.ST_MSK_GLITCH_LARGE for i in range(N)])
+plt.show()
+
 
 print('Done!')
