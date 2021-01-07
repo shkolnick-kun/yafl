@@ -16,8 +16,9 @@
     and limitations under the License.
 """
 #==============================================================================
-#                                YAKF C API
+#                                YAFL C API
 #==============================================================================
+# cython: language_level=3
 # distutils: language = c
 from libc cimport stdint
 
@@ -68,7 +69,7 @@ cdef extern from "yafl_math.c":
         YAFL_ST_INV_ARG_11   = 0x1a0
 
     #--------------------------------------------------------------------------
-    cdef yaflStatusEn yafl_math_set_u(yaflInt sz, yaflFloat *res, yaflFloat *u)
+    #cdef yaflStatusEn yafl_math_set_u(yaflInt sz, yaflFloat *res, yaflFloat *u)
 
 #------------------------------------------------------------------------------
 cdef extern from "yafl.c":

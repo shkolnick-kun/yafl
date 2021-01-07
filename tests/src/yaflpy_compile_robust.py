@@ -15,25 +15,30 @@
 
     See the License for the specific language governing permissions
 """
+import matplotlib.pyplot as plt
 import numpy as np
 import pyximport
+import sys
+import time
+
+sys.path.insert(0,'../../src')
 
 pyximport.install(
-    build_dir='../tests/projects/obj', 
+    build_dir='../projects/obj', 
     pyimport=True,
     reload_support=True, 
     language_level=3,
     setup_args={
-        'include_dirs': ['./', '../tests/src'],
+        'include_dirs': ['../../src', '../../src/configpy'],
         }
     )
 
-import yakf_py
+import yaflpy
 
-#from yakf_py import RobustJoseph as KF
-#from yakf_py import RobustBierman as KF
-#from yakf_py import AdaptiveRobustJoseph as KF
-from yakf_py import AdaptiveRobustBierman as KF
+#from yaflpy import RobustJoseph as KF
+#from yaflpy import RobustBierman as KF
+#from yaflpy import AdaptiveRobustJoseph as KF
+from yaflpy import AdaptiveRobustBierman as KF
 
 def _fx(x, dt, **fx_args):
     x = x.copy()
@@ -122,8 +127,6 @@ for i in range(i, len(clean)):
 
 kf_out = np.zeros((N, 2))
 
-import time
-
 start = time.time()
 for i, z in enumerate(noisy):
     kf.predict()
@@ -132,8 +135,6 @@ for i, z in enumerate(noisy):
 end = time.time()
 print(end - start)
 
-
-import matplotlib.pyplot as plt
 plt.plot(t, noisy - kf_out)
 plt.show()
 
@@ -152,16 +153,16 @@ plt.show()
 plt.plot(t, noisy[:,0], "x", t, kf_out[:,0], t, clean[:,0])
 plt.show()
 
-plt.plot(t, [st[i] & yakf_py.ST_MSK_ANOMALY for i in range(N)])
+plt.plot(t, [st[i] & yaflpy.ST_MSK_ANOMALY for i in range(N)])
 plt.show()
 
-plt.plot(t, [st[i] & yakf_py.ST_MSK_REGULARIZED for i in range(N)])
+plt.plot(t, [st[i] & yaflpy.ST_MSK_REGULARIZED for i in range(N)])
 plt.show()
 
-plt.plot(t, [st[i] & yakf_py.ST_MSK_GLITCH_SMALL for i in range(N)])
+plt.plot(t, [st[i] & yaflpy.ST_MSK_GLITCH_SMALL for i in range(N)])
 plt.show()
 
-plt.plot(t, [st[i] & yakf_py.ST_MSK_GLITCH_LARGE for i in range(N)])
+plt.plot(t, [st[i] & yaflpy.ST_MSK_GLITCH_LARGE for i in range(N)])
 plt.show()
 
 

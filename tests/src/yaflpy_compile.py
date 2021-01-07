@@ -15,24 +15,30 @@
 
     See the License for the specific language governing permissions
 """
+import time
+import matplotlib.pyplot as plt
 import numpy as np
 import pyximport
+import sys
+
+sys.path.insert(0,'../../src')
 
 pyximport.install(
-    build_dir='../tests/projects/obj', 
+    build_dir='../projects/obj', 
     pyimport=True,
     reload_support=True, 
     language_level=3,
     setup_args={
-        'include_dirs': ['./', '../tests/src'],
+        'include_dirs': ['../../src', '../../src/configpy'],
         }
     )
 
-#from yakf_py import Bierman as KF
-#from yakf_py import Joseph as KF
-from yakf_py import AdaptiveBierman as KF
-#from yakf_py import AdaptiveJoseph as KF
-#from yakf_py import DoNotUseThisFilter as KF
+
+#from yaflpy import Bierman as KF
+#from yaflpy import Joseph as KF
+from yaflpy import AdaptiveBierman as KF
+#from yaflpy import AdaptiveJoseph as KF
+#from yaflpy import DoNotUseThisFilter as KF
 
 def _fx(x, dt, **fx_args):
     x = x.copy()
@@ -99,8 +105,6 @@ for i in range(1, len(clean)):
 
 kf_out = np.zeros((N, 2))
 
-import time
-
 start = time.time()
 for i, z in enumerate(noisy):
     kf.predict()
@@ -109,8 +113,6 @@ for i, z in enumerate(noisy):
 end = time.time()
 print(end - start)
 
-
-import matplotlib.pyplot as plt
 plt.plot(t, noisy - kf_out)
 plt.show()
 

@@ -1,4 +1,4 @@
-# Yet Another Kalman Filter library
+# Yet Another Filtering library
 
 This project is work in progress.
 

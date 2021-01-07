@@ -15,25 +15,28 @@
 
     See the License for the specific language governing permissions
 """
-import time
-import numpy as np
 import matplotlib.pyplot as plt
-#from filterpy.kalman import UnscentedKalmanFilter, MerweScaledSigmaPoints
-
+import numpy as np
 import pyximport
+import sys
+import time
+
+sys.path.insert(0,'../../src')
+
 pyximport.install(
-    build_dir='../tests/projects/obj', 
+    build_dir='../projects/obj', 
     pyimport=True,
     reload_support=True, 
     language_level=3,
     setup_args={
-        'include_dirs': ['./', '../tests/src'],
+        'include_dirs': ['../../src', '../../src/configpy'],
         }
     )
 
-from yakf_py import MerweSigmaPoints as SP
-#from yakf_py import UnscentedBierman as KF
-from yakf_py import UnscentedAdaptiveBierman as KF
+#from filterpy.kalman import UnscentedKalmanFilter, MerweScaledSigmaPoints
+
+from yaflpy import MerweSigmaPoints as SP
+from yaflpy import UnscentedAdaptiveBierman as KF
 
 
 def _fx(x, dt, **fx_args):
@@ -122,7 +125,7 @@ plt.show()
 plt.plot(clean[:,0], clean[:,1], kf_out[:,0], kf_out[:,1])
 plt.show()
 
-plt.plot(noisy[:,0], noisy[:,1],  kf_out[:,0], kf_out[:,1])
+plt.plot(noisy[:,0], noisy[:,1], kf_out[:,0], kf_out[:,1])
 plt.show()
 
 plt.plot(t, noisy[:,1], t, kf_out[:,1], t, clean[:,1])

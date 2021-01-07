@@ -14,7 +14,7 @@
     See the License for the specific language governing permissions
     and limitations under the License.
 ******************************************************************************/
-
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -179,7 +179,7 @@ int main (void)
     status = H5Fclose(file);
     printf("File %s closed with status: %d\n", IN_FILE, status);
 
-    YAFL_ASSERT(mat.shape.dim.y == NZ);
+    assert(mat.shape.dim.y == NZ);
     for (i=0; i<mat.shape.dim.x; i++)
     {
         yafl_ekf_base_predict(&kf);

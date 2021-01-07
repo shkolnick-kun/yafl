@@ -1,3 +1,7 @@
+# Setup tools outputs #
+#######################
+src/yaflpy.c
+
 # Compiled Object files #
 #########################
 *.slo

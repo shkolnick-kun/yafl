@@ -18,12 +18,10 @@
 #ifndef YAFL_CONFIG_H
 #define YAFL_CONFIG_H
 
-#include <assert.h>
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
 
-#define YAFL_ASSERT assert
 #define YAFL_LOG(...) fprintf(stderr, __VA_ARGS__)
 
 typedef double  yaflFloat;
