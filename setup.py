@@ -1,23 +1,31 @@
 # -*- coding: utf-8 -*-
 import numpy
+from os.path import join, dirname
 from setuptools import Extension, setup
-from Cython.Build import cythonize
+from Cython.Build import cythonize #must be after setuptools
 
-description = ['Yet Another Filtering Library']
+#------------------------------------------------------------------------------
+setup_dir = dirname(__file__)
+src_dir   = join(setup_dir, 'src')
 
 extensions = [
-    Extension('yaflpy', ['src/yaflpy.pyx'],
-        include_dirs=[numpy.get_include(), 'src', 'src/configpy'],
+    Extension('yaflpy', [join(src_dir, 'yaflpy.pyx')],
+        include_dirs=[numpy.get_include(), src_dir, join(src_dir, 'configpy')],
         define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")])
     ]
 
-for e in extensions:
-    e.cython_directives = {'language_level': "3"} 
+#------------------------------------------------------------------------------
+deps = ['setuptools', 'Cython', 'numpy']
 
+#------------------------------------------------------------------------------
 setup(
       name="yaflpy",
       version = '0.1.0',
+      description = ['Yet Another Filtering Library'],
+      long_description = open(join(setup_dir, 'Readme.md')).read(),
+      long_description_content_type = 'text/markdown',
       license = 'Apache License, Version 2.0',
+      license_file = join(setup_dir, 'LICENSE'),
       author = 'anonimous',
       author_email = 'shkolnick-kun@gmail.com',
       url = 'https://github.com/shkolnick-kun/yafl',
@@ -35,7 +43,9 @@ setup(
         'Programming Language :: Python :: 3.9',
         'Topic :: Software Development :: Embedded Systems',
         ],
-      #packages = ['src'],
+      setup_requires=deps,
+      install_requires=deps,
+      platforms = ['any'],
       ext_modules = cythonize(extensions,
-                              compiler_directives={'language_level' : "3"})
+                              compiler_directives={'language_level' : '3'})
 )

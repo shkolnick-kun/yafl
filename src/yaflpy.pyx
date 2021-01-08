@@ -277,6 +277,10 @@ cdef extern from "yafl.c":
 cimport numpy as np
 import  numpy as np
 
+# We need traceback to print pythonic callback exceptions
+import traceback as tb
+
+#==============================================================================
 #Status masks
 ST_MSK_REGULARIZED  = YAFL_ST_MSK_REGULARIZED
 ST_MSK_GLITCH_SMALL = YAFL_ST_MSK_GLITCH_SMALL
@@ -576,112 +580,131 @@ cdef class yaflExtendedBase:
 #==============================================================================
 # State transition function 
 cdef yaflStatusEn yafl_py_ekf_fx(yaflPyEkfBaseSt * self):
+    try:
+        py_self = <yaflExtendedBase>(self.py_self)
+        if not isinstance(py_self, yaflExtendedBase):
+            raise ValueError('Invalid py_self type (must be subclass of yaflExtendedBase)!')
+        
+        fx = py_self._fx
+        if not callable(fx):
+            raise ValueError('fx must be callable!')
+        
+        dt = py_self._dt
+        if np.isnan(dt):
+            raise ValueError('Invalid dt value (nan)!')
     
-    py_self = <yaflExtendedBase>(self.py_self)
-    if not isinstance(py_self, yaflExtendedBase):
-        raise ValueError('Invalid py_self type (must be subclass of yaflExtendedBase)!')
+        fx_args = py_self._fx_args
+        if not isinstance(fx_args, dict):
+            raise ValueError('Invalid fx_args type (must be dict)!')
+        
+        #How about handling exceptions here???
+        py_self._x[:] = fx(py_self._x, dt, **fx_args)
     
-    fx = py_self._fx
-    if not callable(fx):
-        raise ValueError('fx must be callable!')
-    
-    dt = py_self._dt
-    if np.isnan(dt):
-        raise ValueError('Invalid dt value (nan)!')
+        return YAFL_ST_OK
 
-    fx_args = py_self._fx_args
-    if not isinstance(fx_args, dict):
-        raise ValueError('Invalid fx_args type (must be dict)!')
-    
-    #How about handling exceptions here???
-    py_self._x[:] = fx(py_self._x, dt, **fx_args)
-
-    return YAFL_ST_OK
+    except Exception as e:
+        print(tb.format_exc())
+        return YAFL_ST_INV_ARG_1
 
 #------------------------------------------------------------------------------
 # State transition function Jacobian
 cdef yaflStatusEn yafl_py_ekf_jfx(yaflPyEkfBaseSt * self):
+    try:
+        py_self = <yaflExtendedBase>(self.py_self)
+        if not isinstance(py_self, yaflExtendedBase):
+            raise ValueError('Invalid py_self type (must be subclass of yaflExtendedBase)!')
+           
+        jfx = py_self._jfx
+        if not callable(jfx):
+            raise ValueError('jfx must be callable!')
+        
+        dt = py_self._dt
+        if np.isnan(dt):
+            raise ValueError('Invalid dt value (nan)!')
     
-    py_self = <yaflExtendedBase>(self.py_self)
-    if not isinstance(py_self, yaflExtendedBase):
-        raise ValueError('Invalid py_self type (must be subclass of yaflExtendedBase)!')
-       
-    jfx = py_self._jfx
-    if not callable(jfx):
-        raise ValueError('jfx must be callable!')
+        fx_args = py_self._fx_args
+        if not isinstance(fx_args, dict):
+            raise ValueError('Invalid fx_args type (must be dict)!')
+        
+        #How about handling exceptions here???
+        py_self._W[:, :self.base.base.Nx] = jfx(py_self._x, dt, **fx_args)
     
-    dt = py_self._dt
-    if np.isnan(dt):
-        raise ValueError('Invalid dt value (nan)!')
+        return YAFL_ST_OK
 
-    fx_args = py_self._fx_args
-    if not isinstance(fx_args, dict):
-        raise ValueError('Invalid fx_args type (must be dict)!')
-    
-    #How about handling exceptions here???
-    py_self._W[:, :self.base.base.Nx] = jfx(py_self._x, dt, **fx_args)
-
-    return YAFL_ST_OK
+    except Exception as e:
+        print(tb.format_exc())
+        return YAFL_ST_INV_ARG_1
 
 #------------------------------------------------------------------------------
 # State transition function 
 cdef yaflStatusEn yafl_py_ekf_hx(yaflPyEkfBaseSt * self):
+    try:
+        py_self = <yaflExtendedBase>(self.py_self)
+        if not isinstance(py_self, yaflExtendedBase):
+            raise ValueError('Invalid py_self type (must be subclass of yaflExtendedBase)!')
+        
+        hx = py_self._hx
+        if not callable(hx):
+            raise ValueError('hx must be callable!')
     
-    py_self = <yaflExtendedBase>(self.py_self)
-    if not isinstance(py_self, yaflExtendedBase):
-        raise ValueError('Invalid py_self type (must be subclass of yaflExtendedBase)!')
+        hx_args = py_self._hx_args
+        if not isinstance(hx_args, dict):
+            raise ValueError('Invalid hx_args type (must be dict)!')
+        
+        #How about handling exceptions here???
+        py_self._y[:] = hx(py_self._x, **hx_args)
     
-    hx = py_self._hx
-    if not callable(hx):
-        raise ValueError('hx must be callable!')
+        return YAFL_ST_OK
 
-    hx_args = py_self._hx_args
-    if not isinstance(hx_args, dict):
-        raise ValueError('Invalid hx_args type (must be dict)!')
-    
-    #How about handling exceptions here???
-    py_self._y[:] = hx(py_self._x, **hx_args)
-
-    return YAFL_ST_OK
+    except Exception as e:
+        print(tb.format_exc())
+        return YAFL_ST_INV_ARG_1
 
 #------------------------------------------------------------------------------
 # State transition function Jacobian
 cdef yaflStatusEn yafl_py_ekf_jhx(yaflPyEkfBaseSt * self):
+    try:
+        py_self = <yaflExtendedBase>(self.py_self)
+        if not isinstance(py_self, yaflExtendedBase):
+            raise ValueError('Invalid py_self type (must be subclass of yaflExtendedBase)!')
+        
+        jhx = py_self._jhx
+        if not callable(jhx):
+            raise ValueError('jhx must be callable!')
     
-    py_self = <yaflExtendedBase>(self.py_self)
-    if not isinstance(py_self, yaflExtendedBase):
-        raise ValueError('Invalid py_self type (must be subclass of yaflExtendedBase)!')
+        hx_args = py_self._hx_args
+        if not isinstance(hx_args, dict):
+            raise ValueError('Invalid hx_args type (must be dict)!')
+        
+        #How about handling exceptions here???
+        py_self._H[:,:] = jhx(py_self._x, **hx_args)
     
-    jhx = py_self._jhx
-    if not callable(jhx):
-        raise ValueError('jhx must be callable!')
+        return YAFL_ST_OK
 
-    hx_args = py_self._hx_args
-    if not isinstance(hx_args, dict):
-        raise ValueError('Invalid hx_args type (must be dict)!')
-    
-    #How about handling exceptions here???
-    py_self._H[:,:] = jhx(py_self._x, **hx_args)
-
-    return YAFL_ST_OK
+    except Exception as e:
+        print(tb.format_exc())
+        return YAFL_ST_INV_ARG_1
 
 #------------------------------------------------------------------------------
 # Measurement residual function
 cdef yaflStatusEn yafl_py_ekf_zrf(yaflPyEkfBaseSt * self, yaflFloat * zp):
+    try:
+        py_self = <yaflExtendedBase>(self.py_self)
+        if not isinstance(py_self, yaflExtendedBase):
+            raise ValueError('Invalid py_self type (must be subclass of yaflExtendedBase)!')
+        
+        zrf = py_self._residual_z
+        if not callable(zrf):
+            raise ValueError('jhx must be callable!')
+        
+        #How about handling exceptions here???
+        py_self._y[:] = zrf(py_self._z, py_self._y)
     
-    py_self = <yaflExtendedBase>(self.py_self)
-    if not isinstance(py_self, yaflExtendedBase):
-        raise ValueError('Invalid py_self type (must be subclass of yaflExtendedBase)!')
-    
-    zrf = py_self._residual_z
-    if not callable(zrf):
-        raise ValueError('jhx must be callable!')
-    
-    #How about handling exceptions here???
-    py_self._y[:] = zrf(py_self._z, py_self._y)
+        return YAFL_ST_OK
 
-    return YAFL_ST_OK
-    
+    except Exception as e:
+        print(tb.format_exc())
+        return YAFL_ST_INV_ARG_1
 #==============================================================================
 cdef class Bierman(yaflExtendedBase):
     def _update(self):
@@ -771,49 +794,55 @@ cdef class yakfRobustBase(yaflExtendedBase):
 #------------------------------------------------------------------------------
 # State transition function 
 cdef yaflFloat yafl_py_ekf_rob_gz(yaflPyEkfBaseSt * self, yaflFloat nu):
+    try:
+        py_self = <yakfRobustBase>(self.py_self)
+        if not isinstance(py_self, yaflExtendedBase):
+            raise ValueError('Invalid py_self type (must be subclass of yaflExtendedBase)!')
+    
+        gz = py_self._gz
+        if not callable(gz):
+            raise ValueError('gz must be callable!')
+    
+        hx_args = py_self._hx_args
+        if not isinstance(hx_args, dict):
+            raise ValueError('Invalid hx_args type (must be dict)!')
+    
+        #How about handling exceptions here???
+        ret = gz(nu, **hx_args)
+        if type(ret) != float:
+            raise ValueError('gz must return float!')
+    
+        return <yaflFloat>ret
 
-    py_self = <yakfRobustBase>(self.py_self)
-    if not isinstance(py_self, yaflExtendedBase):
-        raise ValueError('Invalid py_self type (must be subclass of yaflExtendedBase)!')
-
-    gz = py_self._gz
-    if not callable(gz):
-        raise ValueError('gz must be callable!')
-
-    hx_args = py_self._hx_args
-    if not isinstance(hx_args, dict):
-        raise ValueError('Invalid hx_args type (must be dict)!')
-
-    #How about handling exceptions here???
-    ret = gz(nu, **hx_args)
-    if type(ret) != float:
-        raise ValueError('gz must return float!')
-
-    return <yaflFloat>ret
-
+    except Exception as e:
+        print(tb.format_exc())
+        return <yaflFloat>0.0
 #------------------------------------------------------------------------------
 # State transition function Jacobian
 cdef yaflFloat yafl_py_ekf_rob_gdotz(yaflPyEkfBaseSt * self, yaflFloat nu):
+    try:
+        py_self = <yakfRobustBase>(self.py_self)
+        if not isinstance(py_self, yaflExtendedBase):
+            raise ValueError('Invalid py_self type (must be subclass of yaflExtendedBase)!')
+    
+        gdotz = py_self._gdotz
+        if not callable(gdotz):
+            raise ValueError('gdotz must be callable!')
+    
+        hx_args = py_self._hx_args
+        if not isinstance(hx_args, dict):
+            raise ValueError('Invalid hx_args type (must be dict)!')
+    
+        #How about handling exceptions here???
+        ret = gdotz(nu, **hx_args)
+        if type(ret) != float:
+            raise ValueError('gdotz must return float!')
+    
+        return <yaflFloat>ret
 
-    py_self = <yakfRobustBase>(self.py_self)
-    if not isinstance(py_self, yaflExtendedBase):
-        raise ValueError('Invalid py_self type (must be subclass of yaflExtendedBase)!')
-
-    gdotz = py_self._gdotz
-    if not callable(gdotz):
-        raise ValueError('gdotz must be callable!')
-
-    hx_args = py_self._hx_args
-    if not isinstance(hx_args, dict):
-        raise ValueError('Invalid hx_args type (must be dict)!')
-
-    #How about handling exceptions here???
-    ret = gdotz(nu, **hx_args)
-    if type(ret) != float:
-        raise ValueError('gdotz must return float!')
-
-    return <yaflFloat>ret
-
+    except Exception as e:
+        print(tb.format_exc())
+        return <yaflFloat>0.0
 #==============================================================================
 cdef class RobustBierman(yakfRobustBase):
     def _update(self):
@@ -1309,200 +1338,219 @@ cdef class yakfUnscentedBase:
 #==============================================================================
 cdef yaflStatusEn yafl_py_sigma_addf(yakfPyUnscentedSt * self, yaflFloat * delta, \
                              yaflFloat * pivot, yaflFloat mult):
+    try:
+        py_self = <yakfUnscentedBase>(self.py_self)
+        if not isinstance(py_self, yakfUnscentedBase):
+            raise ValueError('Invalid py_self type (must be subclass of yakfUnscentedBase)!')
+    
+        _addf = py_self._points._addf
+        if not callable(_addf):
+            raise ValueError('_addf must be callable!')
+    
+        nx = self.base.base.Nx
+        if nx <= 0:
+            raise ValueError('nx must be > 0!')
+    
+        _delta = np.asarray(<yaflFloat[:nx]> delta) #np.float64_t
+        _pivot = np.asarray(<yaflFloat[:nx]> pivot) #np.float64_t
+    
+        _delta[:] = _addf(_delta, _pivot, mult)
+    
+        return YAFL_ST_OK
 
-    py_self = <yakfUnscentedBase>(self.py_self)
-    if not isinstance(py_self, yakfUnscentedBase):
-        raise ValueError('Invalid py_self type (must be subclass of yakfUnscentedBase)!')
-
-    _addf = py_self._points._addf
-    if not callable(_addf):
-        raise ValueError('_addf must be callable!')
-
-    nx = self.base.base.Nx
-    if nx <= 0:
-        raise ValueError('nx must be > 0!')
-
-    _delta = np.asarray(<yaflFloat[:nx]> delta) #np.float64_t
-    _pivot = np.asarray(<yaflFloat[:nx]> pivot) #np.float64_t
-
-    _delta[:] = _addf(_delta, _pivot, mult)
-
-    return YAFL_ST_OK
-
+    except Exception as e:
+        print(tb.format_exc())
+        return YAFL_ST_INV_ARG_1
 #==============================================================================
 cdef yaflStatusEn yafl_py_ukf_fx(yakfPyUnscentedSt * self, \
                          yaflFloat * new_x, yaflFloat * old_x):
+    try:
+        py_self = <yakfUnscentedBase>(self.py_self)
+        if not isinstance(py_self, yakfUnscentedBase):
+            raise ValueError('Invalid py_self type (must be subclass of yakfUnscentedBase)!')
+    
+        fx = py_self._fx
+        if not callable(fx):
+            raise ValueError('fx must be callable!')
+    
+        dt = py_self._dt
+        if np.isnan(dt):
+            raise ValueError('Invalid dt value (nan)!')
+    
+        fx_args = py_self._fx_args
+        if not isinstance(fx_args, dict):
+            raise ValueError('Invalid fx_args type (must be dict)!')
+    
+        nx = self.base.base.Nx
+        if nx <= 0:
+            raise ValueError('nx must be > 0!')
+    
+        _new_x = np.asarray(<yaflFloat[:nx]> new_x) #np.float64_t
+        _old_x = np.asarray(<yaflFloat[:nx]> old_x) #np.float64_t
+    
+        _new_x[:] = fx(_old_x, dt, **fx_args)
+    
+        return YAFL_ST_OK
 
-    py_self = <yakfUnscentedBase>(self.py_self)
-    if not isinstance(py_self, yakfUnscentedBase):
-        raise ValueError('Invalid py_self type (must be subclass of yakfUnscentedBase)!')
-
-    fx = py_self._fx
-    if not callable(fx):
-        raise ValueError('fx must be callable!')
-
-    dt = py_self._dt
-    if np.isnan(dt):
-        raise ValueError('Invalid dt value (nan)!')
-
-    fx_args = py_self._fx_args
-    if not isinstance(fx_args, dict):
-        raise ValueError('Invalid fx_args type (must be dict)!')
-
-    nx = self.base.base.Nx
-    if nx <= 0:
-        raise ValueError('nx must be > 0!')
-
-    _new_x = np.asarray(<yaflFloat[:nx]> new_x) #np.float64_t
-    _old_x = np.asarray(<yaflFloat[:nx]> old_x) #np.float64_t
-
-    _new_x[:] = fx(_old_x, dt, **fx_args)
-
-    return YAFL_ST_OK
-
+    except Exception as e:
+        print(tb.format_exc())
+        return YAFL_ST_INV_ARG_1
 #------------------------------------------------------------------------------
 cdef yaflStatusEn yafl_py_ukf_xmf(yakfPyUnscentedSt * self, \
                           yaflFloat * res, yaflFloat * sigmas):
+    try:
+        py_self = <yakfUnscentedBase>(self.py_self)
+        if not isinstance(py_self, yakfUnscentedBase):
+            raise ValueError('Invalid py_self type (must be subclass of yakfUnscentedBase)!')
+    
+        mean_x = py_self._mean_x
+        if not callable(mean_x):
+            raise ValueError('mean_x must be callable!')
+    
+        nx = self.base.base.Nx
+        if nx <= 0:
+            raise ValueError('nx must be > 0!')
+    
+        _points = py_self._points
+        if not isinstance(py_self, yakfSigmaBase):
+            raise ValueError('Invalid _points type (must be subclass of yakfSigmaBase)!')
+    
+        pnum = _points.base.base.np
+        if pnum <= 0:
+            raise ValueError('pnum must be > 0!')
+    
+        _sigmas = np.asarray(<yaflFloat[:pnum, :nx]> sigmas) #np.float64_t
+        _res    = np.asarray(<yaflFloat[:nx]> res)           #np.float64_t
+    
+        _res[:] = mean_x(_sigmas, _points._wm)
+    
+        return YAFL_ST_OK
 
-    py_self = <yakfUnscentedBase>(self.py_self)
-    if not isinstance(py_self, yakfUnscentedBase):
-        raise ValueError('Invalid py_self type (must be subclass of yakfUnscentedBase)!')
-
-    mean_x = py_self._mean_x
-    if not callable(mean_x):
-        raise ValueError('mean_x must be callable!')
-
-    nx = self.base.base.Nx
-    if nx <= 0:
-        raise ValueError('nx must be > 0!')
-
-    _points = py_self._points
-    if not isinstance(py_self, yakfSigmaBase):
-        raise ValueError('Invalid _points type (must be subclass of yakfSigmaBase)!')
-
-    pnum = _points.base.base.np
-    if pnum <= 0:
-        raise ValueError('pnum must be > 0!')
-
-    _sigmas = np.asarray(<yaflFloat[:pnum, :nx]> sigmas) #np.float64_t
-    _res    = np.asarray(<yaflFloat[:nx]> res)           #np.float64_t
-
-    _res[:] = mean_x(_sigmas, _points._wm)
-
-    return YAFL_ST_OK
-
+    except Exception as e:
+        print(tb.format_exc())
+        return YAFL_ST_INV_ARG_1
 #------------------------------------------------------------------------------
 cdef yaflStatusEn yafl_py_ukf_xrf(yakfPyUnscentedSt * self, yaflFloat * res, \
                              yaflFloat * sigma, yaflFloat * pivot):
+    try:
+        py_self = <yakfUnscentedBase>(self.py_self)
+        if not isinstance(py_self, yakfUnscentedBase):
+            raise ValueError('Invalid py_self type (must be subclass of yakfUnscentedBase)!')
+    
+        residual_x = py_self._residual_x
+        if not callable(residual_x):
+            raise ValueError('residual_x must be callable!')
+    
+        nx = self.base.base.Nx
+        if nx <= 0:
+            raise ValueError('nx must be > 0!')
+    
+        _res   = np.asarray(<yaflFloat[:nx]> res)   #np.float64_t
+        _sigma = np.asarray(<yaflFloat[:nx]> sigma) #np.float64_t
+        _pivot = np.asarray(<yaflFloat[:nx]> pivot) #np.float64_t
+    
+        _res[:] = residual_x(_sigma, _pivot)
+    
+        return YAFL_ST_OK
 
-    py_self = <yakfUnscentedBase>(self.py_self)
-    if not isinstance(py_self, yakfUnscentedBase):
-        raise ValueError('Invalid py_self type (must be subclass of yakfUnscentedBase)!')
-
-    residual_x = py_self._residual_x
-    if not callable(residual_x):
-        raise ValueError('residual_x must be callable!')
-
-    nx = self.base.base.Nx
-    if nx <= 0:
-        raise ValueError('nx must be > 0!')
-
-    _res   = np.asarray(<yaflFloat[:nx]> res)   #np.float64_t
-    _sigma = np.asarray(<yaflFloat[:nx]> sigma) #np.float64_t
-    _pivot = np.asarray(<yaflFloat[:nx]> pivot) #np.float64_t
-
-    _res[:] = residual_x(_sigma, _pivot)
-
-    return YAFL_ST_OK
-
+    except Exception as e:
+        print(tb.format_exc())
+        return YAFL_ST_INV_ARG_1
 #==============================================================================
 cdef yaflStatusEn yafl_py_ukf_hx(yakfPyUnscentedSt * self, \
                          yaflFloat * z, yaflFloat * x):
+    try:
+        py_self = <yakfUnscentedBase>(self.py_self)
+        if not isinstance(py_self, yakfUnscentedBase):
+            raise ValueError('Invalid py_self type (must be subclass of yakfUnscentedBase)!')
+    
+        hx = py_self._hx
+        if not callable(hx):
+            raise ValueError('hx must be callable!')
+    
+        hx_args = py_self._hx_args
+        if not isinstance(hx_args, dict):
+            raise ValueError('Invalid hx_args type (must be dict)!')
+    
+        nx = self.base.base.Nx
+        if nx <= 0:
+            raise ValueError('nx must be > 0!')
+    
+        nz = self.base.base.Nz
+        if nx <= 0:
+            raise ValueError('nz must be > 0!')
+    
+        _x = np.asarray(<yaflFloat[:nx]> x) #np.float64_t
+        _z = np.asarray(<yaflFloat[:nz]> z) #np.float64_t
+    
+        _z[:] = hx(_x, **hx_args)
+    
+        return YAFL_ST_OK
 
-    py_self = <yakfUnscentedBase>(self.py_self)
-    if not isinstance(py_self, yakfUnscentedBase):
-        raise ValueError('Invalid py_self type (must be subclass of yakfUnscentedBase)!')
-
-    hx = py_self._hx
-    if not callable(hx):
-        raise ValueError('hx must be callable!')
-
-    hx_args = py_self._hx_args
-    if not isinstance(hx_args, dict):
-        raise ValueError('Invalid hx_args type (must be dict)!')
-
-    nx = self.base.base.Nx
-    if nx <= 0:
-        raise ValueError('nx must be > 0!')
-
-    nz = self.base.base.Nz
-    if nx <= 0:
-        raise ValueError('nz must be > 0!')
-
-    _x = np.asarray(<yaflFloat[:nx]> x) #np.float64_t
-    _z = np.asarray(<yaflFloat[:nz]> z) #np.float64_t
-    #print(<np.int64_t>x - <np.int64_t>self.base.base.sigmas_x)
-    #print(<np.int64_t>z - <np.int64_t>self.base.base.sigmas_z)
-
-    _z[:] = hx(_x, **hx_args)
-
-    return YAFL_ST_OK
-
+    except Exception as e:
+        print(tb.format_exc())
+        return YAFL_ST_INV_ARG_1
 #------------------------------------------------------------------------------
 cdef yaflStatusEn yafl_py_ukf_zmf(yakfPyUnscentedSt * self, \
                           yaflFloat * res, yaflFloat * sigmas):
+    try:
+        py_self = <yakfUnscentedBase>(self.py_self)
+        if not isinstance(py_self, yakfUnscentedBase):
+            raise ValueError('Invalid py_self type (must be subclass of yakfUnscentedBase)!')
+    
+        mean_z = py_self._mean_z
+        if not callable(mean_z):
+            raise ValueError('mean_z must be callable!')
+    
+        nz = self.base.base.Nz
+        if nz <= 0:
+            raise ValueError('nz must be > 0!')
+    
+        _points = py_self._points
+        if not isinstance(py_self, yakfSigmaBase):
+            raise ValueError('Invalid _points type (must be subclass of yakfSigmaBase)!')
+    
+        pnum = _points.base.base.np
+        if pnum <= 0:
+            raise ValueError('pnum must be > 0!')
+    
+        _sigmas = np.asarray(<yaflFloat[:pnum, :nz]> sigmas) #np.float64_t
+        _res    = np.asarray(<yaflFloat[:nz]> res)           #np.float64_t
+    
+        _res[:] = mean_z(_sigmas, _points._wm)
+    
+        return YAFL_ST_OK
 
-    py_self = <yakfUnscentedBase>(self.py_self)
-    if not isinstance(py_self, yakfUnscentedBase):
-        raise ValueError('Invalid py_self type (must be subclass of yakfUnscentedBase)!')
-
-    mean_z = py_self._mean_z
-    if not callable(mean_z):
-        raise ValueError('mean_z must be callable!')
-
-    nz = self.base.base.Nz
-    if nz <= 0:
-        raise ValueError('nz must be > 0!')
-
-    _points = py_self._points
-    if not isinstance(py_self, yakfSigmaBase):
-        raise ValueError('Invalid _points type (must be subclass of yakfSigmaBase)!')
-
-    pnum = _points.base.base.np
-    if pnum <= 0:
-        raise ValueError('pnum must be > 0!')
-
-    _sigmas = np.asarray(<yaflFloat[:pnum, :nz]> sigmas) #np.float64_t
-    _res    = np.asarray(<yaflFloat[:nz]> res)           #np.float64_t
-
-    _res[:] = mean_z(_sigmas, _points._wm)
-
-    return YAFL_ST_OK
-
+    except Exception as e:
+        print(tb.format_exc())
+        return YAFL_ST_INV_ARG_1
 #------------------------------------------------------------------------------
 cdef yaflStatusEn yafl_py_ukf_zrf(yakfPyUnscentedSt * self, yaflFloat * res, \
                              yaflFloat * sigma, yaflFloat * pivot):
+    try:
+        py_self = <yakfUnscentedBase>(self.py_self)
+        if not isinstance(py_self, yakfUnscentedBase):
+            raise ValueError('Invalid py_self type (must be subclass of yakfUnscentedBase)!')
+    
+        residual_z = py_self._residual_z
+        if not callable(residual_z):
+            raise ValueError('residual_z must be callable!')
+    
+        nz = self.base.base.Nz
+        if nz <= 0:
+            raise ValueError('nx must be > 0!')
+    
+        _res   = np.asarray(<yaflFloat[:nz]> res)   #np.float64_t
+        _sigma = np.asarray(<yaflFloat[:nz]> sigma) #np.float64_t
+        _pivot = np.asarray(<yaflFloat[:nz]> pivot) #np.float64_t
+    
+        _res[:] = residual_z(_sigma, _pivot)
+    
+        return YAFL_ST_OK
 
-    py_self = <yakfUnscentedBase>(self.py_self)
-    if not isinstance(py_self, yakfUnscentedBase):
-        raise ValueError('Invalid py_self type (must be subclass of yakfUnscentedBase)!')
-
-    residual_z = py_self._residual_z
-    if not callable(residual_z):
-        raise ValueError('residual_z must be callable!')
-
-    nz = self.base.base.Nz
-    if nz <= 0:
-        raise ValueError('nx must be > 0!')
-
-    _res   = np.asarray(<yaflFloat[:nz]> res)   #np.float64_t
-    _sigma = np.asarray(<yaflFloat[:nz]> sigma) #np.float64_t
-    _pivot = np.asarray(<yaflFloat[:nz]> pivot) #np.float64_t
-
-    _res[:] = residual_z(_sigma, _pivot)
-
-    return YAFL_ST_OK
-
+    except Exception as e:
+        print(tb.format_exc())
+        return YAFL_ST_INV_ARG_1
 #==============================================================================
 cdef class Unscented(yakfUnscentedBase):
     """
