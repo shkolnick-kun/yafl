@@ -24,9 +24,9 @@ import time
 sys.path.insert(0,'../../src')
 
 pyximport.install(
-    build_dir='../projects/obj', 
+    build_dir='../projects/obj',
     pyimport=True,
-    reload_support=True, 
+    reload_support=True,
     language_level=3,
     setup_args={
         'include_dirs': ['../../src', '../../src/configpy'],

@@ -24,9 +24,9 @@ import time
 sys.path.insert(0,'../../src')
 
 pyximport.install(
-    build_dir='../projects/obj', 
+    build_dir='../projects/obj',
     pyimport=True,
-    reload_support=True, 
+    reload_support=True,
     language_level=3,
     setup_args={
         'include_dirs': ['../../src', '../../src/configpy'],
@@ -72,23 +72,23 @@ def _gz(beta):
     # +- 3*sigma
     if 3.0 >= np.abs(beta):
         return float(beta)
-    
+
     # +- 6*sigma - uncertain measurements
     if 6.0 >= np.abs(beta):
         return float(beta/3.0)
-    
+
     # outliers
     return float(np.sign(beta))
-    
+
 def _gdotz(beta):
     # +- 3*sigma
     if 3.0 >= np.abs(beta):
         return 1.0
-    
+
     # +- 6*sigma - uncertain measurements
     if 6.0 >= np.abs(beta):
         return 1.0/3.0
-    
+
     # outliers
     return 0.0
 
