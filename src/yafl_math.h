@@ -25,7 +25,7 @@
 do {                                                                       \
     if (!(cond))                                                           \
     {                                                                      \
-        YAFL_LOG("The expression (%s) is false in \n function: %s",        \
+        YAFL_LOG("YAFL:The expression (%s) is false in \n function: %s",   \
                  #cond, func);                                             \
         YAFL_LOG("\n file: %s\n line: %d\n will return: %s\n",             \
                  file, line, #err);                                        \
@@ -75,20 +75,20 @@ typedef enum {
     YAFL_ST_INV_ARG_11   = 0x1a0
 } yaflStatusEn;
 
-#define _YAFL_EXEC(status, exp, file, func, line)                          \
-do {                                                                       \
-    (status) |= (exp);                                                     \
-    if (YAFL_ST_ERR_THR <= (status))                                       \
-    {                                                                      \
-        YAFL_LOG("The expression (%s) gave an error in \n function: %s",   \
-                 #exp, func);                                              \
-        YAFL_LOG("\n file: %s\n line: %d\n will return: %d\n",             \
-                 file, line, status);                                      \
-        return status;                                                     \
-    }                                                                      \
+#define _YAFL_TRY(status, exp, file, func, line)                              \
+do {                                                                          \
+    (status) |= (exp);                                                        \
+    if (YAFL_ST_ERR_THR <= (status))                                          \
+    {                                                                         \
+        YAFL_LOG("YAFL:The expression (%s) gave an error in \n function: %s", \
+                 #exp, func);                                                 \
+        YAFL_LOG("\n file: %s\n line: %d\n will return: %d\n",                \
+                 file, line, status);                                         \
+        return status;                                                        \
+    }                                                                         \
 } while (0)
 
-#define YAFL_EXEC(status, exp) _YAFL_EXEC(status, exp, __FILE__, __func__, __LINE__)
+#define YAFL_TRY(status, exp) _YAFL_TRY(status, exp, __FILE__, __func__, __LINE__)
 
 /*=======================================================================================
                                     Basic operations
