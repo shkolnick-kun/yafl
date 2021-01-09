@@ -35,6 +35,7 @@
 			<Add library="dl" />
 			<Add library="sz" />
 			<Add library="z" />
+			<Add library="m" />
 			<Add directory="/home/anon/Documents/Projects/hdf5_test/" />
 		</Linker>
 		<Unit filename="../../src/configpy/yafl_config.h" />
@@ -54,9 +55,6 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Extensions>
-			<code_completion />
-			<envvars />
-			<debugger />
 			<lib_finder disable_auto="1" />
 		</Extensions>
 	</Project>

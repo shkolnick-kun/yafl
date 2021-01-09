@@ -123,7 +123,8 @@ yaflStatusEn jhx(yaflEKFBaseSt * self)
     return YAFL_ST_OK;
 }
 /*---------------------------------------------------------------------------*/
-typedef struct{
+typedef struct
+{
     YAFL_EKF_BASE_MEMORY_MIXIN(NX, NZ);
     yaflFloat dummy[30];
 } kfMemorySt;
