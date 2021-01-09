@@ -29,7 +29,7 @@ pyximport.install(
     reload_support=True,
     language_level=3,
     setup_args={
-        'include_dirs': ['../../src', '../../src/configpy'],
+        'include_dirs': [np.get_include(), '../../src', '../../src/configpy'],
         }
     )
 
