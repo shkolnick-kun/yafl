@@ -212,9 +212,6 @@ cdef extern from "yafl.c":
         yaflFloat * Up
         yaflFloat * Dp
 
-        yaflFloat * Us
-        yaflFloat * Ds
-
         yaflFloat * Pzx
 
         yaflFloat * Uq
@@ -238,16 +235,13 @@ cdef extern from "yafl.c":
 
     cdef yaflStatusEn yafl_ukf_gen_sigmas(yaflUKFBaseSt * self) #static inline
 
-    cdef yaflStatusEn yafl_ukf_predict(yaflUKFBaseSt * self)
+    cdef yaflStatusEn yafl_ukf_base_predict(yaflUKFBaseSt * self)
 
-    cdef yaflStatusEn yafl_ukf_update(yaflUKFBaseSt * self, yaflFloat * z)
-
-    #--------------------------------------------------------------------------
     cdef yaflStatusEn \
         yafl_ukf_base_update(yaflUKFBaseSt * self, yaflFloat * z, \
                              yaflUKFScalarUpdateP scalar_update)
 
-    #--------------------------------------------------------------------------
+    #==========================================================================
     cdef yaflStatusEn \
         yafl_ukf_bierman_update(yaflUKFBaseSt * self, yaflFloat * z)
 
@@ -259,6 +253,17 @@ cdef extern from "yafl.c":
     cdef yaflStatusEn \
         yafl_ukf_adaptive_bierman_update(yaflUKFAdaptivedSt * self,\
                                          yaflFloat * z)
+
+    #==========================================================================
+    ctypedef struct yaflUKFSt:
+        yaflUKFBaseSt base
+
+        yaflFloat * Us
+        yaflFloat * Ds
+
+    #--------------------------------------------------------------------------
+    cdef yaflStatusEn yafl_ukf_update(yaflUKFBaseSt * self, yaflFloat * z)
+
     #--------------------------------------------------------------------------
     #                  Van der Merwe sigma point generator
     #--------------------------------------------------------------------------
@@ -961,8 +966,9 @@ cdef class yakfSigmaBase:
 #                         UD-factorized UKF definitions
 #------------------------------------------------------------------------------
 ctypedef union yakfPyUnscentedBaseUn:
-    yaflUKFBaseSt base
+    yaflUKFBaseSt      base
     yaflUKFAdaptivedSt adaptive
+    yaflUKFSt          unscented
 
 #------------------------------------------------------------------------------
 ctypedef struct yakfPyUnscentedSt:
@@ -986,9 +992,6 @@ cdef class yakfUnscentedBase:
 
     cdef yaflFloat [::1]    v_Up
     cdef yaflFloat [::1]    v_Dp
-
-    cdef yaflFloat [::1]    v_Us
-    cdef yaflFloat [::1]    v_Ds
 
     cdef yaflFloat [:, ::1] v_Pzx
 
@@ -1165,14 +1168,6 @@ cdef class yakfUnscentedBase:
         self.v_Dp = self._Dp
         self.c_self.base.base.Dp = &self.v_Dp[0]
 
-        self._Us  = np.zeros((_U_sz(dim_z),), dtype=np.float64)
-        self.v_Us = self._Us
-        self.c_self.base.base.Us = &self.v_Us[0]
-
-        self._Ds  = np.ones((dim_z,), dtype=np.float64)
-        self.v_Ds = self._Ds
-        self.c_self.base.base.Ds = &self.v_Ds[0]
-
         self._Pzx  = np.zeros((dim_z, dim_x), dtype=np.float64)
         self.v_Pzx = self._Pzx
         self.c_self.base.base.Pzx = &self.v_Pzx[0, 0]
@@ -1317,7 +1312,7 @@ cdef class yakfUnscentedBase:
         raise AttributeError('yakfUnscentedBase does not support this!')
     #==========================================================================
     def _predict(self):
-        return yafl_ukf_predict(&self.c_self.base.base)
+        return yafl_ukf_base_predict(&self.c_self.base.base)
 
     def predict(self, dt=None, **fx_args):
         old_dt = self._dt
@@ -1567,15 +1562,8 @@ cdef yaflStatusEn yafl_py_ukf_zrf(yakfPyUnscentedSt * self, yaflFloat * res, \
     except Exception as e:
         print(tb.format_exc())
         return YAFL_ST_INV_ARG_1
-#==============================================================================
-cdef class Unscented(yakfUnscentedBase):
-    """
-    UD-factorized UKF implementation
-    """
-    def _update(self):
-        return yafl_ukf_update(&self.c_self.base.base, &self.v_z[0])
 
-#------------------------------------------------------------------------------
+#==============================================================================
 cdef class UnscentedBierman(yakfUnscentedBase):
     """
     UD-factorized UKF implementation
@@ -1583,7 +1571,7 @@ cdef class UnscentedBierman(yakfUnscentedBase):
     def _update(self):
         return yafl_ukf_bierman_update(&self.c_self.base.base, &self.v_z[0])
 
-#------------------------------------------------------------------------------
+#==============================================================================
 cdef class UnscentedAdaptiveBierman(yakfUnscentedBase):
     def __init__(self, int dim_x, int dim_z, yaflFloat dt, hx, fx, points, \
                  **kwargs):
@@ -1600,7 +1588,34 @@ cdef class UnscentedAdaptiveBierman(yakfUnscentedBase):
         return yafl_ukf_adaptive_bierman_update(&self.c_self.base.adaptive, \
                                                 &self.v_z[0])
 
-#------------------------------------------------------------------------------
+#==============================================================================
+#           Full UKF, not sequential square root version of UKF
+#==============================================================================
+cdef class Unscented(yakfUnscentedBase):
+
+    cdef yaflFloat [::1]    v_Us
+    cdef yaflFloat [::1]    v_Ds
+
+    def __init__(self, int dim_x, int dim_z, yaflFloat dt, hx, fx, points, \
+                 **kwargs):
+
+        super().__init__(dim_x, dim_z, dt, hx, fx, points, **kwargs)
+
+        self._Us  = np.zeros((_U_sz(dim_z),), dtype=np.float64)
+        self.v_Us = self._Us
+        self.c_self.base.unscented.Us = &self.v_Us[0]
+
+        self._Ds  = np.ones((dim_z,), dtype=np.float64)
+        self.v_Ds = self._Ds
+        self.c_self.base.unscented.Ds = &self.v_Ds[0]
+
+    """
+    UD-factorized UKF implementation
+    """
+    def _update(self):
+        return yafl_ukf_update(&self.c_self.base.base, &self.v_z[0])
+
+#==============================================================================
 cdef class MerweSigmaPoints(yakfSigmaBase):
     """
     Van der Merwe sigma point generator implementation

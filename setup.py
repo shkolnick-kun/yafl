@@ -31,6 +31,7 @@ setup(
       url = 'https://github.com/shkolnick-kun/yafl',
       classifiers = [
         'Development Status :: 3 - Alpha',
+        'Topic :: Software Development :: Embedded Systems',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: Apache Software License',
         'Programming Language :: Python :: 3',
@@ -41,7 +42,6 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
-        'Topic :: Software Development :: Embedded Systems',
         ],
       setup_requires=deps,
       install_requires=deps,

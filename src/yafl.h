@@ -311,9 +311,6 @@ struct _yaflUKFBaseSt {
     yaflFloat * Up;  /* Upper triangular part of P  */
     yaflFloat * Dp;  /* Diagonal part of P          */
 
-    yaflFloat * Us;  /* Upper triangular part of S  */
-    yaflFloat * Ds;  /* Diagonal part of S          */
-
     yaflFloat * Pzx; /* Pzx cross covariance matrix */
 
     yaflFloat * Uq;  /* Upper triangular part of Q   */
@@ -330,7 +327,6 @@ struct _yaflUKFBaseSt {
     /*Scratchpad memory*/
     yaflFloat * Sx;       /* State       */
 
-
     yaflInt   Nx; /* State vector size       */
     yaflInt   Nz; /* Measurement vector size */
 };
@@ -340,16 +336,13 @@ struct _yaflUKFBaseSt {
 Warning: sigmas_x and _sigmas_z aren't defined in this mixin, see
          sigma points generators mixins!!!
 */
-#define YAFL_UKF_MEMORY_MIXIN(nx, nz) \
+#define YAFL_UKF_BASE_MEMORY_MIXIN(nx, nz) \
     yaflFloat x[nx];                        \
     yaflFloat zp[nz];                       \
     yaflFloat y[nz];                        \
                                             \
     yaflFloat Up[((nx - 1) * nx)/2];        \
     yaflFloat Dp[nx];                       \
-                                            \
-    yaflFloat Us[((nz - 1) * nz)/2];        \
-    yaflFloat Ds[nz];                       \
                                             \
     yaflFloat Pzx[nz * nx];                 \
                                             \
@@ -359,7 +352,7 @@ Warning: sigmas_x and _sigmas_z aren't defined in this mixin, see
     yaflFloat Ur[((nz - 1) * nz)/2];        \
     yaflFloat Dr[nz];                       \
                                             \
-    yaflFloat Sx[nx];
+    yaflFloat Sx[nx]
 
 /*---------------------------------------------------------------------------*/
 #define YAFL_UKF_BASE_INITIALIZER(_p, _pm, _f, _xmf, _xrf, _h, _zmf,          \
@@ -424,14 +417,17 @@ static inline yaflStatusEn yafl_ukf_gen_sigmas(yaflUKFBaseSt * self)
     return self->sp_meth->wf(self);
 }
 
-yaflStatusEn yafl_ukf_predict(yaflUKFBaseSt * self);
-yaflStatusEn yafl_ukf_update(yaflUKFBaseSt * self, yaflFloat * z);
+yaflStatusEn yafl_ukf_base_predict(yaflUKFBaseSt * self);
 
-/*===========================================================================*/
 yaflStatusEn yafl_ukf_base_update(yaflUKFBaseSt * self, yaflFloat * z, \
                                   yaflUKFScalarUpdateP scalar_update);
 
-/*===========================================================================*/
+/*=============================================================================
+                               Bierman filter
+=============================================================================*/
+#define YAFL_UKF_BIERMAN_PREDICT(self) \
+    yafl_ukf_base_predict((yaflUKFBaseSt *)self)
+
 yaflStatusEn yafl_ukf_bierman_update(yaflUKFBaseSt * self, yaflFloat * z);
 
 
@@ -450,8 +446,47 @@ typedef struct {
     .chi2 = 10.8275662                                                   \
 }
 
+/*---------------------------------------------------------------------------*/
+#define YAFL_UKF_ADAPTIVE_BIERMAN_PREDICT(self) \
+    yafl_ukf_base_predict((yaflUKFBaseSt *)self)
+
 yaflStatusEn yafl_ukf_adaptive_bierman_update(yaflUKFAdaptivedSt * self, \
                                               yaflFloat * z);
+
+/*=============================================================================
+            Full UKF, not sequential square root version of UKF
+=============================================================================*/
+typedef struct {
+    yaflUKFBaseSt base; /* Base type                   */
+    yaflFloat *   Us;   /* Upper triangular part of S  */
+    yaflFloat *   Ds;   /* Diagonal part of S          */
+} yaflUKFSt;
+
+/*---------------------------------------------------------------------------*/
+/*
+Warning: sigmas_x and _sigmas_z aren't defined in this mixin, see
+         sigma points generators mixins!!!
+*/
+#define YAFL_UKF_MEMORY_MIXIN(nx, nz)   \
+    YAFL_UKF_BASE_MEMORY_MIXIN(nx, nz); \
+    yaflFloat Us[((nz - 1) * nz)/2];    \
+    yaflFloat Ds[nz]
+
+/*---------------------------------------------------------------------------*/
+#define YAFL_UKF_INITIALIZER(_p, _pm, _f, _xmf, _xrf, _h, _zmf,               \
+                                   _zrf, _nx, _nz, _mem)                      \
+{                                                                             \
+    .base = YAFL_UKF_BASE_INITIALIZER(_p, _pm, _f, _xmf, _xrf, _h, _zmf,      \
+                                      _zrf, _nx, _nz, _mem),                  \
+    .Us  = _mem.Us,                                                           \
+    .Ds  = _mem.Ds                                                            \
+}
+
+/*---------------------------------------------------------------------------*/
+#define YAFL_UKF_PREDICT(self) \
+    yafl_ukf_base_predict((yaflUKFBaseSt *)self)
+
+yaflStatusEn yafl_ukf_update(yaflUKFBaseSt * self, yaflFloat * z);
 
 /*=============================================================================
                      Van der Merwe sigma point generator
@@ -468,7 +503,7 @@ typedef struct _yaflUKFMerweSt {
     yaflFloat wm[2 * nx + 1];               \
     yaflFloat wc[2 * nx + 1];               \
     yaflFloat sigmas_x[(2 * nx + 1) * nx];  \
-    yaflFloat sigmas_z[(2 * nx + 1) * nz];
+    yaflFloat sigmas_z[(2 * nx + 1) * nz]
 
 /*---------------------------------------------------------------------------*/
 #define YAFL_UKF_MERWE_INITIALIZER(_nx, _addf, _alpha, _beta, _kappa, _mem) \
