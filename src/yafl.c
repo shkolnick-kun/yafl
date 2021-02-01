@@ -83,13 +83,13 @@ yaflStatusEn yafl_ekf_base_predict(yaflKalmanBaseSt * self)
     YAFL_TRY(status, \
              YAFL_MATH_BSET_BU(nx2, 0, nx, w, nx, nx, nx2, 0, 0, w, up));
     /* Now W = (F|FUp) */
-    YAFL_TRY(status, yafl_math_bset_u(nx2, w, nx, dp));
+    YAFL_TRY(status, yafl_math_bset_u(nx2, w, nx, uq));
     /* Now W = (Uq|FUp) */
 
     /* D = concatenate([Dq, Dp]) */
     i = nx*sizeof(yaflFloat);
-    memcpy((void *)       d, (void *)uq, i);
-    memcpy((void *)(d + nx), (void *)dq, i);
+    memcpy((void *)       d, (void *)dq, i);
+    memcpy((void *)(d + nx), (void *)dp, i);
 
     /* Up, Dp = MWGSU(w, d)*/
     YAFL_TRY(status, yafl_math_mwgsu(nx, nx2, up, dp, w, d));
@@ -396,8 +396,8 @@ yaflStatusEn yafl_ekf_joseph_scalar_update(yaflKalmanBaseSt * self, yaflInt i)
     _SCALAR_UPDATE_ARGS_CHECKS();
     _EKF_JOSEPH_SELF_INTERNALS_CHECKS();
 
-#   define v (d)
-    f = d + nx;
+#   define v d
+    f = v + nx;
     h = hy + nx * i;
 
     /* f = h.dot(Up) */
@@ -541,7 +541,7 @@ yaflStatusEn yafl_ekf_adaptive_bierman_scalar_update(yaflKalmanBaseSt * self, \
                            Adaptive Joseph filter
 =============================================================================*/
 yaflStatusEn \
-    yafl_adaptive_joseph_scalar_update(yaflKalmanBaseSt * self, yaflInt i)
+    yafl_ekf_adaptive_joseph_scalar_update(yaflKalmanBaseSt * self, yaflInt i)
 {
     yaflStatusEn status = YAFL_ST_OK;
     yaflFloat s  = 1.0;
@@ -792,7 +792,7 @@ yaflStatusEn \
 
     /* v = f.dot(Dp).T = Dp.dot(f.T).T */
 #   define v h /*Don't need h any more, use it to store v*/
-    YAFL_TRY(status, YAFL_MATH_SET_DV(nx, v, d, f));
+    YAFL_TRY(status, YAFL_MATH_SET_DV(nx, v, dp, f));
 
     YAFL_TRY(status, _bierman_update_body(nx, x, up, dp, f, v, r05 * r05, nu, \
                                           1.0, gdot));
@@ -886,7 +886,8 @@ yaflStatusEn \
                         Adaptive robust Bierman filter
 =============================================================================*/
 yaflStatusEn \
-    yafl_adaptive_robust_bierman_scalar_update(yaflKalmanBaseSt * self, yaflInt i)
+    yafl_ekf_adaptive_robust_bierman_scalar_update(yaflKalmanBaseSt * self, \
+                                                   yaflInt i)
 {
     yaflStatusEn status = YAFL_ST_OK;
     yaflFloat gdot = 1.0;
@@ -954,7 +955,8 @@ yaflStatusEn \
                         Adaptive robust Joseph filter
 =============================================================================*/
 yaflStatusEn \
-    yafl_adaptive_robust_joseph_scalar_update(yaflKalmanBaseSt * self, yaflInt i)
+    yafl_ekf_adaptive_robust_joseph_scalar_update(yaflKalmanBaseSt * self, \
+                                                  yaflInt i)
 {
     yaflStatusEn status = YAFL_ST_OK;
     yaflFloat gdot = 1.0;

@@ -34,9 +34,9 @@ pyximport.install(
     )
 
 
-#from yaflpy import Bierman as KF
+from yaflpy import Bierman as KF
 #from yaflpy import Joseph as KF
-from yaflpy import AdaptiveBierman as KF
+#from yaflpy import AdaptiveBierman as KF
 #from yaflpy import AdaptiveJoseph as KF
 #from yaflpy import DoNotUseThisFilter as KF
 

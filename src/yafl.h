@@ -242,14 +242,14 @@ static inline yaflStatusEn \
 -----------------------------------------------------------------------------*/
 #define YAFL_EKF_ADAPTIVE_JOSEPH_PREDICT _yafl_ada_ekf_predict_wrapper
 
-yaflStatusEn yafl_adaptive_joseph_scalar_update(yaflKalmanBaseSt * self, \
-                                                yaflInt i);
+yaflStatusEn yafl_ekf_adaptive_joseph_scalar_update(yaflKalmanBaseSt * self, \
+                                                    yaflInt i);
 
 static inline yaflStatusEn \
     yafl_ekf_adaptive_joseph_update(yaflEKFAdaptiveSt * self, yaflFloat * z)
 {
     return yafl_ekf_base_update((yaflKalmanBaseSt *)self, z, \
-                                yafl_adaptive_joseph_scalar_update);
+                                yafl_ekf_adaptive_joseph_scalar_update);
 }
 
 /*-----------------------------------------------------------------------------
@@ -325,8 +325,8 @@ static inline yaflStatusEn \
 yaflStatusEn \
     yafl_ekf_robust_joseph_scalar_update(yaflKalmanBaseSt * self, yaflInt i);
 
-static inline yaflStatusEn
-yafl_ekf_robust_joseph_update(yaflEKFRobustSt * self, yaflFloat * z)
+static inline yaflStatusEn \
+    yafl_ekf_robust_joseph_update(yaflEKFRobustSt * self, yaflFloat * z)
 {
     return yafl_ekf_base_update((yaflKalmanBaseSt *)self, z, \
                                 yafl_ekf_robust_joseph_scalar_update);
@@ -365,7 +365,7 @@ static inline yaflStatusEn \
 #define YAFL_EKF_ADAPTIVE_ROBUST_BIERAMN_PREDICT _yafl_ada_rob_predict_wrapper
 
 yaflStatusEn \
-    yafl_adaptive_robust_bierman_scalar_update(yaflKalmanBaseSt * self, \
+    yafl_ekf_adaptive_robust_bierman_scalar_update(yaflKalmanBaseSt * self, \
                                                yaflInt i);
 
 static inline yaflStatusEn \
@@ -373,7 +373,7 @@ static inline yaflStatusEn \
                                             yaflFloat * z)
 {
     return yafl_ekf_base_update((yaflKalmanBaseSt *)self, z, \
-                                yafl_adaptive_robust_bierman_scalar_update);
+                                yafl_ekf_adaptive_robust_bierman_scalar_update);
 }
 
 /*-----------------------------------------------------------------------------
@@ -382,7 +382,7 @@ static inline yaflStatusEn \
 #define YAFL_EKF_ADAPTIVE_ROBUST_JOSEPH_PREDICT(self) _yafl_ada_rob_predict_wrapper
 
 yaflStatusEn \
-    yafl_adaptive_robust_joseph_scalar_update(yaflKalmanBaseSt * self, \
+    yafl_ekf_adaptive_robust_joseph_scalar_update(yaflKalmanBaseSt * self, \
                                               yaflInt i);
 
 static inline yaflStatusEn \
@@ -390,7 +390,7 @@ static inline yaflStatusEn \
                                             yaflFloat * z)
 {
     return yafl_ekf_base_update((yaflKalmanBaseSt *)self, z, \
-                                yafl_adaptive_robust_joseph_scalar_update);
+                                yafl_ekf_adaptive_robust_joseph_scalar_update);
 }
 
 /*=============================================================================

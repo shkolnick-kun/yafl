@@ -73,26 +73,27 @@ cdef extern from "yafl_math.c":
 
 #------------------------------------------------------------------------------
 cdef extern from "yafl.c":
-    #==========================================================================
-    #                     UD-factorized EKF definitions
-    #==========================================================================
-    ctypedef _yaflEKFBaseSt yaflEKFBaseSt
+    ctypedef _yaflKalmanBaseSt yaflKalmanBaseSt
 
-    ctypedef yaflStatusEn (* yaflEKFFuncP)(yaflEKFBaseSt *)
-    ctypedef yaflStatusEn (* yaflEKFResFuncP)(yaflEKFBaseSt *, yaflFloat *)
-    ctypedef yaflStatusEn (* yaflEKFScalarUpdateP)(yaflEKFBaseSt *, yaflInt)
+    ctypedef yaflStatusEn (* yaflKalmanFuncP)(yaflKalmanBaseSt *, \
+                                              yaflFloat *, yaflFloat *)
 
-    ctypedef struct _yaflEKFBaseSt:
-        yaflEKFFuncP f      #
-        yaflEKFFuncP jf     #
+    ctypedef yaflStatusEn (* yaflKalmanResFuncP)(yaflKalmanBaseSt *, \
+                                                 yaflFloat *, yaflFloat *, \
+                                                     yaflFloat *)
 
-        yaflEKFFuncP h      #
-        yaflEKFFuncP jh     #
-        yaflEKFResFuncP zrf #
+    ctypedef yaflStatusEn (* yaflKalmanScalarUpdateP)(yaflKalmanBaseSt *, \
+                                                      yaflInt)
+
+    ctypedef yaflFloat (* yaflKalmanRobFuncP)(yaflKalmanBaseSt *, yaflFloat)
+
+    ctypedef struct _yaflKalmanBaseSt:
+        yaflKalmanFuncP f      #
+        yaflKalmanFuncP h      #
+        yaflKalmanResFuncP zrf #
 
         yaflFloat * x    #
         yaflFloat * y    #
-        yaflFloat * H    #
 
         yaflFloat * Up   #
         yaflFloat * Dp   #
@@ -103,67 +104,88 @@ cdef extern from "yafl.c":
         yaflFloat * Ur   #
         yaflFloat * Dr   #
 
-        yaflFloat * W    #
-        yaflFloat * D    #
-
         yaflInt   Nx     #
         yaflInt   Nz     #
 
-    cdef yaflStatusEn \
-        yafl_ekf_base_predict(yaflEKFBaseSt * self)
-    cdef yaflStatusEn \
-        yafl_ekf_base_update(yaflEKFBaseSt * self, yaflFloat * z, \
-                             yaflEKFScalarUpdateP scalar_update)
+    #==========================================================================
+    #                     UD-factorized EKF definitions
+    #==========================================================================
+    ctypedef struct yaflEKFBaseSt:
+        yaflKalmanBaseSt base
+
+        yaflKalmanFuncP jf #
+        yaflKalmanFuncP jh #
+
+        yaflFloat * H      #
+        yaflFloat * W      #
+        yaflFloat * D      #
+
+    cdef yaflStatusEn yafl_ekf_base_predict(yaflKalmanBaseSt * self)
 
     cdef yaflStatusEn \
-        yafl_ekf_bierman_update(yaflEKFBaseSt * self, yaflFloat * z)
-
-    cdef yaflStatusEn \
-        yafl_ekf_joseph_update(yaflEKFBaseSt * self, yaflFloat * z)
+        yafl_ekf_base_update(yaflKalmanBaseSt * self, yaflFloat * z, \
+                             yaflKalmanScalarUpdateP scalar_update)
 
     #--------------------------------------------------------------------------
+    cdef yaflStatusEn \
+        yafl_ekf_bierman_scalar_update(yaflKalmanBaseSt * self, yaflInt i)
+
+    #--------------------------------------------------------------------------
+    cdef yaflStatusEn \
+        yafl_ekf_joseph_scalar_update(yaflKalmanBaseSt * self, yaflInt i)
+
+
+    #==========================================================================
     ctypedef struct yaflEKFAdaptiveSt:
         yaflEKFBaseSt base
         yaflFloat  chi2
 
+    #--------------------------------------------------------------------------
     cdef yaflStatusEn \
-        yafl_ekf_adaptive_bierman_update(yaflEKFAdaptiveSt * self, \
-                                         yaflFloat * z)
-
-    cdef yaflStatusEn \
-        yafl_ekf_adaptive_joseph_update(yaflEKFAdaptiveSt * self, \
-                                        yaflFloat * z)
-
-    # For demonstration purposes only
-    cdef yaflStatusEn \
-        yafl_ekf_do_not_use_this_update(yaflEKFAdaptiveSt * self, \
-                                        yaflFloat * z)
+        yafl_ekf_adaptive_bierman_scalar_update(yaflKalmanBaseSt * self, \
+                                                yaflInt i)
 
     #--------------------------------------------------------------------------
-    ctypedef yaflFloat (* yaflEKFRobFuncP)(yaflEKFBaseSt *, yaflFloat)
+    cdef yaflStatusEn \
+        yafl_ekf_adaptive_joseph_scalar_update(yaflKalmanBaseSt * self, \
+                                               yaflInt i)
 
+    #--------------------------------------------------------------------------
+    # For demonstration purposes only
+    #cdef yaflStatusEn \
+    #    yafl_ekf_do_not_use_this_update(yaflEKFAdaptiveSt * self, \
+    #                                    yaflFloat * z)
+
+    #==========================================================================
     ctypedef struct yaflEKFRobustSt:
         yaflEKFBaseSt   base
-        yaflEKFRobFuncP g
-        yaflEKFRobFuncP gdot
+        yaflKalmanRobFuncP g
+        yaflKalmanRobFuncP gdot
 
-    cdef yaflStatusEn yafl_ekf_robust_bierman_update(yaflEKFRobustSt * self, \
-                                                     yaflFloat * z)
-
-    cdef yaflStatusEn yafl_ekf_robust_joseph_update(yaflEKFRobustSt * self, \
-                                                    yaflFloat * z)
     #--------------------------------------------------------------------------
+    cdef yaflStatusEn \
+        yafl_ekf_robust_bierman_scalar_update(yaflKalmanBaseSt * self, \
+                                              yaflInt i)
+
+    #--------------------------------------------------------------------------
+    cdef yaflStatusEn \
+        yafl_ekf_robust_joseph_scalar_update(yaflKalmanBaseSt * self, \
+                                             yaflInt i)
+
+    #==========================================================================
     ctypedef struct yaflEKFAdaptiveRobustSt:
         yaflEKFRobustSt base
         yaflFloat  chi2
 
+    #--------------------------------------------------------------------------
     cdef yaflStatusEn \
-        yafl_ekf_adaptive_robust_bierman_update(yaflEKFAdaptiveRobustSt * self,\
-                                                yaflFloat * z)
+        yafl_ekf_adaptive_robust_bierman_scalar_update(yaflKalmanBaseSt * self, \
+                                                       yaflInt i)
 
+    #--------------------------------------------------------------------------
     cdef yaflStatusEn \
-        yafl_ekf_adaptive_robust_joseph_update(yaflEKFAdaptiveRobustSt * self, \
-                                               yaflFloat * z)
+        yafl_ekf_adaptive_robust_joseph_scalar_update(yaflKalmanBaseSt * self, \
+                                                      yaflInt i)
 
     #==========================================================================
     #                     UD-factorized UKF definitions
@@ -280,7 +302,7 @@ cdef extern from "yafl.c":
 #==============================================================================
 # We need numpy for Pythonic interfaces
 cimport numpy as np
-import  numpy as np
+import  numpy as np#WTF???
 
 # We need traceback to print pythonic callback exceptions
 import traceback as tb
@@ -319,18 +341,19 @@ ST_INV_ARG_11 = YAFL_ST_INV_ARG_11
 #------------------------------------------------------------------------------
 #                       Kalman filter basic union
 #------------------------------------------------------------------------------
-ctypedef union yaflPyEkfBaseUn:
-    yaflEKFBaseSt           base
-    yaflEKFAdaptiveSt       adaptive
-    yaflEKFRobustSt         robust
-    yaflEKFAdaptiveRobustSt ada_rob
+ctypedef union yaflPyKalmanBaseUn:
+    yaflKalmanBaseSt        base
+    yaflEKFBaseSt           ekf
+    yaflEKFAdaptiveSt       ekf_adaptive
+    yaflEKFRobustSt         ekf_robust
+    yaflEKFAdaptiveRobustSt ekf_ada_rob
 
 #------------------------------------------------------------------------------
 # Kalman filter C-structure with Python callback
 #------------------------------------------------------------------------------
-ctypedef struct yaflPyEkfBaseSt:
+ctypedef struct yaflPyKalmanBaseSt:
     # Kalman filter base union
-    yaflPyEkfBaseUn base
+    yaflPyKalmanBaseUn base
 
     # Python/Cython self
     void * py_self
@@ -342,15 +365,14 @@ cdef int _U_sz(int dim_u):
 #------------------------------------------------------------------------------
 #                             Basic Filter class
 #------------------------------------------------------------------------------
-cdef class yaflExtendedBase:
+cdef class yaflKalmanBase:
     # Kalman filter C-self
-    cdef yaflPyEkfBaseSt c_self
+    cdef yaflPyKalmanBaseSt c_self
 
     # Kalman filter memory views
     cdef yaflFloat [::1]    v_x
     cdef yaflFloat [::1]    v_y
     cdef yaflFloat [::1]    v_z
-    cdef yaflFloat [:, ::1] v_H
 
     cdef yaflFloat [::1]    v_Up
     cdef yaflFloat [::1]    v_Dp
@@ -361,14 +383,10 @@ cdef class yaflExtendedBase:
     cdef yaflFloat [::1]    v_Ur
     cdef yaflFloat [::1]    v_Dr
 
-    cdef yaflFloat [:, ::1] v_W
-    cdef yaflFloat [::1]    v_D
-
     # Kalman filter numpy arrays
     cdef np.ndarray  _x
     cdef np.ndarray  _y
     cdef np.ndarray  _z
-    cdef np.ndarray  _H
 
     cdef np.ndarray  _Up
     cdef np.ndarray  _Dp
@@ -379,25 +397,18 @@ cdef class yaflExtendedBase:
     cdef np.ndarray _Ur
     cdef np.ndarray _Dr
 
-    cdef np.ndarray _W
-    cdef np.ndarray _D
-
     # Callback info
     cdef yaflFloat _dt
     cdef dict      _fx_args
     cdef object    _fx
-    cdef object    _jfx
 
     cdef dict      _hx_args
     cdef object    _hx
-    cdef object    _jhx
+
     cdef object    _residual_z
 
-    #The object will be Extensible
-    cdef dict __dict__
-
     def __init__(self, int dim_x, int dim_z, yaflFloat dt, \
-                 fx, jfx, hx, jhx, residual_z = None):
+                 fx, hx, residual_z = None):
 
         #Store dimensions
         self.c_self.base.base.Nx = dim_x
@@ -412,31 +423,21 @@ cdef class yaflExtendedBase:
 
         if not callable(fx):
             raise ValueError('fx must be callable!')
-        self.c_self.base.base.f = <yaflEKFFuncP> yafl_py_ekf_fx
+        self.c_self.base.base.f = <yaflKalmanFuncP>yafl_py_kalman_fx
         self._fx = fx
-
-        if not callable(jfx):
-            raise ValueError('jfx must be callable!')
-        self.c_self.base.base.jf = <yaflEKFFuncP> yafl_py_ekf_jfx
-        self._jfx = jfx
 
         if not callable(hx):
             raise ValueError('hx must be callable!')
-        self.c_self.base.base.h = <yaflEKFFuncP> yafl_py_ekf_hx
+        self.c_self.base.base.h = <yaflKalmanFuncP>yafl_py_kalman_hx
         self._hx = hx
-
-        if not callable(jhx):
-            raise ValueError('jhx must be callable!')
-        self.c_self.base.base.jh = <yaflEKFFuncP> yafl_py_ekf_jhx
-        self._jhx = jhx
 
         if residual_z:
             if not callable(residual_z):
                 raise ValueError('residual_z must be callable!')
-            self.c_self.base.base.zrf = <yaflEKFResFuncP> yafl_py_ekf_zrf
+            self.c_self.base.base.zrf = <yaflKalmanResFuncP>yafl_py_kalman_zrf
             self._residual_z = residual_z
         else:
-            self.c_self.base.base.zrf = <yaflEKFResFuncP> 0
+            self.c_self.base.base.zrf = <yaflKalmanResFuncP>0
             self._residual_z = None
 
         # Allocate memories and setup the rest of c_self
@@ -450,10 +451,6 @@ cdef class yaflExtendedBase:
         self._y  = np.zeros((dim_z,), dtype=np.float64)
         self.v_y = self._y
         self.c_self.base.base.y = &self.v_y[0]
-
-        self._H  = np.zeros((dim_z, dim_x), dtype=np.float64)
-        self.v_H = self._H
-        self.c_self.base.base.H = &self.v_H[0, 0]
 
         self._Up  = np.zeros((_U_sz(dim_x),), dtype=np.float64)
         self.v_Up = self._Up
@@ -479,14 +476,6 @@ cdef class yaflExtendedBase:
         self.v_Dr = self._Dr
         self.c_self.base.base.Dr = &self.v_Dr[0]
 
-        self._W  = np.zeros((dim_x, 2 * dim_x), dtype=np.float64)
-        self.v_W = self._W
-        self.c_self.base.base.W = &self.v_W[0,0]
-
-        self._D  = np.ones((2 * dim_x,), dtype=np.float64)
-        self.v_D = self._D
-        self.c_self.base.base.D = &self.v_D[0]
-
     #==========================================================================
     #Decorators
     @property
@@ -503,7 +492,7 @@ cdef class yaflExtendedBase:
 
     @y.setter
     def y(self, value):
-        raise AttributeError('yaflExtendedBase does not support this!')
+        raise AttributeError('yaflKalmanBase does not support this!')
     #--------------------------------------------------------------------------
     @property
     def Up(self):
@@ -555,7 +544,7 @@ cdef class yaflExtendedBase:
 
     #==========================================================================
     def _predict(self):
-        return yafl_ekf_base_predict(&(self.c_self.base.base))
+        raise NotImplementedError('yaflKalmanBase is the base class!')
 
     def predict(self, dt=None, **fx_args):
         old_dt = self._dt
@@ -569,14 +558,14 @@ cdef class yaflExtendedBase:
 
         res = self._predict()
         if res > YAFL_ST_ERR_THR:
-            raise ValueError('Bad return value on yaflExtendedBase.predict!')
+            raise ValueError('Bad return value on yaflKalmanBase.predict!')
 
         self._dt = old_dt
         return res
 
     #==========================================================================
     def _update(self):
-        raise NotImplementedError('yaflExtendedBase is the base class!')
+        raise NotImplementedError('yaflKalmanBase is the base class!')
 
     def update(self, z, **hx_args):
 
@@ -584,18 +573,17 @@ cdef class yaflExtendedBase:
         self._hx_args = hx_args
         res = self._update()
         if res > YAFL_ST_ERR_THR:
-            raise ValueError('Bad return value on yaflExtendedBase.update!')
+            raise ValueError('Bad return value on yaflKalmanBase.update!')
         return res
 
-#==============================================================================
-#                             Basic C-callbacks
-#==============================================================================
-# State transition function
-cdef yaflStatusEn yafl_py_ekf_fx(yaflPyEkfBaseSt * self):
+#------------------------------------------------------------------------------
+cdef yaflStatusEn yafl_py_kalman_fx(yaflPyKalmanBaseSt * self, \
+                                    yaflFloat * new_x, yaflFloat * old_x):
     try:
-        py_self = <yaflExtendedBase>(self.py_self)
-        if not isinstance(py_self, yaflExtendedBase):
-            raise ValueError('Invalid py_self type (must be subclass of yaflExtendedBase)!')
+        if not isinstance(<object>(self.py_self), yaflKalmanBase):
+            raise ValueError('Invalid py_self type (must be subclass of yaflKalmanBase)!')
+
+        py_self = <yaflKalmanBase>(self.py_self)
 
         fx = py_self._fx
         if not callable(fx):
@@ -609,8 +597,14 @@ cdef yaflStatusEn yafl_py_ekf_fx(yaflPyEkfBaseSt * self):
         if not isinstance(fx_args, dict):
             raise ValueError('Invalid fx_args type (must be dict)!')
 
-        #How about handling exceptions here???
-        py_self._x[:] = fx(py_self._x, dt, **fx_args)
+        nx = self.base.base.Nx
+        if nx <= 0:
+            raise ValueError('nx must be > 0!')
+
+        _new_x = np.asarray(<yaflFloat[:nx]> new_x) #np.float64_t
+        _old_x = np.asarray(<yaflFloat[:nx]> old_x) #np.float64_t
+
+        _new_x[:] = fx(_old_x, dt, **fx_args)
 
         return YAFL_ST_OK
 
@@ -619,12 +613,138 @@ cdef yaflStatusEn yafl_py_ekf_fx(yaflPyEkfBaseSt * self):
         return YAFL_ST_INV_ARG_1
 
 #------------------------------------------------------------------------------
-# State transition function Jacobian
-cdef yaflStatusEn yafl_py_ekf_jfx(yaflPyEkfBaseSt * self):
+cdef yaflStatusEn yafl_py_kalman_hx(yaflPyKalmanBaseSt * self, \
+                         yaflFloat * z, yaflFloat * x):
     try:
-        py_self = <yaflExtendedBase>(self.py_self)
-        if not isinstance(py_self, yaflExtendedBase):
+        if not isinstance(<object>(self.py_self), yaflKalmanBase):
+            raise ValueError('Invalid py_self type (must be subclass of yaflKalmanBase)!')
+
+        py_self = <yaflKalmanBase>(self.py_self)
+
+        hx = py_self._hx
+        if not callable(hx):
+            raise ValueError('hx must be callable!')
+
+        hx_args = py_self._hx_args
+        if not isinstance(hx_args, dict):
+            raise ValueError('Invalid hx_args type (must be dict)!')
+
+        nx = self.base.base.Nx
+        if nx <= 0:
+            raise ValueError('nx must be > 0!')
+
+        nz = self.base.base.Nz
+        if nx <= 0:
+            raise ValueError('nz must be > 0!')
+
+        _x = np.asarray(<yaflFloat[:nx]> x) #np.float64_t
+        _z = np.asarray(<yaflFloat[:nz]> z) #np.float64_t
+
+        _z[:] = hx(_x, **hx_args)
+
+        return YAFL_ST_OK
+
+    except Exception as e:
+        print(tb.format_exc())
+        return YAFL_ST_INV_ARG_1
+
+#------------------------------------------------------------------------------
+cdef yaflStatusEn yafl_py_kalman_zrf(yaflPyKalmanBaseSt * self, yaflFloat * res, \
+                             yaflFloat * sigma, yaflFloat * pivot):
+    try:
+        if not isinstance(<object>(self.py_self), yaflKalmanBase):
+            raise ValueError('Invalid py_self type (must be subclass of yaflKalmanBase)!')
+
+        py_self = <yaflKalmanBase>(self.py_self)
+
+        residual_z = py_self._residual_z
+        if not callable(residual_z):
+            raise ValueError('residual_z must be callable!')
+
+        nz = self.base.base.Nz
+        if nz <= 0:
+            raise ValueError('nx must be > 0!')
+
+        _res   = np.asarray(<yaflFloat[:nz]> res)   #np.float64_t
+        _sigma = np.asarray(<yaflFloat[:nz]> sigma) #np.float64_t
+        _pivot = np.asarray(<yaflFloat[:nz]> pivot) #np.float64_t
+
+        _res[:] = residual_z(_sigma, _pivot)
+
+        return YAFL_ST_OK
+
+    except Exception as e:
+        print(tb.format_exc())
+        return YAFL_ST_INV_ARG_1
+
+#==============================================================================
+#                             Basic Filter class
+#==============================================================================
+cdef class yaflExtendedBase(yaflKalmanBase):
+
+    # Kalman filter memory views
+    cdef yaflFloat [:, ::1] v_H
+    cdef yaflFloat [:, ::1] v_W
+    cdef yaflFloat [::1]    v_D
+
+    # Kalman filter numpy arrays
+    cdef np.ndarray _H
+    cdef np.ndarray _W
+    cdef np.ndarray _D
+
+    # Callback info
+    cdef object    _jfx
+    cdef object    _jhx
+
+    #The object will be Extensible
+    cdef dict __dict__
+
+    def __init__(self, int dim_x, int dim_z, yaflFloat dt, \
+                 fx, jfx, hx, jhx, residual_z = None):
+
+        super().__init__(dim_x, dim_z, dt, fx, hx, residual_z)
+
+        if not callable(jfx):
+            raise ValueError('jfx must be callable!')
+        self.c_self.base.ekf.jf = <yaflKalmanFuncP>yafl_py_ekf_jfx
+        self._jfx = jfx
+
+        if not callable(jhx):
+            raise ValueError('jhx must be callable!')
+        self.c_self.base.ekf.jh = <yaflKalmanFuncP>yafl_py_ekf_jhx
+        self._jhx = jhx
+
+
+        # Allocate memories and setup the rest of c_self
+        self._H  = np.zeros((dim_z, dim_x), dtype=np.float64)
+        self.v_H = self._H
+        self.c_self.base.ekf.H = &self.v_H[0, 0]
+
+        self._W  = np.zeros((dim_x, 2 * dim_x), dtype=np.float64)
+        self.v_W = self._W
+        self.c_self.base.ekf.W = &self.v_W[0,0]
+
+        self._D  = np.ones((2 * dim_x,), dtype=np.float64)
+        self.v_D = self._D
+        self.c_self.base.ekf.D = &self.v_D[0]
+
+    #==========================================================================
+    def _predict(self):
+        return yafl_ekf_base_predict(&(self.c_self.base.base))
+
+    #==========================================================================
+    def _update(self):
+        raise NotImplementedError('yaflExtendedBase is the base class!')
+
+#------------------------------------------------------------------------------
+# State transition function Jacobian
+cdef yaflStatusEn yafl_py_ekf_jfx(yaflPyKalmanBaseSt * self, yaflFloat * w, \
+                                  yaflFloat * x):
+    try:
+        if not isinstance(<object>(self.py_self), yaflExtendedBase):
             raise ValueError('Invalid py_self type (must be subclass of yaflExtendedBase)!')
+
+        py_self = <yaflExtendedBase>(self.py_self)
 
         jfx = py_self._jfx
         if not callable(jfx):
@@ -648,37 +768,14 @@ cdef yaflStatusEn yafl_py_ekf_jfx(yaflPyEkfBaseSt * self):
         return YAFL_ST_INV_ARG_1
 
 #------------------------------------------------------------------------------
-# State transition function
-cdef yaflStatusEn yafl_py_ekf_hx(yaflPyEkfBaseSt * self):
-    try:
-        py_self = <yaflExtendedBase>(self.py_self)
-        if not isinstance(py_self, yaflExtendedBase):
-            raise ValueError('Invalid py_self type (must be subclass of yaflExtendedBase)!')
-
-        hx = py_self._hx
-        if not callable(hx):
-            raise ValueError('hx must be callable!')
-
-        hx_args = py_self._hx_args
-        if not isinstance(hx_args, dict):
-            raise ValueError('Invalid hx_args type (must be dict)!')
-
-        #How about handling exceptions here???
-        py_self._y[:] = hx(py_self._x, **hx_args)
-
-        return YAFL_ST_OK
-
-    except Exception as e:
-        print(tb.format_exc())
-        return YAFL_ST_INV_ARG_1
-
-#------------------------------------------------------------------------------
 # State transition function Jacobian
-cdef yaflStatusEn yafl_py_ekf_jhx(yaflPyEkfBaseSt * self):
+cdef yaflStatusEn yafl_py_ekf_jhx(yaflPyKalmanBaseSt * self, yaflFloat * h, \
+                                  yaflFloat * x):
     try:
-        py_self = <yaflExtendedBase>(self.py_self)
-        if not isinstance(py_self, yaflExtendedBase):
+        if not isinstance(<object>(self.py_self), yaflExtendedBase):
             raise ValueError('Invalid py_self type (must be subclass of yaflExtendedBase)!')
+
+        py_self = <yaflExtendedBase>(self.py_self)
 
         jhx = py_self._jhx
         if not callable(jhx):
@@ -697,35 +794,17 @@ cdef yaflStatusEn yafl_py_ekf_jhx(yaflPyEkfBaseSt * self):
         print(tb.format_exc())
         return YAFL_ST_INV_ARG_1
 
-#------------------------------------------------------------------------------
-# Measurement residual function
-cdef yaflStatusEn yafl_py_ekf_zrf(yaflPyEkfBaseSt * self, yaflFloat * zp):
-    try:
-        py_self = <yaflExtendedBase>(self.py_self)
-        if not isinstance(py_self, yaflExtendedBase):
-            raise ValueError('Invalid py_self type (must be subclass of yaflExtendedBase)!')
-
-        zrf = py_self._residual_z
-        if not callable(zrf):
-            raise ValueError('jhx must be callable!')
-
-        #How about handling exceptions here???
-        py_self._y[:] = zrf(py_self._z, py_self._y)
-
-        return YAFL_ST_OK
-
-    except Exception as e:
-        print(tb.format_exc())
-        return YAFL_ST_INV_ARG_1
 #==============================================================================
 cdef class Bierman(yaflExtendedBase):
     def _update(self):
-        return yafl_ekf_bierman_update(&self.c_self.base.base, &self.v_z[0])
+        return yafl_ekf_base_update(&self.c_self.base.base, &self.v_z[0], \
+                                    yafl_ekf_bierman_scalar_update)
 
 #------------------------------------------------------------------------------
 cdef class Joseph(yaflExtendedBase):
     def _update(self):
-        return yafl_ekf_joseph_update(&self.c_self.base.base, &self.v_z[0])
+        return yafl_ekf_base_update(&self.c_self.base.base, &self.v_z[0], \
+                                    yafl_ekf_joseph_scalar_update)
 
 #==============================================================================
 #                        Adaptive filter basic class
@@ -737,38 +816,40 @@ cdef class yakfAdaptiveBase(yaflExtendedBase):
         super().__init__(dim_x, dim_z, dt, fx, jfx, hx, jhx, **kwargs)
 
         #Init chi2 with scipy.stats.chi2.ppf(0.999, 1)
-        self.c_self.base.adaptive.chi2 = 10.8275662
+        self.c_self.base.ekf_adaptive.chi2 = 10.8275662
     #==========================================================================
     #Decorators
     @property
     def chi2(self):
-        return self.c_self.base.adaptive.chi2
+        return self.c_self.base.ekf_adaptive.chi2
 
     @chi2.setter
     def chi2(self, value):
-        self.c_self.base.adaptive.chi2 = <yaflFloat>value
+        self.c_self.base.ekf_adaptive.chi2 = <yaflFloat>value
 #==============================================================================
 cdef class AdaptiveBierman(yakfAdaptiveBase):
     def _update(self):
-        return yafl_ekf_adaptive_bierman_update(&self.c_self.base.adaptive, \
-                                                &self.v_z[0])
+        return yafl_ekf_base_update(&self.c_self.base.base, &self.v_z[0], \
+                                    yafl_ekf_adaptive_bierman_scalar_update)
 
 #------------------------------------------------------------------------------
 cdef class AdaptiveJoseph(yakfAdaptiveBase):
     def _update(self):
-        return yafl_ekf_adaptive_joseph_update(&self.c_self.base.adaptive, \
-                                               &self.v_z[0])
+        return yafl_ekf_base_update(&self.c_self.base.base, &self.v_z[0], \
+                                    yafl_ekf_adaptive_joseph_scalar_update)
 
 #------------------------------------------------------------------------------
-cdef class DoNotUseThisFilter(yakfAdaptiveBase):
-    """
-    WARNING!!!
-    DO NOT USE THIS variant of Adaptive Joseph filter !!!
-    It was implemented to show some flaws of the corresponding algorithm!
-    """
-    def _update(self):
-        return yafl_ekf_do_not_use_this_update(&self.c_self.base.adaptive, \
-                                               &self.v_z[0])
+# cdef class DoNotUseThisFilter(yakfAdaptiveBase):
+#     """
+#     WARNING!!!
+#     DO NOT USE THIS variant of Adaptive Joseph filter !!!
+#     It was implemented to show some flaws of the corresponding algorithm!
+#     """
+#     def _update(self):
+#         return yafl_ekf_do_not_use_this_update(&self.c_self.base.adaptive, \
+#                                                &self.v_z[0])
+
+
 
 #==============================================================================
 #                        Robust filter basic class
@@ -796,20 +877,21 @@ cdef class yakfRobustBase(yaflExtendedBase):
             self._gz = gz
             self._gdotz = gdotz
 
-            self.c_self.base.robust.g    = <yaflEKFRobFuncP>yafl_py_ekf_rob_gz
-            self.c_self.base.robust.gdot = <yaflEKFRobFuncP>yafl_py_ekf_rob_gdotz
+            self.c_self.base.ekf_robust.g    = <yaflKalmanRobFuncP>yafl_py_ekf_rob_gz
+            self.c_self.base.ekf_robust.gdot = <yaflKalmanRobFuncP>yafl_py_ekf_rob_gdotz
 
         else:
-            self.c_self.base.robust.g    = <yaflEKFRobFuncP>0
-            self.c_self.base.robust.gdot = <yaflEKFRobFuncP>0
+            self.c_self.base.ekf_robust.g    = <yaflKalmanRobFuncP>0
+            self.c_self.base.ekf_robust.gdot = <yaflKalmanRobFuncP>0
 
 #------------------------------------------------------------------------------
-# State transition function
-cdef yaflFloat yafl_py_ekf_rob_gz(yaflPyEkfBaseSt * self, yaflFloat nu):
+# Influence limiting function
+cdef yaflFloat yafl_py_ekf_rob_gz(yaflPyKalmanBaseSt * self, yaflFloat nu):
     try:
+        if not isinstance(<object>(self.py_self), yakfRobustBase):
+            raise ValueError('Invalid py_self type (must be subclass of yakfRobustBase)!')
+
         py_self = <yakfRobustBase>(self.py_self)
-        if not isinstance(py_self, yaflExtendedBase):
-            raise ValueError('Invalid py_self type (must be subclass of yaflExtendedBase)!')
 
         gz = py_self._gz
         if not callable(gz):
@@ -830,12 +912,13 @@ cdef yaflFloat yafl_py_ekf_rob_gz(yaflPyEkfBaseSt * self, yaflFloat nu):
         print(tb.format_exc())
         return <yaflFloat>0.0
 #------------------------------------------------------------------------------
-# State transition function Jacobian
-cdef yaflFloat yafl_py_ekf_rob_gdotz(yaflPyEkfBaseSt * self, yaflFloat nu):
+# Influence limiting function derivative
+cdef yaflFloat yafl_py_ekf_rob_gdotz(yaflPyKalmanBaseSt * self, yaflFloat nu):
     try:
+        if not isinstance(<object>(self.py_self), yakfRobustBase):
+            raise ValueError('Invalid py_self type (must be subclass of yakfRobustBase)!')
+
         py_self = <yakfRobustBase>(self.py_self)
-        if not isinstance(py_self, yaflExtendedBase):
-            raise ValueError('Invalid py_self type (must be subclass of yaflExtendedBase)!')
 
         gdotz = py_self._gdotz
         if not callable(gdotz):
@@ -858,14 +941,14 @@ cdef yaflFloat yafl_py_ekf_rob_gdotz(yaflPyEkfBaseSt * self, yaflFloat nu):
 #==============================================================================
 cdef class RobustBierman(yakfRobustBase):
     def _update(self):
-        return yafl_ekf_robust_bierman_update(&self.c_self.base.robust, \
-                                              &self.v_z[0])
+        return yafl_ekf_base_update(&self.c_self.base.base, &self.v_z[0], \
+                                    yafl_ekf_robust_bierman_scalar_update)
 
 #------------------------------------------------------------------------------
 cdef class RobustJoseph(yakfRobustBase):
     def _update(self):
-        return yafl_ekf_robust_joseph_update(&self.c_self.base.robust, \
-                                             &self.v_z[0])
+        return yafl_ekf_base_update(&self.c_self.base.base, &self.v_z[0], \
+                                    yafl_ekf_robust_joseph_scalar_update)
 
 #==============================================================================
 #                        Robust filter basic class
@@ -878,31 +961,29 @@ cdef class yakfAdaptiveRobustBase(yakfRobustBase):
         super().__init__(dim_x, dim_z, dt, fx, jfx, hx, jhx, **kwargs)
 
         #Init chi2 with scipy.stats.chi2.ppf(0.997, 1)
-        self.c_self.base.ada_rob.chi2 = 8.807468393511947
+        self.c_self.base.ekf_ada_rob.chi2 = 8.807468393511947
 
     #==========================================================================
     #Decorators
     @property
     def chi2(self):
-        return self.c_self.base.ada_rob.chi2
+        return self.c_self.base.ekf_ada_rob.chi2
 
     @chi2.setter
     def chi2(self, value):
-        self.c_self.base.ada_rob.chi2 = <yaflFloat>value
+        self.c_self.base.ekf_ada_rob.chi2 = <yaflFloat>value
 
 #==============================================================================
 cdef class AdaptiveRobustBierman(yakfAdaptiveRobustBase):
     def _update(self):
-        return \
-            yafl_ekf_adaptive_robust_bierman_update(&self.c_self.base.ada_rob, \
-                                                    &self.v_z[0])
+        return yafl_ekf_base_update(&self.c_self.base.base, &self.v_z[0], \
+                                    yafl_ekf_adaptive_robust_bierman_scalar_update)
 
 #------------------------------------------------------------------------------
 cdef class AdaptiveRobustJoseph(yakfAdaptiveRobustBase):
     def _update(self):
-        return \
-            yafl_ekf_adaptive_robust_joseph_update(&self.c_self.base.ada_rob, \
-                                                   &self.v_z[0])
+        return yafl_ekf_base_update(&self.c_self.base.base, &self.v_z[0], \
+                                    yafl_ekf_adaptive_robust_joseph_scalar_update)
 
 #==============================================================================
 #                          UD-factorized UKF API
