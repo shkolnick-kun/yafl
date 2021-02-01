@@ -28,31 +28,27 @@
 #define NX 4
 #define NZ 2
 
-yaflStatusEn fx(yaflEKFBaseSt * self)
+yaflStatusEn fx(yaflKalmanBaseSt * self, yaflFloat * x, yaflFloat * xz)
 {
-    yaflFloat * x;
     YAFL_CHECK(self,          YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(self->x,       YAFL_ST_INV_ARG_1);
     YAFL_CHECK(4 == self->Nx, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(x,             YAFL_ST_INV_ARG_2);
 
-    x = self->x;
     x[0] += 0.1 * x[2];
     x[1] += 0.1 * x[3];
     return YAFL_ST_OK;
 }
 
-yaflStatusEn jfx(yaflEKFBaseSt * self)
+yaflStatusEn jfx(yaflKalmanBaseSt * self, yaflFloat * w, yaflFloat * x)
 {
     yaflInt i;
     yaflInt nx;
     yaflInt nx2;
-    yaflFloat * w;
 
     YAFL_CHECK(self,          YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(self->W,       YAFL_ST_INV_ARG_1);
     YAFL_CHECK(4 == self->Nx, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(w,             YAFL_ST_INV_ARG_2);
 
-    w   = self->W;
     nx  = self->Nx;
     nx2 = nx * 2;
 
@@ -73,38 +69,32 @@ yaflStatusEn jfx(yaflEKFBaseSt * self)
     return YAFL_ST_OK;
 }
 
-yaflStatusEn hx(yaflEKFBaseSt * self)
+yaflStatusEn hx(yaflKalmanBaseSt * self, yaflFloat * y, yaflFloat * x)
 {
-    yaflFloat * x;
-    yaflFloat * y;
-
     YAFL_CHECK(self,          YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(self->x,       YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(self->y,       YAFL_ST_INV_ARG_1);
     YAFL_CHECK(2 == self->Nz, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(y,             YAFL_ST_INV_ARG_2);
+    YAFL_CHECK(x,             YAFL_ST_INV_ARG_3);
 
-    x = self->x;
-    y = self->y;
     y[0] = x[0];
     y[1] = x[1];
     return YAFL_ST_OK;
 }
 
-yaflStatusEn jhx(yaflEKFBaseSt * self)
+yaflStatusEn jhx(yaflKalmanBaseSt * self, yaflFloat * h, yaflFloat * x)
 {
     yaflInt i;
     yaflInt nx;
     yaflInt nz;
-    yaflFloat * h;
 
     YAFL_CHECK(self,          YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(self->H,       YAFL_ST_INV_ARG_1);
     YAFL_CHECK(4 == self->Nx, YAFL_ST_INV_ARG_1);
     YAFL_CHECK(2 == self->Nz, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(h,             YAFL_ST_INV_ARG_2);
+    YAFL_CHECK(x,             YAFL_ST_INV_ARG_3);
 
     nx = self->Nx;
     nz = self->Nz;
-    h = self->H;
 
     for (i = 0; i < nz; i++)
     {
@@ -183,10 +173,10 @@ int main (void)
     assert(mat.shape.dim.y == NZ);
     for (i=0; i<mat.shape.dim.x; i++)
     {
-        yafl_ekf_base_predict(&kf);
+        YAFL_EKF_JOSEPH_PREDICT(&kf);
         yafl_ekf_joseph_update(&kf, mat.data + NZ*i);
-        mat.data[NZ*i + 0] = kf.x[0];
-        mat.data[NZ*i + 1] = kf.x[1];
+        mat.data[NZ*i + 0] = kf.base.x[0];
+        mat.data[NZ*i + 1] = kf.base.x[1];
     }
 
     file = H5Fcreate(OUT_FILE, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
