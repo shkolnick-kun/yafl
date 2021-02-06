@@ -302,7 +302,7 @@ cdef extern from "yafl.c":
 #==============================================================================
 # We need numpy for Pythonic interfaces
 cimport numpy as np
-import  numpy as np#WTF???
+import  numpy as np#WTF??
 
 # We need traceback to print pythonic callback exceptions
 import traceback as tb

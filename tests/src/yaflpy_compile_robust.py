@@ -37,8 +37,8 @@ import yaflpy
 
 #from yaflpy import RobustJoseph as KF
 #from yaflpy import RobustBierman as KF
-#from yaflpy import AdaptiveRobustJoseph as KF
-from yaflpy import AdaptiveRobustBierman as KF
+from yaflpy import AdaptiveRobustJoseph as KF
+#from yaflpy import AdaptiveRobustBierman as KF
 
 def _fx(x, dt, **fx_args):
     x = x.copy()
