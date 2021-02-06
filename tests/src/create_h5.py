@@ -10,8 +10,8 @@ import numpy as np
 import h5py
 
 
-clear = np.zeros((10000, 2))
-noisy = np.zeros((10000, 2))
+clear = np.zeros((100000, 2))
+noisy = np.zeros((100000, 2))
 for i in range(1, len(clear)):
     clear[i] = clear[i-1] + np.array([1.,1.])
     noisy[i] = clear[i]   + np.random.normal(scale=20., size=2)

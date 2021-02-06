@@ -435,53 +435,29 @@ typedef struct _yaflUKFSigmaMethodsSt {
 } yaflUKFSigmaMethodsSt;
 
 /*---------------------------------------------------------------------------*/
-typedef yaflStatusEn (* yaflUKFScalarUpdateP)(yaflUKFBaseSt *, yaflInt);
-
-typedef yaflStatusEn (* yaflUKFFuncP)(yaflUKFBaseSt *, yaflFloat *, \
-                                      yaflFloat *);
-
-typedef yaflStatusEn (* yaflUKFResFuncP)(yaflUKFBaseSt *, yaflFloat *, \
-                                         yaflFloat *, yaflFloat *);
-
 struct _yaflUKFBaseSt {
+
+    yaflKalmanBaseSt base;
+
     /* A pointer to the sigma point generator structure */
     yaflUKFSigmaSt               * sp_info;
     /* A sigma point generator method table pointer     */
     const yaflUKFSigmaMethodsSt  * sp_meth;
 
-    yaflUKFFuncP      f; /* A state transition function      */
-    yaflUKFFuncP    xmf; /* State mean function              */
-    yaflUKFResFuncP xrf; /* State residual function function */
+    yaflKalmanFuncP    xmf; /* State mean function              */
+    yaflKalmanResFuncP xrf; /* State residual function function */
 
-    yaflUKFFuncP      h; /* A measurement function                */
-    yaflUKFFuncP    zmf; /* Measurement mean function function    */
-    yaflUKFResFuncP zrf; /* Measurement residual function function*/
-
-    yaflFloat * x;  /* State vector                 */
+    yaflKalmanFuncP    zmf; /* Measurement mean function function    */
     yaflFloat * zp; /* Predicted measurement vector */
-    yaflFloat * y;  /* Innovation */
 
-    yaflFloat * Up;  /* Upper triangular part of P  */
-    yaflFloat * Dp;  /* Diagonal part of P          */
-
+    /*Scratchpad memory*/
+    yaflFloat * Sx;  /* State       */
     yaflFloat * Pzx; /* Pzx cross covariance matrix */
-
-    yaflFloat * Uq;  /* Upper triangular part of Q   */
-    yaflFloat * Dq;  /* Diagonal part of Q           */
-
-    yaflFloat * Ur;  /* Upper triangular part of R   */
-    yaflFloat * Dr;  /* Diagonal part of R           */
 
     yaflFloat * sigmas_x; /* State sigma points       */
     yaflFloat * sigmas_z; /* Measurement sigma points */
     yaflFloat * wm;       /* Weights for mean calculations       */
     yaflFloat * wc;       /* Weights for covariance calculations */
-
-    /*Scratchpad memory*/
-    yaflFloat * Sx;       /* State       */
-
-    yaflInt   Nx; /* State vector size       */
-    yaflInt   Nz; /* Measurement vector size */
 };
 
 /*---------------------------------------------------------------------------*/
@@ -490,20 +466,10 @@ Warning: sigmas_x and _sigmas_z aren't defined in this mixin, see
          sigma points generators mixins!!!
 */
 #define YAFL_UKF_BASE_MEMORY_MIXIN(nx, nz) \
-    yaflFloat x[nx];                        \
+    YAFL_KALMAN_BASE_MEMORY_MIXIN(nx, nz);  \
     yaflFloat zp[nz];                       \
-    yaflFloat y[nz];                        \
-                                            \
-    yaflFloat Up[((nx - 1) * nx)/2];        \
-    yaflFloat Dp[nx];                       \
                                             \
     yaflFloat Pzx[nz * nx];                 \
-                                            \
-    yaflFloat Uq[((nx - 1) * nx)/2];        \
-    yaflFloat Dq[nx];                       \
-                                            \
-    yaflFloat Ur[((nz - 1) * nz)/2];        \
-    yaflFloat Dr[nz];                       \
                                             \
     yaflFloat Sx[nx]
 
@@ -511,45 +477,26 @@ Warning: sigmas_x and _sigmas_z aren't defined in this mixin, see
 #define YAFL_UKF_BASE_INITIALIZER(_p, _pm, _f, _xmf, _xrf, _h, _zmf,          \
                                    _zrf, _nx, _nz, _mem)                      \
 {                                                                             \
+    .base = YAFL_KALMAN_BASE_INITIALIZER(_f, _h, _zrf, _nx, _nz, _mem),       \
+                                                                              \
     .sp_info = _p,                                                            \
     .sp_meth = _pm,                                                           \
                                                                               \
-    .f   = (yaflUKFFuncP)_f,                                                  \
     .xmf = (yaflUKFFuncP)_xmf,                                                \
     .xrf = (yaflUKFResFuncP)_xrf,                                             \
                                                                               \
-    .h   = (yaflUKFFuncP)_h,                                                  \
-    .xmf = (yaflUKFFuncP)_xmf,                                                \
-    .xrf = (yaflUKFResFuncP)_xrf,                                             \
+    .zmf = (yaflUKFFuncP)_zmf,                                                \
                                                                               \
-    .x   = _mem.x,                                                            \
     .zp  = _mem.zp,                                                           \
-    .y   = _mem.y,                                                            \
                                                                               \
-    .Up  = _mem.Up,                                                           \
-    .Dp  = _mem.Dp,                                                           \
-                                                                              \
-    .Us  = _mem.Us,                                                           \
-    .Ds  = _mem.Ds,                                                           \
-                                                                              \
+    .Sx  = _mem.Sx,                                                           \
     .Pzx = _mem.Pzx,                                                          \
-                                                                              \
-    .Uq  = _mem.Uq,                                                           \
-    .Dq  = _mem.Dq,                                                           \
-                                                                              \
-    .Ur  = _mem.Ur,                                                           \
-    .Dr  = _mem.Dr,                                                           \
                                                                               \
     .sigmas_x  = _mem.sigmas_x,                                               \
     .sigmas_z  = _mem.sigmas_z,                                               \
                                                                               \
     .wm   = _mem.wm,                                                          \
     .wc   = _mem.wc                                                           \
-                                                                              \
-    .Sx  = _mem.Sx,                                                           \
-                                                                              \
-    .Nx  = _nx,                                                               \
-    .Nz  = _nz                                                                \
 }
 
 /*---------------------------------------------------------------------------*/
@@ -573,7 +520,7 @@ static inline yaflStatusEn yafl_ukf_gen_sigmas(yaflUKFBaseSt * self)
 yaflStatusEn yafl_ukf_base_predict(yaflUKFBaseSt * self);
 
 yaflStatusEn yafl_ukf_base_update(yaflUKFBaseSt * self, yaflFloat * z, \
-                                  yaflUKFScalarUpdateP scalar_update);
+                                  yaflKalmanScalarUpdateP scalar_update);
 
 /*=============================================================================
                                Bierman UKF
@@ -615,9 +562,9 @@ typedef yaflFloat (* yaflUKFRobFuncP)(yaflUKFBaseSt *, yaflFloat);
 
 typedef struct {
     yaflUKFBaseSt base;
-    yaflUKFRobFuncP g;    /* g = -d(ln(pdf(y))) / dy */
-    yaflUKFRobFuncP gdot; /* gdot = G = d(g) / dy */
-} yaflUKFRobustSt; /*Robust EKF*/
+    yaflKalmanRobFuncP g;    /* g = -d(ln(pdf(y))) / dy */
+    yaflKalmanRobFuncP gdot; /* gdot = G = d(g) / dy */
+} yaflUKFRobustSt; /*Robust UKF*/
 
 /*=============================================================================
             Full UKF, not sequential square root version of UKF
