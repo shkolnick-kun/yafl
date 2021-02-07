@@ -986,7 +986,6 @@ static yaflStatusEn _unscented_transform(yaflUKFBaseSt * self,   \
         /*res_u, res_d = noise_u.copy(), noise_d.copy()*/
         memcpy((void *)res_u, (void *)noise_u, (res_sz * (res_sz - 1)) / 2 * sizeof(yaflFloat));
         memcpy((void *)res_d, (void *)noise_d, res_sz * sizeof(yaflFloat));
-
     }
     else
     {

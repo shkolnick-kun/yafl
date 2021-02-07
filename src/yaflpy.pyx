@@ -200,7 +200,6 @@ cdef extern from "yafl.c":
         yaflUKFSigmaAddP addf
 
     #--------------------------------------------------------------------------
-    ctypedef yaflStatusEn (* yaflUKFScalarUpdateP)(yaflUKFBaseSt *, yaflInt)
     ctypedef yaflStatusEn (* yaflUKFSigmaGenWeigthsP)(yaflUKFBaseSt *)
     ctypedef yaflStatusEn (* yaflUKFSigmaGenSigmasP)(yaflUKFBaseSt *)
 
@@ -209,48 +208,26 @@ cdef extern from "yafl.c":
         yaflUKFSigmaGenSigmasP  spgf
 
     #--------------------------------------------------------------------------
-    ctypedef yaflStatusEn (* yaflUKFFuncP)(yaflUKFBaseSt *, yaflFloat *, \
-                                           yaflFloat *)
-
-    ctypedef yaflStatusEn (* yaflUKFResFuncP)(yaflUKFBaseSt *, yaflFloat *, \
-                                              yaflFloat *, yaflFloat *)
 
     ctypedef struct _yaflUKFBaseSt:
+        yaflKalmanBaseSt base
+
         yaflUKFSigmaSt              * sp_info
         const yaflUKFSigmaMethodsSt * sp_meth
 
-        yaflUKFFuncP      f
-        yaflUKFFuncP    xmf
-        yaflUKFResFuncP xrf
+        yaflKalmanFuncP    xmf
+        yaflKalmanResFuncP xrf
 
-        yaflUKFFuncP      h
-        yaflUKFFuncP    zmf
-        yaflUKFResFuncP zrf
-
-        yaflFloat * x
+        yaflKalmanFuncP    zmf
         yaflFloat * zp
-        yaflFloat * y
 
-        yaflFloat * Up
-        yaflFloat * Dp
-
+        yaflFloat * Sx
         yaflFloat * Pzx
-
-        yaflFloat * Uq
-        yaflFloat * Dq
-
-        yaflFloat * Ur
-        yaflFloat * Dr
 
         yaflFloat * sigmas_x
         yaflFloat * sigmas_z
         yaflFloat * wm
         yaflFloat * wc
-
-        yaflFloat * Sx
-
-        yaflInt   Nx
-        yaflInt   Nz
 
     #--------------------------------------------------------------------------
     cdef yaflStatusEn yafl_ukf_post_init(yaflUKFBaseSt * self)  #static inline
@@ -261,7 +238,7 @@ cdef extern from "yafl.c":
 
     cdef yaflStatusEn \
         yafl_ukf_base_update(yaflUKFBaseSt * self, yaflFloat * z, \
-                             yaflUKFScalarUpdateP scalar_update)
+                             yaflKalmanScalarUpdateP scalar_update)
 
     #==========================================================================
     cdef yaflStatusEn \
@@ -347,6 +324,10 @@ ctypedef union yaflPyKalmanBaseUn:
     yaflEKFAdaptiveSt       ekf_adaptive
     yaflEKFRobustSt         ekf_robust
     yaflEKFAdaptiveRobustSt ekf_ada_rob
+
+    yaflUKFBaseSt           ukf
+    yaflUKFAdaptivedSt      ukf_adaptive
+    yaflUKFSt               ukf_full
 
 #------------------------------------------------------------------------------
 # Kalman filter C-structure with Python callback
@@ -809,7 +790,7 @@ cdef class Joseph(yaflExtendedBase):
 #==============================================================================
 #                        Adaptive filter basic class
 #==============================================================================
-cdef class yakfAdaptiveBase(yaflExtendedBase):
+cdef class yaflAdaptiveBase(yaflExtendedBase):
     def __init__(self, int dim_x, int dim_z, yaflFloat dt, \
                  fx, jfx, hx, jhx, **kwargs):
 
@@ -827,19 +808,19 @@ cdef class yakfAdaptiveBase(yaflExtendedBase):
     def chi2(self, value):
         self.c_self.base.ekf_adaptive.chi2 = <yaflFloat>value
 #==============================================================================
-cdef class AdaptiveBierman(yakfAdaptiveBase):
+cdef class AdaptiveBierman(yaflAdaptiveBase):
     def _update(self):
         return yafl_ekf_base_update(&self.c_self.base.base, &self.v_z[0], \
                                     yafl_ekf_adaptive_bierman_scalar_update)
 
 #------------------------------------------------------------------------------
-cdef class AdaptiveJoseph(yakfAdaptiveBase):
+cdef class AdaptiveJoseph(yaflAdaptiveBase):
     def _update(self):
         return yafl_ekf_base_update(&self.c_self.base.base, &self.v_z[0], \
                                     yafl_ekf_adaptive_joseph_scalar_update)
 
 #------------------------------------------------------------------------------
-# cdef class DoNotUseThisFilter(yakfAdaptiveBase):
+# cdef class DoNotUseThisFilter(yaflAdaptiveBase):
 #     """
 #     WARNING!!!
 #     DO NOT USE THIS variant of Adaptive Joseph filter !!!
@@ -854,7 +835,7 @@ cdef class AdaptiveJoseph(yakfAdaptiveBase):
 #==============================================================================
 #                        Robust filter basic class
 #==============================================================================
-cdef class yakfRobustBase(yaflExtendedBase):
+cdef class yaflRobustBase(yaflExtendedBase):
 
     cdef object _gz
     cdef object _gdotz
@@ -888,10 +869,10 @@ cdef class yakfRobustBase(yaflExtendedBase):
 # Influence limiting function
 cdef yaflFloat yafl_py_ekf_rob_gz(yaflPyKalmanBaseSt * self, yaflFloat nu):
     try:
-        if not isinstance(<object>(self.py_self), yakfRobustBase):
-            raise ValueError('Invalid py_self type (must be subclass of yakfRobustBase)!')
+        if not isinstance(<object>(self.py_self), yaflRobustBase):
+            raise ValueError('Invalid py_self type (must be subclass of yaflRobustBase)!')
 
-        py_self = <yakfRobustBase>(self.py_self)
+        py_self = <yaflRobustBase>(self.py_self)
 
         gz = py_self._gz
         if not callable(gz):
@@ -915,10 +896,10 @@ cdef yaflFloat yafl_py_ekf_rob_gz(yaflPyKalmanBaseSt * self, yaflFloat nu):
 # Influence limiting function derivative
 cdef yaflFloat yafl_py_ekf_rob_gdotz(yaflPyKalmanBaseSt * self, yaflFloat nu):
     try:
-        if not isinstance(<object>(self.py_self), yakfRobustBase):
-            raise ValueError('Invalid py_self type (must be subclass of yakfRobustBase)!')
+        if not isinstance(<object>(self.py_self), yaflRobustBase):
+            raise ValueError('Invalid py_self type (must be subclass of yaflRobustBase)!')
 
-        py_self = <yakfRobustBase>(self.py_self)
+        py_self = <yaflRobustBase>(self.py_self)
 
         gdotz = py_self._gdotz
         if not callable(gdotz):
@@ -939,13 +920,13 @@ cdef yaflFloat yafl_py_ekf_rob_gdotz(yaflPyKalmanBaseSt * self, yaflFloat nu):
         print(tb.format_exc())
         return <yaflFloat>0.0
 #==============================================================================
-cdef class RobustBierman(yakfRobustBase):
+cdef class RobustBierman(yaflRobustBase):
     def _update(self):
         return yafl_ekf_base_update(&self.c_self.base.base, &self.v_z[0], \
                                     yafl_ekf_robust_bierman_scalar_update)
 
 #------------------------------------------------------------------------------
-cdef class RobustJoseph(yakfRobustBase):
+cdef class RobustJoseph(yaflRobustBase):
     def _update(self):
         return yafl_ekf_base_update(&self.c_self.base.base, &self.v_z[0], \
                                     yafl_ekf_robust_joseph_scalar_update)
@@ -953,7 +934,7 @@ cdef class RobustJoseph(yakfRobustBase):
 #==============================================================================
 #                        Robust filter basic class
 #==============================================================================
-cdef class yakfAdaptiveRobustBase(yakfRobustBase):
+cdef class yaflAdaptiveRobustBase(yaflRobustBase):
 
     def __init__(self, int dim_x, int dim_z, yaflFloat dt, \
                  fx, jfx, hx, jhx, **kwargs):
@@ -974,13 +955,13 @@ cdef class yakfAdaptiveRobustBase(yakfRobustBase):
         self.c_self.base.ekf_ada_rob.chi2 = <yaflFloat>value
 
 #==============================================================================
-cdef class AdaptiveRobustBierman(yakfAdaptiveRobustBase):
+cdef class AdaptiveRobustBierman(yaflAdaptiveRobustBase):
     def _update(self):
         return yafl_ekf_base_update(&self.c_self.base.base, &self.v_z[0], \
                                     yafl_ekf_adaptive_robust_bierman_scalar_update)
 
 #------------------------------------------------------------------------------
-cdef class AdaptiveRobustJoseph(yakfAdaptiveRobustBase):
+cdef class AdaptiveRobustJoseph(yaflAdaptiveRobustBase):
     def _update(self):
         return yafl_ekf_base_update(&self.c_self.base.base, &self.v_z[0], \
                                     yafl_ekf_adaptive_robust_joseph_scalar_update)
@@ -991,22 +972,22 @@ cdef class AdaptiveRobustJoseph(yakfAdaptiveRobustBase):
 #------------------------------------------------------------------------------
 #                   Sigma points generator basic definitions
 #------------------------------------------------------------------------------
-ctypedef union yakfPySigmaBaseUn:
+ctypedef union yaflPySigmaBaseUn:
     yaflUKFSigmaSt base
     yaflUKFMerweSt merwe
 
 #------------------------------------------------------------------------------
-ctypedef struct yakfPySigmaSt:
+ctypedef struct yaflPySigmaSt:
     # Sigma point generator base structure
-    yakfPySigmaBaseUn base
+    yaflPySigmaBaseUn base
 
     # Python/Cython self
     void * py_self
 
 #------------------------------------------------------------------------------
-cdef class yakfSigmaBase:
+cdef class yaflSigmaBase:
     # Sigma point generator C-self
-    cdef yakfPySigmaSt c_self
+    cdef yaflPySigmaSt c_self
 
     # Callback info
     cdef object _addf
@@ -1031,10 +1012,10 @@ cdef class yakfSigmaBase:
         self.c_self.base.base.np = pnum
 
     cdef yaflInt get_np(self, int dim_x):
-        raise NotImplementedError('yakfSigmaBase is the base class!')
+        raise NotImplementedError('yaflSigmaBase is the base class!')
 
     cdef const yaflUKFSigmaMethodsSt * get_spm(self):
-        raise NotImplementedError('yakfSigmaBase is the base class!')
+        raise NotImplementedError('yaflSigmaBase is the base class!')
 
     @property
     def pnum(self):
@@ -1042,94 +1023,42 @@ cdef class yakfSigmaBase:
 
     @pnum.setter
     def pnum(self, value):
-        raise AttributeError('yakfSigmaBase does not support this!')
+        raise AttributeError('yaflSigmaBase does not support this!')
+
 #------------------------------------------------------------------------------
 #                         UD-factorized UKF definitions
 #------------------------------------------------------------------------------
-ctypedef union yakfPyUnscentedBaseUn:
-    yaflUKFBaseSt      base
-    yaflUKFAdaptivedSt adaptive
-    yaflUKFSt          unscented
-
-#------------------------------------------------------------------------------
-ctypedef struct yakfPyUnscentedSt:
-    # Basic filter structure
-    yakfPyUnscentedBaseUn base
-
-    # Python/Cython self
-    void * py_self
-
-#------------------------------------------------------------------------------
-cdef class yakfUnscentedBase:
-    # Kalman filter C-self
-    cdef yakfPyUnscentedSt c_self
+cdef class yaflUnscentedBase(yaflKalmanBase):
 
     # Kalman filter memory views
-    cdef yaflFloat [::1]    v_z
-
-    cdef yaflFloat [::1]    v_x
     cdef yaflFloat [::1]    v_zp
-    cdef yaflFloat [::1]    v_y
 
-    cdef yaflFloat [::1]    v_Up
-    cdef yaflFloat [::1]    v_Dp
-
+    cdef yaflFloat [::1]    v_Sx
     cdef yaflFloat [:, ::1] v_Pzx
-
-    cdef yaflFloat [::1]    v_Uq
-    cdef yaflFloat [::1]    v_Dq
-
-    cdef yaflFloat [::1]    v_Ur
-    cdef yaflFloat [::1]    v_Dr
 
     cdef yaflFloat [:, ::1] v_sigmas_x
     cdef yaflFloat [:, ::1] v_sigmas_z
     cdef yaflFloat [::1]    v_wm
     cdef yaflFloat [::1]    v_wc
 
-    cdef yaflFloat [::1]    v_Sx
-
     # Kalman filter numpy arrays
-    cdef np.ndarray  _z
-
-    cdef np.ndarray  _x
     cdef np.ndarray  _zp
-    cdef np.ndarray  _y
 
-    cdef np.ndarray  _Up
-    cdef np.ndarray  _Dp
-
-    cdef np.ndarray  _Us
-    cdef np.ndarray  _Ds
-
+    cdef np.ndarray  _Sx
     cdef np.ndarray  _Pzx
-
-    cdef np.ndarray _Uq
-    cdef np.ndarray _Dq
-
-    cdef np.ndarray _Ur
-    cdef np.ndarray _Dr
 
     cdef np.ndarray  _sigmas_x
     cdef np.ndarray  _sigmas_z
     cdef np.ndarray  _wm
     cdef np.ndarray  _wc
 
-    cdef np.ndarray _Sx
-
     # Callback info
     cdef object    _points
 
-    cdef yaflFloat _dt
-    cdef dict      _fx_args
-    cdef object    _fx
     cdef object    _mean_x
     cdef object    _resudual_x
 
-    cdef dict      _hx_args
-    cdef object    _hx
     cdef object    _mean_z
-    cdef object    _residual_z
 
     #The object will be Extensible
     cdef dict __dict__
@@ -1138,72 +1067,45 @@ cdef class yakfUnscentedBase:
                  x_mean_fn=None, z_mean_fn=None, \
                  residual_x=None, residual_z=None):
 
-        #Store dimensions
-        self.c_self.base.base.Nx = dim_x
-        self.c_self.base.base.Nz = dim_z
+        super().__init__(dim_x, dim_z, dt, fx, hx, residual_z)
 
-        #Setup callbacks
-        self.c_self.py_self = <void *>self
-
-        self._dt = dt
-        self._fx_args = {}
-        self._hx_args = {}
-
-        if not callable(fx):
-            raise ValueError('fx must be callable!')
-        self.c_self.base.base.f = <yaflUKFFuncP> yafl_py_ukf_fx
-        self._fx = fx
-
-        if not callable(hx):
-            raise ValueError('hx must be callable!')
-        self.c_self.base.base.h = <yaflUKFFuncP> yafl_py_ukf_hx
-        self._hx = hx
 
         if x_mean_fn:
             if not callable(x_mean_fn):
                 raise ValueError('x_mean_fn must be callable!')
-            self.c_self.base.base.xmf = <yaflUKFFuncP> yafl_py_ukf_xmf
+            self.c_self.base.ukf.xmf = <yaflKalmanFuncP>yafl_py_ukf_xmf
             self._mean_x = x_mean_fn
         else:
-            self.c_self.base.base.xmf = <yaflUKFFuncP> 0
+            self.c_self.base.ukf.xmf = <yaflKalmanFuncP>0
             self._mean_x = None
 
         if residual_x:
             if not callable(residual_x):
                 raise ValueError('residual_x must be callable!')
-            self.c_self.base.base.xrf = <yaflUKFResFuncP> yafl_py_ukf_xrf
+            self.c_self.base.ukf.xrf = <yaflKalmanResFuncP>yafl_py_ukf_xrf
             self._residual_x = residual_x
         else:
-            self.c_self.base.base.xrf = <yaflUKFResFuncP> 0
+            self.c_self.base.ukf.xrf = <yaflKalmanResFuncP>0
             self._residual_x = None
 
         if z_mean_fn:
             if not callable(z_mean_fn):
                 raise ValueError('z_mean_fn must be callable!')
-            self.c_self.base.base.zmf = <yaflUKFFuncP> yafl_py_ukf_zmf
+            self.c_self.base.ukf.zmf = <yaflKalmanFuncP>yafl_py_ukf_zmf
             self._mean_z = z_mean_fn
         else:
-            self.c_self.base.base.zmf = <yaflUKFFuncP> 0
+            self.c_self.base.ukf.zmf = <yaflKalmanFuncP>0
             self._mean_z = None
 
-        if residual_z:
-            if not callable(residual_z):
-                raise ValueError('residual_z must be callable!')
-            self.c_self.base.base.zrf = <yaflUKFResFuncP> yafl_py_ukf_zrf
-            self._residual_z = residual_z
-        else:
-            self.c_self.base.base.zrf = <yaflUKFResFuncP> 0
-            self._residual_z = None
-
         #Setup sigma points generator
-        if not isinstance(points, yakfSigmaBase):
-            raise ValueError('Invalid points type (must be subclass of yakfSigmaBase)!')
+        if not isinstance(points, yaflSigmaBase):
+            raise ValueError('Invalid points type (must be subclass of yaflSigmaBase)!')
 
-        _points = <yakfSigmaBase>points
+        _points = <yaflSigmaBase>points
 
         self._points = _points
-        self.c_self.base.base.sp_info = &_points.c_self.base.base
-        self.c_self.base.base.sp_meth = _points.get_spm()
+        self.c_self.base.ukf.sp_info = &_points.c_self.base.base
+        self.c_self.base.ukf.sp_meth = _points.get_spm()
 
         # Allocate memories and setup the rest of c_self
         # Sigma points and weights
@@ -1211,152 +1113,46 @@ cdef class yakfUnscentedBase:
 
         self._wm  = np.zeros((pnum,), dtype=np.float64)
         self.v_wm = self._wm
-        self.c_self.base.base.wm = &self.v_wm[0]
+        self.c_self.base.ukf.wm = &self.v_wm[0]
 
         self._wc  = np.zeros((pnum,), dtype=np.float64)
         self.v_wc = self._wc
-        self.c_self.base.base.wc = &self.v_wc[0]
+        self.c_self.base.ukf.wc = &self.v_wc[0]
 
         self._sigmas_x  = np.zeros((pnum, dim_x), dtype=np.float64)
         self.v_sigmas_x = self._sigmas_x
-        self.c_self.base.base.sigmas_x = &self.v_sigmas_x[0, 0]
+        self.c_self.base.ukf.sigmas_x = &self.v_sigmas_x[0, 0]
 
         self._sigmas_z  = np.zeros((pnum, dim_z), dtype=np.float64)
         self.v_sigmas_z = self._sigmas_z
-        self.c_self.base.base.sigmas_z = &self.v_sigmas_z[0, 0]
+        self.c_self.base.ukf.sigmas_z = &self.v_sigmas_z[0, 0]
 
         #Rest of rhe UKF
-        self._z  = np.zeros((dim_z,), dtype=np.float64)
-        self.v_z = self._z
-
-        self._x  = np.zeros((dim_x,), dtype=np.float64)
-        self.v_x = self._x
-        self.c_self.base.base.x = &self.v_x[0]
-
         self._zp  = np.zeros((dim_z,), dtype=np.float64)
         self.v_zp = self._zp
-        self.c_self.base.base.zp = &self.v_zp[0]
-
-        self._y  = np.zeros((dim_z,), dtype=np.float64)
-        self.v_y = self._y
-        self.c_self.base.base.y = &self.v_y[0]
-
-        self._Up  = np.zeros((_U_sz(dim_x),), dtype=np.float64)
-        self.v_Up = self._Up
-        self.c_self.base.base.Up = &self.v_Up[0]
-
-        self._Dp  = np.ones((dim_x,), dtype=np.float64)
-        self.v_Dp = self._Dp
-        self.c_self.base.base.Dp = &self.v_Dp[0]
+        self.c_self.base.ukf.zp = &self.v_zp[0]
 
         self._Pzx  = np.zeros((dim_z, dim_x), dtype=np.float64)
         self.v_Pzx = self._Pzx
-        self.c_self.base.base.Pzx = &self.v_Pzx[0, 0]
-
-        self._Uq  = np.zeros((_U_sz(dim_x),), dtype=np.float64)
-        self.v_Uq = self._Uq
-        self.c_self.base.base.Uq = &self.v_Uq[0]
-
-        self._Dq  = np.ones((dim_x,), dtype=np.float64)
-        self.v_Dq = self._Dq
-        self.c_self.base.base.Dq = &self.v_Dq[0]
-
-        self._Ur  = np.zeros((_U_sz(dim_z),), dtype=np.float64)
-        self.v_Ur = self._Ur
-        self.c_self.base.base.Ur = &self.v_Ur[0]
-
-        self._Dr  = np.ones((dim_z,), dtype=np.float64)
-        self.v_Dr = self._Dr
-        self.c_self.base.base.Dr = &self.v_Dr[0]
+        self.c_self.base.ukf.Pzx = &self.v_Pzx[0, 0]
 
         self._Sx  = np.zeros((dim_x,), dtype=np.float64)
         self.v_Sx = self._Sx
-        self.c_self.base.base.Sx = &self.v_Sx[0]
+        self.c_self.base.ukf.Sx = &self.v_Sx[0]
 
         #Call C-post init
-        yafl_ukf_post_init(&self.c_self.base.base)
+        yafl_ukf_post_init(&self.c_self.base.ukf)
 
     #==========================================================================
     #Decorators
     @property
-    def dim_x(self):
-        return self.c_self.base.base.Nx
-
-    @property
-    def dim_z(self):
-        return self.c_self.base.base.Nz
-
-    @property
-    def x(self):
-        return self._x
-
-    @x.setter
-    def x(self, value):
-        self._x[:] = value
-
-    @property
     def Pzx(self):
         return self._Pzx
 
+    #--------------------------------------------------------------------------
     @property
     def zp(self):
         return self._zp
-    #--------------------------------------------------------------------------
-    @property
-    def y(self):
-        return self._y
-
-    @y.setter
-    def y(self, value):
-        raise AttributeError('yakfUnscentedBase does not support this!')
-    #--------------------------------------------------------------------------
-    @property
-    def Up(self):
-        return self._Up
-
-    @Up.setter
-    def Up(self, value):
-        self._Up[:] = value
-    #--------------------------------------------------------------------------
-    @property
-    def Dp(self):
-        return self._Dp
-
-    @Dp.setter
-    def Dp(self, value):
-        self._Dp[:] = value
-    #--------------------------------------------------------------------------
-    @property
-    def Uq(self):
-        return self._Uq
-
-    @Uq.setter
-    def Uq(self, value):
-        self._Uq[:] = value
-    #--------------------------------------------------------------------------
-    @property
-    def Dq(self):
-        return self._Dq
-
-    @Dq.setter
-    def Dq(self, value):
-        self._Dq[:] = value
-    #--------------------------------------------------------------------------
-    @property
-    def Ur(self):
-        return self._Ur
-
-    @Ur.setter
-    def Ur(self, value):
-        self._Ur[:] = value
-    #--------------------------------------------------------------------------
-    @property
-    def Dr(self):
-        return self._Dr
-
-    @Dr.setter
-    def Dr(self, value):
-        self._Dr[:] = value
 
     #--------------------------------------------------------------------------
     @property
@@ -1365,7 +1161,7 @@ cdef class yakfUnscentedBase:
 
     @sigmas_x.setter
     def sigmas_x(self, value):
-        raise AttributeError('yakfUnscentedBase does not support this!')
+        raise AttributeError('yaflUnscentedBase does not support this!')
 
     #--------------------------------------------------------------------------
     @property
@@ -1374,7 +1170,7 @@ cdef class yakfUnscentedBase:
 
     @sigmas_z.setter
     def sigmas_z(self, value):
-        raise AttributeError('yakfUnscentedBase does not support this!')
+        raise AttributeError('yaflUnscentedBase does not support this!')
     #--------------------------------------------------------------------------
     @property
     def wc(self):
@@ -1382,7 +1178,7 @@ cdef class yakfUnscentedBase:
 
     @wc.setter
     def wc(self, value):
-        raise AttributeError('yakfUnscentedBase does not support this!')
+        raise AttributeError('yaflUnscentedBase does not support this!')
     #--------------------------------------------------------------------------
     @property
     def wm(self):
@@ -1390,50 +1186,23 @@ cdef class yakfUnscentedBase:
 
     @wm.setter
     def wm(self, value):
-        raise AttributeError('yakfUnscentedBase does not support this!')
+        raise AttributeError('yaflUnscentedBase does not support this!')
+
     #==========================================================================
     def _predict(self):
-        return yafl_ukf_base_predict(&self.c_self.base.base)
-
-    def predict(self, dt=None, **fx_args):
-        old_dt = self._dt
-
-        if dt:
-            if np.isnan(dt):
-                raise ValueError('Invalid dt value (nan)!')
-            self._dt = <yaflFloat>dt
-
-        self._fx_args = fx_args
-
-        res = self._predict()
-        if res > YAFL_ST_ERR_THR:
-            raise ValueError('Bad return value on yakfUnscentedBase.predict call!')
-
-        self._dt = old_dt
-        return res
+        return yafl_ukf_base_predict(&self.c_self.base.ukf)
 
     #==========================================================================
     def _update(self):
-        raise NotImplementedError('yakfUnscentedBase is the base class!')
-
-    def update(self, z, **hx_args):
-
-        self._z[:] = z
-        self._hx_args = hx_args
-
-        res = self._update()
-        if res > YAFL_ST_ERR_THR:
-            raise ValueError('Bad return value on yakfUnscentedBase.update call!')
-
-        return res
+        raise NotImplementedError('yaflUnscentedBase is the base class!')
 
 #==============================================================================
-cdef yaflStatusEn yafl_py_sigma_addf(yakfPyUnscentedSt * self, yaflFloat * delta, \
+cdef yaflStatusEn yafl_py_sigma_addf(yaflPyKalmanBaseSt * self, yaflFloat * delta, \
                              yaflFloat * pivot, yaflFloat mult):
     try:
-        py_self = <yakfUnscentedBase>(self.py_self)
-        if not isinstance(py_self, yakfUnscentedBase):
-            raise ValueError('Invalid py_self type (must be subclass of yakfUnscentedBase)!')
+        py_self = <yaflUnscentedBase>(self.py_self)
+        if not isinstance(py_self, yaflUnscentedBase):
+            raise ValueError('Invalid py_self type (must be subclass of yaflUnscentedBase)!')
 
         _addf = py_self._points._addf
         if not callable(_addf):
@@ -1453,47 +1222,14 @@ cdef yaflStatusEn yafl_py_sigma_addf(yakfPyUnscentedSt * self, yaflFloat * delta
     except Exception as e:
         print(tb.format_exc())
         return YAFL_ST_INV_ARG_1
-#==============================================================================
-cdef yaflStatusEn yafl_py_ukf_fx(yakfPyUnscentedSt * self, \
-                         yaflFloat * new_x, yaflFloat * old_x):
-    try:
-        py_self = <yakfUnscentedBase>(self.py_self)
-        if not isinstance(py_self, yakfUnscentedBase):
-            raise ValueError('Invalid py_self type (must be subclass of yakfUnscentedBase)!')
 
-        fx = py_self._fx
-        if not callable(fx):
-            raise ValueError('fx must be callable!')
-
-        dt = py_self._dt
-        if np.isnan(dt):
-            raise ValueError('Invalid dt value (nan)!')
-
-        fx_args = py_self._fx_args
-        if not isinstance(fx_args, dict):
-            raise ValueError('Invalid fx_args type (must be dict)!')
-
-        nx = self.base.base.Nx
-        if nx <= 0:
-            raise ValueError('nx must be > 0!')
-
-        _new_x = np.asarray(<yaflFloat[:nx]> new_x) #np.float64_t
-        _old_x = np.asarray(<yaflFloat[:nx]> old_x) #np.float64_t
-
-        _new_x[:] = fx(_old_x, dt, **fx_args)
-
-        return YAFL_ST_OK
-
-    except Exception as e:
-        print(tb.format_exc())
-        return YAFL_ST_INV_ARG_1
 #------------------------------------------------------------------------------
-cdef yaflStatusEn yafl_py_ukf_xmf(yakfPyUnscentedSt * self, \
+cdef yaflStatusEn yafl_py_ukf_xmf(yaflPyKalmanBaseSt * self, \
                           yaflFloat * res, yaflFloat * sigmas):
     try:
-        py_self = <yakfUnscentedBase>(self.py_self)
-        if not isinstance(py_self, yakfUnscentedBase):
-            raise ValueError('Invalid py_self type (must be subclass of yakfUnscentedBase)!')
+        py_self = <yaflUnscentedBase>(self.py_self)
+        if not isinstance(py_self, yaflUnscentedBase):
+            raise ValueError('Invalid py_self type (must be subclass of yaflUnscentedBase)!')
 
         mean_x = py_self._mean_x
         if not callable(mean_x):
@@ -1504,8 +1240,8 @@ cdef yaflStatusEn yafl_py_ukf_xmf(yakfPyUnscentedSt * self, \
             raise ValueError('nx must be > 0!')
 
         _points = py_self._points
-        if not isinstance(py_self, yakfSigmaBase):
-            raise ValueError('Invalid _points type (must be subclass of yakfSigmaBase)!')
+        if not isinstance(py_self, yaflSigmaBase):
+            raise ValueError('Invalid _points type (must be subclass of yaflSigmaBase)!')
 
         pnum = _points.base.base.np
         if pnum <= 0:
@@ -1521,13 +1257,14 @@ cdef yaflStatusEn yafl_py_ukf_xmf(yakfPyUnscentedSt * self, \
     except Exception as e:
         print(tb.format_exc())
         return YAFL_ST_INV_ARG_1
+
 #------------------------------------------------------------------------------
-cdef yaflStatusEn yafl_py_ukf_xrf(yakfPyUnscentedSt * self, yaflFloat * res, \
+cdef yaflStatusEn yafl_py_ukf_xrf(yaflPyKalmanBaseSt * self, yaflFloat * res, \
                              yaflFloat * sigma, yaflFloat * pivot):
     try:
-        py_self = <yakfUnscentedBase>(self.py_self)
-        if not isinstance(py_self, yakfUnscentedBase):
-            raise ValueError('Invalid py_self type (must be subclass of yakfUnscentedBase)!')
+        py_self = <yaflUnscentedBase>(self.py_self)
+        if not isinstance(py_self, yaflUnscentedBase):
+            raise ValueError('Invalid py_self type (must be subclass of yaflUnscentedBase)!')
 
         residual_x = py_self._residual_x
         if not callable(residual_x):
@@ -1548,47 +1285,14 @@ cdef yaflStatusEn yafl_py_ukf_xrf(yakfPyUnscentedSt * self, yaflFloat * res, \
     except Exception as e:
         print(tb.format_exc())
         return YAFL_ST_INV_ARG_1
-#==============================================================================
-cdef yaflStatusEn yafl_py_ukf_hx(yakfPyUnscentedSt * self, \
-                         yaflFloat * z, yaflFloat * x):
-    try:
-        py_self = <yakfUnscentedBase>(self.py_self)
-        if not isinstance(py_self, yakfUnscentedBase):
-            raise ValueError('Invalid py_self type (must be subclass of yakfUnscentedBase)!')
 
-        hx = py_self._hx
-        if not callable(hx):
-            raise ValueError('hx must be callable!')
-
-        hx_args = py_self._hx_args
-        if not isinstance(hx_args, dict):
-            raise ValueError('Invalid hx_args type (must be dict)!')
-
-        nx = self.base.base.Nx
-        if nx <= 0:
-            raise ValueError('nx must be > 0!')
-
-        nz = self.base.base.Nz
-        if nx <= 0:
-            raise ValueError('nz must be > 0!')
-
-        _x = np.asarray(<yaflFloat[:nx]> x) #np.float64_t
-        _z = np.asarray(<yaflFloat[:nz]> z) #np.float64_t
-
-        _z[:] = hx(_x, **hx_args)
-
-        return YAFL_ST_OK
-
-    except Exception as e:
-        print(tb.format_exc())
-        return YAFL_ST_INV_ARG_1
 #------------------------------------------------------------------------------
-cdef yaflStatusEn yafl_py_ukf_zmf(yakfPyUnscentedSt * self, \
+cdef yaflStatusEn yafl_py_ukf_zmf(yaflPyKalmanBaseSt * self, \
                           yaflFloat * res, yaflFloat * sigmas):
     try:
-        py_self = <yakfUnscentedBase>(self.py_self)
-        if not isinstance(py_self, yakfUnscentedBase):
-            raise ValueError('Invalid py_self type (must be subclass of yakfUnscentedBase)!')
+        py_self = <yaflUnscentedBase>(self.py_self)
+        if not isinstance(py_self, yaflUnscentedBase):
+            raise ValueError('Invalid py_self type (must be subclass of yaflUnscentedBase)!')
 
         mean_z = py_self._mean_z
         if not callable(mean_z):
@@ -1599,8 +1303,8 @@ cdef yaflStatusEn yafl_py_ukf_zmf(yakfPyUnscentedSt * self, \
             raise ValueError('nz must be > 0!')
 
         _points = py_self._points
-        if not isinstance(py_self, yakfSigmaBase):
-            raise ValueError('Invalid _points type (must be subclass of yakfSigmaBase)!')
+        if not isinstance(py_self, yaflSigmaBase):
+            raise ValueError('Invalid _points type (must be subclass of yaflSigmaBase)!')
 
         pnum = _points.base.base.np
         if pnum <= 0:
@@ -1616,63 +1320,36 @@ cdef yaflStatusEn yafl_py_ukf_zmf(yakfPyUnscentedSt * self, \
     except Exception as e:
         print(tb.format_exc())
         return YAFL_ST_INV_ARG_1
-#------------------------------------------------------------------------------
-cdef yaflStatusEn yafl_py_ukf_zrf(yakfPyUnscentedSt * self, yaflFloat * res, \
-                             yaflFloat * sigma, yaflFloat * pivot):
-    try:
-        py_self = <yakfUnscentedBase>(self.py_self)
-        if not isinstance(py_self, yakfUnscentedBase):
-            raise ValueError('Invalid py_self type (must be subclass of yakfUnscentedBase)!')
-
-        residual_z = py_self._residual_z
-        if not callable(residual_z):
-            raise ValueError('residual_z must be callable!')
-
-        nz = self.base.base.Nz
-        if nz <= 0:
-            raise ValueError('nx must be > 0!')
-
-        _res   = np.asarray(<yaflFloat[:nz]> res)   #np.float64_t
-        _sigma = np.asarray(<yaflFloat[:nz]> sigma) #np.float64_t
-        _pivot = np.asarray(<yaflFloat[:nz]> pivot) #np.float64_t
-
-        _res[:] = residual_z(_sigma, _pivot)
-
-        return YAFL_ST_OK
-
-    except Exception as e:
-        print(tb.format_exc())
-        return YAFL_ST_INV_ARG_1
 
 #==============================================================================
-cdef class UnscentedBierman(yakfUnscentedBase):
+cdef class UnscentedBierman(yaflUnscentedBase):
     """
     UD-factorized UKF implementation
     """
     def _update(self):
-        return yafl_ukf_bierman_update(&self.c_self.base.base, &self.v_z[0])
+        return yafl_ukf_bierman_update(&self.c_self.base.ukf, &self.v_z[0])
 
 #==============================================================================
-cdef class UnscentedAdaptiveBierman(yakfUnscentedBase):
+cdef class UnscentedAdaptiveBierman(yaflUnscentedBase):
     def __init__(self, int dim_x, int dim_z, yaflFloat dt, hx, fx, points, \
                  **kwargs):
 
         super().__init__(dim_x, dim_z, dt, hx, fx, points, **kwargs)
 
         #Init chi2 with scipy.stats.chi2.ppf(0.99999, 1)
-        self.c_self.base.adaptive.chi2 = 19.511420964666268
+        self.c_self.base.ukf_adaptive.chi2 = 19.511420964666268
 
     """
     UD-factorized UKF implementation
     """
     def _update(self):
-        return yafl_ukf_adaptive_bierman_update(&self.c_self.base.adaptive, \
+        return yafl_ukf_adaptive_bierman_update(&self.c_self.base.ukf_adaptive, \
                                                 &self.v_z[0])
 
 #==============================================================================
 #           Full UKF, not sequential square root version of UKF
 #==============================================================================
-cdef class Unscented(yakfUnscentedBase):
+cdef class Unscented(yaflUnscentedBase):
 
     cdef yaflFloat [::1]    v_Us
     cdef yaflFloat [::1]    v_Ds
@@ -1684,20 +1361,20 @@ cdef class Unscented(yakfUnscentedBase):
 
         self._Us  = np.zeros((_U_sz(dim_z),), dtype=np.float64)
         self.v_Us = self._Us
-        self.c_self.base.unscented.Us = &self.v_Us[0]
+        self.c_self.base.ukf_full.Us = &self.v_Us[0]
 
         self._Ds  = np.ones((dim_z,), dtype=np.float64)
         self.v_Ds = self._Ds
-        self.c_self.base.unscented.Ds = &self.v_Ds[0]
+        self.c_self.base.ukf_full.Ds = &self.v_Ds[0]
 
     """
     UD-factorized UKF implementation
     """
     def _update(self):
-        return yafl_ukf_update(&self.c_self.base.base, &self.v_z[0])
+        return yafl_ukf_update(&self.c_self.base.ukf, &self.v_z[0])
 
 #==============================================================================
-cdef class MerweSigmaPoints(yakfSigmaBase):
+cdef class MerweSigmaPoints(yaflSigmaBase):
     """
     Van der Merwe sigma point generator implementation
     """
