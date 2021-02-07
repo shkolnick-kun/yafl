@@ -1004,9 +1004,8 @@ static yaflStatusEn _unscented_transform(yaflUKFBaseSt * self,   \
     {
         yaflFloat wci;
 
-        YAFL_TRY(status, \
-                 _compute_res(_KALMAN_SELF, res_sz, rf , sp, sigmas + res_sz * i, \
-                              res_v));
+        YAFL_TRY(status, _compute_res(_KALMAN_SELF, res_sz, rf , sp, \
+                                      sigmas + res_sz * i, res_v));
         /*Update res_u and res_d*/
         /*wc should be sorted in descending order*/
         wci = _WC[i];
@@ -1108,7 +1107,8 @@ yaflStatusEn yafl_ukf_base_update(yaflUKFBaseSt * self, yaflFloat * z, \
     /* Compute measurement sigmas */
     for (i = 0; i < np; i++)
     {
-        YAFL_TRY(status, _UHX(_KALMAN_SELF, _SIGMAS_Z + nz * i, _SIGMAS_X + _UNX * i));
+        YAFL_TRY(status, _UHX(_KALMAN_SELF, _SIGMAS_Z + nz * i, \
+                              _SIGMAS_X + _UNX * i));
     }
 
     /* Compute zp*/
@@ -1123,16 +1123,16 @@ yaflStatusEn yafl_ukf_base_update(yaflUKFBaseSt * self, yaflFloat * z, \
     }
 
     /* Compute Pzx */
-    YAFL_TRY(status, _compute_res(_KALMAN_SELF, nz, _UZRF,  _UY, _SIGMAS_Z,  _ZP));
-    YAFL_TRY(status, _compute_res(_KALMAN_SELF, _UNX,  _XRF,  _SX, _SIGMAS_X,  _UX));
+    YAFL_TRY(status, _compute_res(_KALMAN_SELF,   nz, _UZRF,  _UY, _SIGMAS_Z, _ZP));
+    YAFL_TRY(status, _compute_res(_KALMAN_SELF, _UNX,  _XRF,  _SX, _SIGMAS_X, _UX));
     YAFL_TRY(status, yafl_math_set_vvtxn(nz, _UNX, _PZX, _UY, _SX, _WC[0]));
 
     for (i = 1; i < np; i++)
     {
-        YAFL_TRY(status, \
-                 _compute_res(_KALMAN_SELF, nz, _UZRF,  _UY, _SIGMAS_Z + nz * i, _ZP));
-        YAFL_TRY(status, \
-                 _compute_res(_KALMAN_SELF, _UNX, _XRF, _SX, _SIGMAS_X + _UNX * i,  _UX));
+        YAFL_TRY(status, _compute_res(_KALMAN_SELF,   nz, _UZRF, _UY, \
+                                      _SIGMAS_Z + nz * i, _ZP));
+        YAFL_TRY(status, _compute_res(_KALMAN_SELF, _UNX,  _XRF, _SX, \
+                                      _SIGMAS_X + _UNX * i, _UX));
         YAFL_TRY(status, yafl_math_add_vvtxn(nz, _UNX, _PZX, _UY, _SX, _WC[i]));
     }
 
@@ -1299,7 +1299,8 @@ yaflStatusEn yafl_ukf_update(yaflUKFBaseSt * self, yaflFloat * z)
     /* Compute measurement sigmas */
     for (i = 0; i < np; i++)
     {
-        YAFL_TRY(status, _UHX(_KALMAN_SELF, _SIGMAS_Z + nz * i, _SIGMAS_X + _UNX * i));
+        YAFL_TRY(status, _UHX(_KALMAN_SELF, _SIGMAS_Z + nz * i, \
+                              _SIGMAS_X + _UNX * i));
     }
 
     /* Compute zp, Us, Ds */
@@ -1314,10 +1315,10 @@ yaflStatusEn yafl_ukf_update(yaflUKFBaseSt * self, yaflFloat * z)
 
     for (i = 1; i < np; i++)
     {
-        YAFL_TRY(status, \
-                 _compute_res(_KALMAN_SELF, nz, _UZRF, _UY, _SIGMAS_Z + nz * i,  _ZP));
-        YAFL_TRY(status, \
-                 _compute_res(_KALMAN_SELF, _UNX,  _XRF, _SX, _SIGMAS_X + _UNX * i, _UX));
+        YAFL_TRY(status, _compute_res(_KALMAN_SELF, nz, _UZRF, _UY, \
+                                      _SIGMAS_Z + nz * i,  _ZP));
+        YAFL_TRY(status, _compute_res(_KALMAN_SELF, _UNX,  _XRF, _SX, \
+                                      _SIGMAS_X + _UNX * i, _UX));
         YAFL_TRY(status, yafl_math_add_vvtxn(nz, _UNX, _PZX, _UY, _SX, _WC[i]));
     }
 
