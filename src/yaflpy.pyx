@@ -1200,9 +1200,10 @@ cdef class yaflUnscentedBase(yaflKalmanBase):
 cdef yaflStatusEn yafl_py_sigma_addf(yaflPyKalmanBaseSt * self, yaflFloat * delta, \
                              yaflFloat * pivot, yaflFloat mult):
     try:
-        py_self = <yaflUnscentedBase>(self.py_self)
-        if not isinstance(py_self, yaflUnscentedBase):
+        if not isinstance(<object>(self.py_self), yaflUnscentedBase):
             raise ValueError('Invalid py_self type (must be subclass of yaflUnscentedBase)!')
+
+        py_self = <yaflUnscentedBase>(self.py_self)
 
         _addf = py_self._points._addf
         if not callable(_addf):
@@ -1227,9 +1228,10 @@ cdef yaflStatusEn yafl_py_sigma_addf(yaflPyKalmanBaseSt * self, yaflFloat * delt
 cdef yaflStatusEn yafl_py_ukf_xmf(yaflPyKalmanBaseSt * self, \
                           yaflFloat * res, yaflFloat * sigmas):
     try:
-        py_self = <yaflUnscentedBase>(self.py_self)
-        if not isinstance(py_self, yaflUnscentedBase):
+        if not isinstance(<object>(self.py_self), yaflUnscentedBase):
             raise ValueError('Invalid py_self type (must be subclass of yaflUnscentedBase)!')
+
+        py_self = <yaflUnscentedBase>(self.py_self)
 
         mean_x = py_self._mean_x
         if not callable(mean_x):
@@ -1262,9 +1264,10 @@ cdef yaflStatusEn yafl_py_ukf_xmf(yaflPyKalmanBaseSt * self, \
 cdef yaflStatusEn yafl_py_ukf_xrf(yaflPyKalmanBaseSt * self, yaflFloat * res, \
                              yaflFloat * sigma, yaflFloat * pivot):
     try:
-        py_self = <yaflUnscentedBase>(self.py_self)
-        if not isinstance(py_self, yaflUnscentedBase):
+        if not isinstance(<object>(self.py_self), yaflUnscentedBase):
             raise ValueError('Invalid py_self type (must be subclass of yaflUnscentedBase)!')
+
+        py_self = <yaflUnscentedBase>(self.py_self)
 
         residual_x = py_self._residual_x
         if not callable(residual_x):
@@ -1290,9 +1293,10 @@ cdef yaflStatusEn yafl_py_ukf_xrf(yaflPyKalmanBaseSt * self, yaflFloat * res, \
 cdef yaflStatusEn yafl_py_ukf_zmf(yaflPyKalmanBaseSt * self, \
                           yaflFloat * res, yaflFloat * sigmas):
     try:
-        py_self = <yaflUnscentedBase>(self.py_self)
-        if not isinstance(py_self, yaflUnscentedBase):
+        if not isinstance(<object>(self.py_self), yaflUnscentedBase):
             raise ValueError('Invalid py_self type (must be subclass of yaflUnscentedBase)!')
+
+        py_self = <yaflUnscentedBase>(self.py_self)
 
         mean_z = py_self._mean_z
         if not callable(mean_z):
