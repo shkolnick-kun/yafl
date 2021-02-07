@@ -1524,21 +1524,21 @@ const yaflUKFSigmaMethodsSt yafl_ukf_merwe_spm =
 /*=============================================================================
                           Undef Kalman filter stuff
 =============================================================================*/
-#   undef _FX
-#   undef _HX
-#   undef _ZRF
+#undef _FX
+#undef _HX
+#undef _ZRF
 
-#   undef _X
-#   undef _Y
+#undef _X
+#undef _Y
 
-#   undef _UP
-#   undef _DP
+#undef _UP
+#undef _DP
 
-#   undef _UQ
-#   undef _DQ
+#undef _UQ
+#undef _DQ
 
-#   undef _UR
-#   undef _DR
+#undef _UR
+#undef _DR
 
-#   undef _NX
-#   undef _NZ
+#undef _NX
+#undef _NZ
