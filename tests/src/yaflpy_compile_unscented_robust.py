@@ -15,11 +15,11 @@
 
     See the License for the specific language governing permissions
 """
+import time
 import matplotlib.pyplot as plt
 import numpy as np
 import pyximport
 import sys
-import time
 
 sys.path.insert(0,'../../src')
 
@@ -33,10 +33,8 @@ pyximport.install(
         }
     )
 
-#from filterpy.kalman import UnscentedKalmanFilter, MerweScaledSigmaPoints
-
 from yaflpy import MerweSigmaPoints as SP
-from yaflpy import UnscentedAdaptiveBierman as KF
+from yaflpy import UnscentedRobustBierman as KF
 
 
 def _fx(x, dt, **fx_args):
@@ -51,6 +49,29 @@ def _hx(x, **hx_args):
         print(hx_args)
     return np.array([x[0], x[2]])
 
+def _gz(beta):
+    # +- 3*sigma
+    if 3.0 >= np.abs(beta):
+        return float(beta)
+
+    # +- 6*sigma - uncertain measurements
+    if 6.0 >= np.abs(beta):
+        return float(beta/3.0)
+
+    # outliers
+    return float(np.sign(beta))
+
+def _gdotz(beta):
+    # +- 3*sigma
+    if 3.0 >= np.abs(beta):
+        return 1.0
+
+    # +- 6*sigma - uncertain measurements
+    if 6.0 >= np.abs(beta):
+        return 1.0/3.0
+
+    # outliers
+    return 0.0
 
 def _zrf(a,b):
     #print(a - b)
@@ -59,7 +80,7 @@ def _zrf(a,b):
 STD = 100.
 
 sp = SP(4, 0.1, 2., 0)
-kf = KF(4, 2, 1., _hx, _fx, sp)
+kf = KF(4, 2, 1., _hx, _fx, sp, gz=_gz, gdotz=_gdotz)
 #kf = KF(4, 2, 1., _hx, _fx, sp, residual_z=_zrf)
 
 kf.x[0] = 0.
@@ -67,7 +88,7 @@ kf.x[1] = 0.3
 kf.Dp *= .00001
 kf.Dq *= 1.0e-8
 #This is robust filter, so no square here
-kf.Dr *= STD*STD
+kf.Dr *= STD
 
 kf.Dr[0] *= .75
 kf.Ur += .5
@@ -125,7 +146,7 @@ plt.show()
 plt.plot(clean[:,0], clean[:,1], kf_out[:,0], kf_out[:,1])
 plt.show()
 
-plt.plot(noisy[:,0], noisy[:,1], kf_out[:,0], kf_out[:,1])
+plt.plot(noisy[:,0], noisy[:,1],  kf_out[:,0], kf_out[:,1])
 plt.show()
 
 plt.plot(t, noisy[:,1], t, kf_out[:,1], t, clean[:,1])

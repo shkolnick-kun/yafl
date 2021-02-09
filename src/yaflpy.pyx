@@ -18,8 +18,8 @@
 #==============================================================================
 #                                YAFL C API
 #==============================================================================
-# cython: language_level=3
-# distutils: language = c
+#cython: language_level=3
+#distutils: language=c
 from libc cimport stdint
 
 #------------------------------------------------------------------------------
@@ -242,7 +242,7 @@ cdef extern from "yafl.c":
 
     #==========================================================================
     cdef yaflStatusEn \
-        yafl_ukf_bierman_update(yaflUKFBaseSt * self, yaflFloat * z)
+        yafl_ukf_bierman_update_scalar(yaflKalmanBaseSt * self, yaflInt i)
 
     #==========================================================================
     ctypedef struct yaflUKFAdaptivedSt:
@@ -250,9 +250,19 @@ cdef extern from "yafl.c":
         yaflFloat  chi2
 
     cdef yaflStatusEn \
-        yafl_ukf_adaptive_bierman_update(yaflUKFAdaptivedSt * self,\
-                                         yaflFloat * z)
+        yafl_ukf_adaptive_bierman_update_scalar(yaflKalmanBaseSt * self, \
+                                                yaflInt i)
 
+    #==========================================================================
+    ctypedef struct yaflUKFRobustSt:
+        yaflUKFBaseSt   base
+        yaflKalmanRobFuncP g
+        yaflKalmanRobFuncP gdot
+
+    #--------------------------------------------------------------------------
+    cdef yaflStatusEn \
+        yafl_ukf_robust_bierman_update_scalar(yaflKalmanBaseSt * self, \
+                                              yaflInt i)
     #==========================================================================
     ctypedef struct yaflUKFSt:
         yaflUKFBaseSt base
@@ -327,6 +337,7 @@ ctypedef union yaflPyKalmanBaseUn:
 
     yaflUKFBaseSt           ukf
     yaflUKFAdaptivedSt      ukf_adaptive
+    yaflUKFRobustSt         ukf_robust
     yaflUKFSt               ukf_full
 
 #------------------------------------------------------------------------------
@@ -969,7 +980,6 @@ cdef class AdaptiveRobustJoseph(yaflAdaptiveRobustBase):
 #==============================================================================
 #                          UD-factorized UKF API
 #==============================================================================
-#------------------------------------------------------------------------------
 #                   Sigma points generator basic definitions
 #------------------------------------------------------------------------------
 ctypedef union yaflPySigmaBaseUn:
@@ -1331,7 +1341,8 @@ cdef class UnscentedBierman(yaflUnscentedBase):
     UD-factorized UKF implementation
     """
     def _update(self):
-        return yafl_ukf_bierman_update(&self.c_self.base.ukf, &self.v_z[0])
+        return yafl_ukf_base_update(&self.c_self.base.ukf, &self.v_z[0], \
+                                yafl_ukf_bierman_update_scalar)
 
 #==============================================================================
 cdef class UnscentedAdaptiveBierman(yaflUnscentedBase):
@@ -1347,8 +1358,101 @@ cdef class UnscentedAdaptiveBierman(yaflUnscentedBase):
     UD-factorized UKF implementation
     """
     def _update(self):
-        return yafl_ukf_adaptive_bierman_update(&self.c_self.base.ukf_adaptive, \
-                                                &self.v_z[0])
+        return yafl_ukf_base_update(&self.c_self.base.ukf, &self.v_z[0], \
+                                yafl_ukf_adaptive_bierman_update_scalar)
+
+#==============================================================================
+#                        Robust filter basic class
+#==============================================================================
+cdef class yaflRobustUKFBase(yaflUnscentedBase):
+
+    cdef object _gz
+    cdef object _gdotz
+
+    def __init__(self, int dim_x, int dim_z, yaflFloat dt, \
+                 hx, fx, points, gz=None, gdotz=None, **kwargs):
+
+        super().__init__(dim_x, dim_z, dt, hx, fx, points, **kwargs)
+
+        if gz:
+            if not callable(gz):
+                raise ValueError('gz must be callable!')
+
+            if not gdotz:
+                raise ValueError('gdotz must be passed!')
+
+            if not callable(gdotz):
+                raise ValueError('gdotz must be callable!')
+
+            self._gz = gz
+            self._gdotz = gdotz
+
+            self.c_self.base.ukf_robust.g    = <yaflKalmanRobFuncP>yafl_py_ukf_rob_gz
+            self.c_self.base.ukf_robust.gdot = <yaflKalmanRobFuncP>yafl_py_ukf_rob_gdotz
+
+        else:
+            self.c_self.base.ukf_robust.g    = <yaflKalmanRobFuncP>0
+            self.c_self.base.ukf_robust.gdot = <yaflKalmanRobFuncP>0
+
+#------------------------------------------------------------------------------
+# Influence limiting function
+cdef yaflFloat yafl_py_ukf_rob_gz(yaflPyKalmanBaseSt * self, yaflFloat nu):
+    try:
+        if not isinstance(<object>(self.py_self), yaflRobustUKFBase):
+            raise ValueError('Invalid py_self type (must be subclass of yaflRobustBase)!')
+
+        py_self = <yaflRobustUKFBase>(self.py_self)
+
+        gz = py_self._gz
+        if not callable(gz):
+            raise ValueError('gz must be callable!')
+
+        hx_args = py_self._hx_args
+        if not isinstance(hx_args, dict):
+            raise ValueError('Invalid hx_args type (must be dict)!')
+
+        #How about handling exceptions here???
+        ret = gz(nu, **hx_args)
+        if type(ret) != float:
+            raise ValueError('gz must return float!')
+
+        return <yaflFloat>ret
+
+    except Exception as e:
+        print(tb.format_exc())
+        return <yaflFloat>0.0
+#------------------------------------------------------------------------------
+# Influence limiting function derivative
+cdef yaflFloat yafl_py_ukf_rob_gdotz(yaflPyKalmanBaseSt * self, yaflFloat nu):
+    try:
+        if not isinstance(<object>(self.py_self), yaflRobustUKFBase):
+            raise ValueError('Invalid py_self type (must be subclass of yaflRobustBase)!')
+
+        py_self = <yaflRobustUKFBase>(self.py_self)
+
+        gdotz = py_self._gdotz
+        if not callable(gdotz):
+            raise ValueError('gdotz must be callable!')
+
+        hx_args = py_self._hx_args
+        if not isinstance(hx_args, dict):
+            raise ValueError('Invalid hx_args type (must be dict)!')
+
+        #How about handling exceptions here???
+        ret = gdotz(nu, **hx_args)
+        if type(ret) != float:
+            raise ValueError('gdotz must return float!')
+
+        return <yaflFloat>ret
+
+    except Exception as e:
+        print(tb.format_exc())
+        return <yaflFloat>0.0
+#==============================================================================
+cdef class UnscentedRobustBierman(yaflRobustUKFBase):
+    def _update(self):
+        return yafl_ukf_base_update(&self.c_self.base.ukf, &self.v_z[0], \
+                                    yafl_ukf_robust_bierman_update_scalar)
 
 #==============================================================================
 #           Full UKF, not sequential square root version of UKF

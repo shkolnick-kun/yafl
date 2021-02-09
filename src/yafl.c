@@ -624,48 +624,51 @@ yaflStatusEn \
                             Robust Bierman filter
 =============================================================================*/
 static inline yaflStatusEn \
-    _scalar_robustify(yaflKalmanBaseSt * self, yaflFloat * gdot_res, \
-                      yaflFloat * nu, yaflFloat r05)
+    _scalar_robustify(yaflKalmanBaseSt * self, \
+                      yaflKalmanRobFuncP g, yaflKalmanRobFuncP gdot, \
+                      yaflFloat * gdot_res, yaflFloat * nu, yaflFloat r05)
 {
-    yaflKalmanRobFuncP g;
-    yaflFloat gdot;
+    yaflFloat tmp;
 
     YAFL_CHECK(self,     YAFL_ST_INV_ARG_1);
     YAFL_CHECK(gdot_res, YAFL_ST_INV_ARG_3);
     YAFL_CHECK(nu,       YAFL_ST_INV_ARG_4);
 
-    g = ((yaflEKFRobustSt *)self)->g;
-
     if (g)
     {
-        gdot = *nu / r05; /*Use gdot as temp variable*/
-        *nu = r05 * g(self, gdot);
+        tmp = *nu / r05;
+        *nu = r05 * g(self, tmp);
 
-        g = ((yaflEKFRobustSt *)self)->gdot;
-        YAFL_CHECK(g, YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(gdot, YAFL_ST_INV_ARG_1);
 
-        gdot = g(self, gdot);
+        tmp = gdot(self, tmp);
     }
     else
     {
-        gdot = 1.0;
+        tmp = 1.0;
     }
 
-    *gdot_res = gdot;
+    *gdot_res = tmp;
 
     /*Detect glitches and return*/
-    if (gdot < YAFL_EPS)
+    if (tmp < YAFL_EPS)
     {
         return YAFL_ST_MSK_GLITCH_LARGE;
     }
 
-    if (gdot < (1.0 - 2.0*YAFL_EPS))
+    if (tmp < (1.0 - 2.0*YAFL_EPS))
     {
         return YAFL_ST_MSK_GLITCH_SMALL;
     }
 
     return YAFL_ST_OK;
 }
+
+#define _SCALAR_ROBUSTIFY(_self, _gdot_res, _nu, _r05) \
+    _scalar_robustify(self,                            \
+                      ((yaflEKFRobustSt *)self)->g,    \
+                      ((yaflEKFRobustSt *)self)->gdot, \
+                      _gdot_res, _nu, _r05)
 
 /*---------------------------------------------------------------------------*/
 yaflStatusEn \
@@ -683,7 +686,7 @@ yaflStatusEn \
     r05 = _DR[i]; /* alpha = r**0.5 is stored in Dr*/
     nu  = _Y[i];
 
-    YAFL_TRY(status, _scalar_robustify(self, &gdot, &nu, r05));
+    YAFL_TRY(status, _SCALAR_ROBUSTIFY(self, &gdot, &nu, r05));
 
     h = _HY + _NX * i;
     /* f = h.dot(Up) */
@@ -724,7 +727,7 @@ yaflStatusEn \
     r05 = _DR[i]; /* alpha = r**0.5 is stored in Dr*/
     nu  = _Y[i];
 
-    YAFL_TRY(status, _scalar_robustify(self, &gdot, &nu, r05));
+    YAFL_TRY(status, _SCALAR_ROBUSTIFY(self, &gdot, &nu, r05));
 
     r05 *= r05;
 #   define A2 r05 /*Now it is r = alpha**2 */
@@ -775,7 +778,7 @@ yaflStatusEn \
     r05 = _DR[i]; /* alpha = r**0.5 is stored in Dr*/
     nu  = _Y[i];
 
-    YAFL_TRY(status, _scalar_robustify(self, &gdot, &nu, r05));
+    YAFL_TRY(status, _SCALAR_ROBUSTIFY(self, &gdot, &nu, r05));
 
     r05 *= r05;
 #   define A2 r05 /*Now it is r = alpha**2 */
@@ -825,7 +828,7 @@ yaflStatusEn \
     r05 = _DR[i]; /* alpha = r**0.5 is stored in Dr*/
     nu  = _Y[i];
 
-    YAFL_TRY(status, _scalar_robustify(self, &gdot, &nu, r05));
+    YAFL_TRY(status, _SCALAR_ROBUSTIFY(self, &gdot, &nu, r05));
 
     r05 *= r05;
 #   define A2 r05 /*Now it is r = alpha**2 */
@@ -859,6 +862,8 @@ yaflStatusEn \
 /*------------------------------------------------------------------------------
                                  Undef EKF stuff
 ------------------------------------------------------------------------------*/
+#undef _SCALAR_ROBUSTIFY
+
 #undef _JFX
 #undef _JHX
 
@@ -1158,13 +1163,15 @@ yaflStatusEn yafl_ukf_base_update(yaflUKFBaseSt * self, yaflFloat * z, \
     return status;
 }
 
-/*===========================================================================*/
+/*=============================================================================
+                                 Bierman UKF
+=============================================================================*/
 #define _UKF_SELF ((yaflUKFBaseSt *)self)
 
 #define _UPZX (_UKF_SELF->Pzx)
 #define _USX  (_UKF_SELF->Sx)
 
-#define _BIERMAN_LIKE_SELF_INTERNALS_CHECKS() \
+#define _UKF_BIERMAN_SELF_INTERNALS_CHECKS()  \
 do {                                          \
     YAFL_CHECK(_NX > 1, YAFL_ST_INV_ARG_1);   \
     YAFL_CHECK(_UP,     YAFL_ST_INV_ARG_1);   \
@@ -1176,7 +1183,7 @@ do {                                          \
 } while (0)
 
 /*---------------------------------------------------------------------------*/
-static yaflStatusEn _bierman_like_scalar_update(yaflKalmanBaseSt * self, yaflInt i)
+yaflStatusEn yafl_ukf_bierman_update_scalar(yaflKalmanBaseSt * self, yaflInt i)
 {
     yaflStatusEn status = YAFL_ST_OK;
     yaflInt nx;
@@ -1185,7 +1192,7 @@ static yaflStatusEn _bierman_like_scalar_update(yaflKalmanBaseSt * self, yaflInt
     _SCALAR_UPDATE_ARGS_CHECKS();
 
     nx = self->Nx;
-    _BIERMAN_LIKE_SELF_INTERNALS_CHECKS();
+    _UKF_BIERMAN_SELF_INTERNALS_CHECKS();
 
     v = _UPZX + nx * i;
 
@@ -1196,20 +1203,14 @@ static yaflStatusEn _bierman_like_scalar_update(yaflKalmanBaseSt * self, yaflInt
     YAFL_TRY(status, \
              _bierman_update_body(nx, _X, _UP, _DP, f, v, _DR[i], _Y[i], \
                                   1.0, 1.0));
-#undef f
+#   undef f
     return status;
 }
 
-/*---------------------------------------------------------------------------*/
-yaflStatusEn yafl_ukf_bierman_update(yaflUKFBaseSt * self, yaflFloat * z)
-{
-    return yafl_ukf_base_update(self, z, _bierman_like_scalar_update);
-}
-
 /*=============================================================================
-                        Adaptive Bierman-like filter
+                             Adaptive Bierman UKF
 =============================================================================*/
-static yaflStatusEn _adaptive_bierman_like_scalar_update(yaflKalmanBaseSt * self, yaflInt i)
+yaflStatusEn yafl_ukf_adaptive_bierman_update_scalar(yaflKalmanBaseSt * self, yaflInt i)
 {
     yaflStatusEn status = YAFL_ST_OK;
     yaflFloat * v;
@@ -1218,7 +1219,7 @@ static yaflStatusEn _adaptive_bierman_like_scalar_update(yaflKalmanBaseSt * self
     yaflFloat ac;
 
     _SCALAR_UPDATE_ARGS_CHECKS();
-    _BIERMAN_LIKE_SELF_INTERNALS_CHECKS();
+    _UKF_BIERMAN_SELF_INTERNALS_CHECKS();
 
     v = _UPZX + _NX * i;
 
@@ -1235,21 +1236,51 @@ static yaflStatusEn _adaptive_bierman_like_scalar_update(yaflKalmanBaseSt * self
 
     YAFL_TRY(status, \
              _bierman_update_body(_NX, _X, _UP, _DP, f, v, r, _Y[i], ac, 1.0));
-#undef f
+#   undef f
     return status;
-}
-
-/*---------------------------------------------------------------------------*/
-yaflStatusEn yafl_ukf_adaptive_bierman_update(yaflUKFAdaptivedSt * self, \
-        yaflFloat * z)
-{
-    return yafl_ukf_base_update((yaflUKFBaseSt *)self, z, \
-                                _adaptive_bierman_like_scalar_update);
 }
 
 /*=============================================================================
                            Robust Bierman UKF
 =============================================================================*/
+#define _SCALAR_ROBUSTIFY(_self, _gdot_res, _nu, _r05) \
+    _scalar_robustify(self,                            \
+                      ((yaflUKFRobustSt *)self)->g,    \
+                      ((yaflUKFRobustSt *)self)->gdot, \
+                      _gdot_res, _nu, _r05)
+
+yaflStatusEn yafl_ukf_robust_bierman_update_scalar(yaflKalmanBaseSt * self, \
+                                                   yaflInt i)
+{
+    yaflStatusEn status = YAFL_ST_OK;
+    yaflInt nx;
+    yaflFloat gdot = 1.0;
+    yaflFloat nu   = 0.0;
+    yaflFloat r05;
+    yaflFloat * v;
+
+    _SCALAR_UPDATE_ARGS_CHECKS();
+
+    nx = self->Nx;
+    _UKF_BIERMAN_SELF_INTERNALS_CHECKS();
+
+    r05 = _DR[i]; /* alpha = r**0.5 is stored in Dr*/
+    nu  = _Y[i];
+
+    YAFL_TRY(status, _SCALAR_ROBUSTIFY(self, &gdot, &nu, r05));
+
+    v = _UPZX + nx * i;
+
+    /* f = linalg.inv(Dp).dot(v)*/
+#   define f _USX
+    YAFL_TRY(status, YAFL_MATH_SET_RDV(nx, f, _DP, v));
+
+    YAFL_TRY(status, \
+             _bierman_update_body(nx, _X, _UP, _DP, f, v, r05 * r05, nu, \
+                                  1.0, gdot));
+#   undef f
+    return status;
+}
 
 /*=============================================================================
             Full UKF, not a sequential square root version of UKF
@@ -1522,6 +1553,8 @@ const yaflUKFSigmaMethodsSt yafl_ukf_merwe_spm =
 #undef _UPZX
 #undef _USX
 
+/*----------------------------------------------------------------------------*/
+#undef _SCALAR_ROBUSTIFY
 /*=============================================================================
                           Undef Kalman filter stuff
 =============================================================================*/

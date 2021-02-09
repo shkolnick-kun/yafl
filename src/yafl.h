@@ -289,11 +289,13 @@ typedef struct {
 } yaflEKFRobustSt; /*Robust EKF*/
 
 /*---------------------------------------------------------------------------*/
-#define YAFL_EKF_ROBUST_INITIALIZER(_f, _jf, _h, _jh, _zrf, _nx, _nz, _mem)    \
-{                                                                              \
-    .base = YAFL_EKF_BASE_INITIALIZER(_f, _jf, _h, _jh, _zrf, _nx, _nz, _mem), \
-    .g    = (yaflKalmanRobFuncP)0,                                             \
-    .gdot = (yaflKalmanRobFuncP)0                                              \
+#define YAFL_EKF_ROBUST_INITIALIZER(_f, _jf, _h, _jh, _zrf, _g, _gdot,  \
+                                    _nx, _nz, _mem)                     \
+{                                                                       \
+    .base = YAFL_EKF_BASE_INITIALIZER(_f, _jf, _h, _jh, _zrf, _nx, _nz, \
+                                      _mem),                            \
+    .g    = _g,                                                         \
+    .gdot = _gdot                                                       \
 }
 
 /*---------------------------------------------------------------------------*/
@@ -342,10 +344,12 @@ typedef struct {
 } yaflEKFAdaptiveRobustSt; /*Robust EKF*/
 
 /*---------------------------------------------------------------------------*/
-#define YAFL_EKF_ADAPTIVE_ROBUST_INITIALIZER(_f, _jf, _h, _jh, _zrf, _nx, _nz, _mem) \
-{                                                                                    \
-    .base = YAFL_EKF_ROBUST_INITIALIZER(_f, _jf, _h, _jh, _zrf, _nx, _nz, _mem),     \
-    .chi2 = 8.8074684                                                                \
+#define YAFL_EKF_ADAPTIVE_ROBUST_INITIALIZER(_f, _jf, _h, _jh, _zrf,    \
+                                             _g, _gdot, _nx, _nz, _mem) \
+{                                                                       \
+    .base = YAFL_EKF_ROBUST_INITIALIZER(_f, _jf, _h, _jh, _zrf,         \
+                                        _g, _gdot, _nx, _nz, _mem),     \
+    .chi2 = 8.8074684                                                   \
 }
 /*
 Default value for chi2 is:
@@ -528,8 +532,13 @@ yaflStatusEn yafl_ukf_base_update(yaflUKFBaseSt * self, yaflFloat * z, \
 #define YAFL_UKF_BIERMAN_PREDICT(self) \
     yafl_ukf_base_predict((yaflUKFBaseSt *)self)
 
-yaflStatusEn yafl_ukf_bierman_update(yaflUKFBaseSt * self, yaflFloat * z);
+yaflStatusEn yafl_ukf_bierman_update_scalar(yaflKalmanBaseSt * self, yaflInt i);
 
+static inline yaflStatusEn \
+    yafl_ukf_bierman_update(yaflUKFBaseSt * self, yaflFloat * z)
+{
+    return yafl_ukf_base_update(self, z, yafl_ukf_bierman_update_scalar);
+}
 
 /*=============================================================================
                           Adaptive Bierman UKF
@@ -552,8 +561,15 @@ typedef struct {
 #define YAFL_UKF_ADAPTIVE_BIERMAN_PREDICT(self) \
     yafl_ukf_base_predict((yaflUKFBaseSt *)self)
 
-yaflStatusEn yafl_ukf_adaptive_bierman_update(yaflUKFAdaptivedSt * self, \
-                                              yaflFloat * z);
+yaflStatusEn yafl_ukf_adaptive_bierman_update_scalar(yaflKalmanBaseSt * self, \
+                                                     yaflInt i);
+
+static inline yaflStatusEn \
+    yafl_ukf_adaptive_bierman_update(yaflUKFAdaptivedSt * self, yaflFloat * z)
+{
+    return yafl_ukf_base_update((yaflUKFBaseSt *)self, z, \
+                                yafl_ukf_adaptive_bierman_update_scalar);
+}
 
 /*=============================================================================
                            Robust Bierman UKF
@@ -565,6 +581,27 @@ typedef struct {
     yaflKalmanRobFuncP g;    /* g = -d(ln(pdf(y))) / dy */
     yaflKalmanRobFuncP gdot; /* gdot = G = d(g) / dy */
 } yaflUKFRobustSt; /*Robust UKF*/
+
+/*---------------------------------------------------------------------------*/
+#define YAFL_UKF_ROBUST_INITIALIZER(_p, _pm, _f, _xmf, _xrf, _h, _zmf, _zrf, \
+                                    _g, _gdot, _nx, _nz, _mem)               \
+{                                                                            \
+    .base = YAFL_UKF_BASE_INITIALIZER(_p, _pm, _f, _xmf, _xrf, _h, _zmf,     \
+                                       _zrf, _nx, _nz, _mem) ,               \
+    .g    = _g,                                                              \
+    .gdot = _gdot                                                            \
+}
+
+/*---------------------------------------------------------------------------*/
+yaflStatusEn yafl_ukf_robust_bierman_update_scalar(yaflKalmanBaseSt * self, \
+                                                     yaflInt i);
+
+static inline yaflStatusEn \
+    yafl_ukf_robust_bierman_update(yaflUKFAdaptivedSt * self, yaflFloat * z)
+{
+    return yafl_ukf_base_update((yaflUKFBaseSt *)self, z, \
+                                yafl_ukf_robust_bierman_update_scalar);
+}
 
 /*=============================================================================
             Full UKF, not sequential square root version of UKF

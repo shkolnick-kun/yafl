@@ -35,8 +35,8 @@ pyximport.install(
 
 from yaflpy import MerweSigmaPoints as SP
 #from yaflpy import Unscented as KF
-#from yaflpy import UnscentedBierman as KF
-from yaflpy import UnscentedAdaptiveBierman as KF
+from yaflpy import UnscentedBierman as KF
+#from yaflpy import UnscentedAdaptiveBierman as KF
 
 
 def _fx(x, dt, **fx_args):
