@@ -35,8 +35,8 @@ pyximport.install(
 
 from yaflpy import MerweSigmaPoints as SP
 #from yaflpy import Unscented as KF
-from yaflpy import UnscentedBierman as KF
-#from yaflpy import UnscentedAdaptiveBierman as KF
+#from yaflpy import UnscentedBierman as KF
+from yaflpy import UnscentedAdaptiveBierman as KF
 
 
 def _fx(x, dt, **fx_args):
@@ -71,6 +71,8 @@ kf.Dr *= STD*STD
 
 kf.Dr[0] *= .75
 kf.Ur += .5
+
+#kf.chi2 = 8.807468393511947
 
 # sp = MerweScaledSigmaPoints(4, alpha=.1, beta=2., kappa=0)
 # kf = UnscentedKalmanFilter(4, 2, dt=1., fx=_fx, hx=_hx, points=sp)

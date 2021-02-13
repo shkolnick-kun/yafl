@@ -36,8 +36,8 @@ pyximport.install(
 
 #from yaflpy import Bierman as KF
 #from yaflpy import Joseph as KF
-#from yaflpy import AdaptiveBierman as KF
-from yaflpy import AdaptiveJoseph as KF
+from yaflpy import AdaptiveBierman as KF
+#from yaflpy import AdaptiveJoseph as KF
 #from yaflpy import DoNotUseThisFilter as KF
 
 def _fx(x, dt, **fx_args):
@@ -85,6 +85,8 @@ kf.Ur += 0.5
 
 N = 6000
 
+#kf.chi2 = 8.807468393511947
+
 clean = np.zeros((N, 2))
 noisy = np.zeros((N, 2))
 t     = np.zeros((N,), dtype=np.float)
@@ -122,13 +124,13 @@ plt.show()
 plt.plot(clean[:,0], clean[:,1], kf_out[:,0], kf_out[:,1])
 plt.show()
 
-plt.plot(noisy[:,0], noisy[:,1], "x", kf_out[:,0], kf_out[:,1])
+plt.plot(noisy[:,0], noisy[:,1], kf_out[:,0], kf_out[:,1])
 plt.show()
 
-plt.plot(t, noisy[:,1], "x", t, kf_out[:,1], t, clean[:,1])
+plt.plot(t, noisy[:,1], t, kf_out[:,1], t, clean[:,1])
 plt.show()
 
-plt.plot(t, noisy[:,0], "x", t, kf_out[:,0], t, clean[:,0])
+plt.plot(t, noisy[:,0], t, kf_out[:,0], t, clean[:,0])
 plt.show()
 
 print('Done!')

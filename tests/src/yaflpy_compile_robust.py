@@ -36,9 +36,9 @@ pyximport.install(
 import yaflpy
 
 #from yaflpy import RobustJoseph as KF
-from yaflpy import RobustBierman as KF
+#from yaflpy import RobustBierman as KF
 #from yaflpy import AdaptiveRobustJoseph as KF
-#from yaflpy import AdaptiveRobustBierman as KF
+from yaflpy import AdaptiveRobustBierman as KF
 
 def _fx(x, dt, **fx_args):
     x = x.copy()
@@ -98,8 +98,8 @@ def _zrf(a,b):
 STD = 100.
 
 #kf = KF(4, 2, 1., _fx, _jfx, _hx, _jhx, residual_z=_zrf)
-kf = KF(4, 2, 1., _fx, _jfx, _hx, _jhx, gz=_gz, gdotz=_gdotz)
-#kf = KF(4, 2, 1., _fx, _jfx, _hx, _jhx)
+#kf = KF(4, 2, 1., _fx, _jfx, _hx, _jhx, gz=_gz, gdotz=_gdotz)
+kf = KF(4, 2, 1., _fx, _jfx, _hx, _jhx)
 kf.x[0] = 1000.
 kf.x[1] = -0.5
 kf.Dp *= .00001
@@ -108,6 +108,8 @@ kf.Dq *= 1.0e-8
 kf.Dr *= STD
 kf.Dr[0] *= .87
 kf.Ur += 0.5
+
+#kf.chi2 = 8.807468393511947
 
 N = 12000
 
@@ -144,13 +146,13 @@ plt.show()
 plt.plot(clean[:,0], clean[:,1], kf_out[:,0], kf_out[:,1])
 plt.show()
 
-plt.plot(noisy[:,0], noisy[:,1], "x", kf_out[:,0], kf_out[:,1])
+plt.plot(noisy[:,0], noisy[:,1], kf_out[:,0], kf_out[:,1])
 plt.show()
 
-plt.plot(t, noisy[:,1], "x", t, kf_out[:,1], t, clean[:,1])
+plt.plot(t, noisy[:,1], t, kf_out[:,1], t, clean[:,1])
 plt.show()
 
-plt.plot(t, noisy[:,0], "x", t, kf_out[:,0], t, clean[:,0])
+plt.plot(t, noisy[:,0], t, kf_out[:,0], t, clean[:,0])
 plt.show()
 
 plt.plot(t, [st[i] & yaflpy.ST_MSK_ANOMALY for i in range(N)])

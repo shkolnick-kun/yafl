@@ -604,6 +604,36 @@ static inline yaflStatusEn \
 }
 
 /*=============================================================================
+                        Adaptive robust Bierman UKF
+=============================================================================*/
+typedef struct {
+    yaflUKFRobustSt base;
+    yaflFloat chi2; /*Divergence test threshold (chi-squared criteria)*/
+} yaflUKFAdaptiveRobustSt; /*Robust EKF*/
+
+/*---------------------------------------------------------------------------*/
+#define YAFL_UKF_ADAPTIVE_ROBUST_INITIALIZER(_f, _jf, _h, _jh, _zrf,    \
+                                             _g, _gdot, _nx, _nz, _mem) \
+{                                                                       \
+    .base = YAFL_UKF_ROBUST_INITIALIZER(_f, _jf, _h, _jh, _zrf,         \
+                                        _g, _gdot, _nx, _nz, _mem),     \
+    .chi2 = 8.8074684                                                   \
+}
+
+/*---------------------------------------------------------------------------*/
+yaflStatusEn \
+    yafl_ukf_adaptive_robust_bierman_update_scalar(yaflKalmanBaseSt * self, \
+                                                   yaflInt i);
+
+static inline yaflStatusEn \
+    yafl_ukf_adaptive_robust_bierman_update(yaflUKFAdaptivedSt * self, \
+                                            yaflFloat * z)
+{
+    return yafl_ukf_base_update((yaflUKFBaseSt *)self, z, \
+                                yafl_ukf_adaptive_robust_bierman_update_scalar);
+}
+
+/*=============================================================================
             Full UKF, not sequential square root version of UKF
 =============================================================================*/
 typedef struct {

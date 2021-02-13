@@ -263,6 +263,17 @@ cdef extern from "yafl.c":
     cdef yaflStatusEn \
         yafl_ukf_robust_bierman_update_scalar(yaflKalmanBaseSt * self, \
                                               yaflInt i)
+
+    #==========================================================================
+    ctypedef struct yaflUKFAdaptiveRobustSt:
+        yaflUKFRobustSt   base
+        yaflFloat chi2
+
+    #--------------------------------------------------------------------------
+    cdef yaflStatusEn \
+        yafl_ukf_adaptive_robust_bierman_update_scalar(yaflKalmanBaseSt * self, \
+                                              yaflInt i)
+
     #==========================================================================
     ctypedef struct yaflUKFSt:
         yaflUKFBaseSt base
@@ -338,6 +349,7 @@ ctypedef union yaflPyKalmanBaseUn:
     yaflUKFBaseSt           ukf
     yaflUKFAdaptivedSt      ukf_adaptive
     yaflUKFRobustSt         ukf_robust
+    yaflUKFAdaptiveRobustSt ukf_ada_rob
     yaflUKFSt               ukf_full
 
 #------------------------------------------------------------------------------
@@ -943,7 +955,7 @@ cdef class RobustJoseph(yaflRobustBase):
                                     yafl_ekf_robust_joseph_scalar_update)
 
 #==============================================================================
-#                        Robust filter basic class
+#                   Adaptive robust filter basic class
 #==============================================================================
 cdef class yaflAdaptiveRobustBase(yaflRobustBase):
 
@@ -1354,13 +1366,22 @@ cdef class UnscentedAdaptiveBierman(yaflUnscentedBase):
         #Init chi2 with scipy.stats.chi2.ppf(0.99999, 1)
         self.c_self.base.ukf_adaptive.chi2 = 19.511420964666268
 
+    #==========================================================================
+    #Decorators
+    @property
+    def chi2(self):
+        return self.c_self.base.ukf_adaptive.chi2
+
+    @chi2.setter
+    def chi2(self, value):
+        self.c_self.base.ukf_adaptive.chi2 = <yaflFloat>value
+
     """
     UD-factorized UKF implementation
     """
     def _update(self):
         return yafl_ukf_base_update(&self.c_self.base.ukf, &self.v_z[0], \
                                 yafl_ukf_adaptive_bierman_update_scalar)
-
 #==============================================================================
 #                        Robust filter basic class
 #==============================================================================
@@ -1453,6 +1474,35 @@ cdef class UnscentedRobustBierman(yaflRobustUKFBase):
     def _update(self):
         return yafl_ukf_base_update(&self.c_self.base.ukf, &self.v_z[0], \
                                     yafl_ukf_robust_bierman_update_scalar)
+
+#==============================================================================
+#                         Adaptive robust UKF base
+#==============================================================================
+cdef class yaflAdaptiveRobustUKFBase(yaflRobustUKFBase):
+
+    def __init__(self, int dim_x, int dim_z, yaflFloat dt, \
+                 hx, fx, points, **kwargs):
+
+        super().__init__(dim_x, dim_z, dt, hx, fx, points, **kwargs)
+
+        #Init chi2 with scipy.stats.chi2.ppf(0.997, 1)
+        self.c_self.base.ukf_ada_rob.chi2 = 8.807468393511947
+
+    #==========================================================================
+    #Decorators
+    @property
+    def chi2(self):
+        return self.c_self.base.ukf_ada_rob.chi2
+
+    @chi2.setter
+    def chi2(self, value):
+        self.c_self.base.ukf_ada_rob.chi2 = <yaflFloat>value
+
+#==============================================================================
+cdef class UnscentedAdaptiveRobustBierman(yaflAdaptiveRobustUKFBase):
+    def _update(self):
+        return yafl_ukf_base_update(&self.c_self.base.ukf, &self.v_z[0], \
+                                    yafl_ukf_adaptive_robust_bierman_update_scalar)
 
 #==============================================================================
 #           Full UKF, not sequential square root version of UKF
