@@ -730,6 +730,30 @@ yaflStatusEn yafl_math_ruv(yaflInt sz, yaflFloat *res, yaflFloat *u)
     return YAFL_ST_OK;
 }
 
+yaflStatusEn yafl_math_rutv(yaflInt sz, yaflFloat *res, yaflFloat *u)
+{
+    yaflInt j;
+
+    YAFL_CHECK(res, YAFL_ST_INV_ARG_2);
+    YAFL_CHECK(u,   YAFL_ST_INV_ARG_3);
+
+    for (j = 0;  j < sz - 1; j++)
+    {
+        yaflInt i;
+        yaflFloat resj;
+
+        resj = res[j];
+        for (i = j + 1; i < sz; i++)
+        {
+            yaflInt szi;
+
+            szi = ((i - 1)*i)/2;
+            res[i] -= u[szi + j] * resj;
+        }
+    }
+    return YAFL_ST_OK;
+}
+
 yaflStatusEn yafl_math_rum(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *u)
 {
     yaflInt j;

@@ -313,6 +313,7 @@ v - vector
 ----------------------------------------------------------------------------------------------------------------*/
 /*res is vector*/
 yaflStatusEn yafl_math_ruv(yaflInt sz, yaflFloat *res, yaflFloat *u);             /*res = linalg.inv(u).dot(res)*/
+yaflStatusEn yafl_math_rutv(yaflInt sz, yaflFloat *res, yaflFloat *u);            /*res = linalg.inv(u.T).dot(res)*/
 /*res is matrix*/
 yaflStatusEn yafl_math_rum(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *u); /*res = linalg.inv(u).dot(res)*/
 
