@@ -39,17 +39,35 @@ _DO_VXN(yafl_math_sub_vxn, -=)
 #define _DO_VRN(name, op)                                                \
 yaflStatusEn name(yaflInt sz, yaflFloat *res, yaflFloat *v, yaflFloat n) \
 {                                                                        \
+    yaflStatusEn status;                                                 \
     yaflInt k;                                                           \
                                                                          \
     YAFL_CHECK(res, YAFL_ST_INV_ARG_2);                                  \
     YAFL_CHECK(v,   YAFL_ST_INV_ARG_3);                                  \
-    YAFL_CHECK(n,   YAFL_ST_INV_ARG_4);                                  \
+                                                                         \
+    status = YAFL_ST_OK;                                                 \
+    if (n > 0.0)                                                         \
+    {                                                                    \
+        if (n < YAFL_EPS)                                                \
+        {                                                                \
+            n = YAFL_EPS;                                                \
+            status = YAFL_ST_R;                                          \
+        }                                                                \
+    }                                                                    \
+    else                                                                 \
+    {                                                                    \
+        if (n > -YAFL_EPS)                                               \
+        {                                                                \
+            n = -YAFL_EPS;                                               \
+            status = YAFL_ST_R;                                          \
+        }                                                                \
+    }                                                                    \
                                                                          \
     for (k = 0; k < sz; k++)                                             \
     {                                                                    \
         res[k] op v[k] / n;                                              \
     }                                                                    \
-    return YAFL_ST_OK;                                                   \
+    return status;                                                       \
 }
 
 _DO_VRN(yafl_math_set_vrn,  =)

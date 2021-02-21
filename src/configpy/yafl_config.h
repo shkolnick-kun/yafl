@@ -31,6 +31,7 @@ typedef int32_t yaflInt;
 #define YAFL_EPS  (1.0e-15)
 
 #define YAFL_SQRT sqrt
+#define YAFL_ABS  abs
 
 /* WARNING!!!
 Fast UKF SSR updates may give dramatically incorrect results in case of adaptive Bierman filter

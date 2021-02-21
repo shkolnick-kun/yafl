@@ -105,6 +105,21 @@ struct _yaflKalmanBaseSt {
     .Nz  = _nz                                                     \
 }
 
+/*---------------------------------------------------------------------------*/
+#define YAFL_KALMAN_PREDICT_WRAPPER(predict, base_type, func, self_type) \
+static inline yaflStatusEn func(self_type * self)                        \
+{                                                                        \
+    return predict((base_type *)self);                                   \
+}
+
+/*---------------------------------------------------------------------------*/
+#define YAFL_KALMAN_UPDATE_IMPL(update, base_type, func, self_type) \
+yaflStatusEn func##_scalar(yaflKalmanBaseSt * self, yaflInt i);     \
+static inline yaflStatusEn func(self_type * self, yaflFloat * z)    \
+{                                                                   \
+    return update((base_type *)self, z, func##_scalar);             \
+}
+
 /*=============================================================================
                     Basic UD-factorized EKF definitions
 =============================================================================*/
@@ -149,53 +164,29 @@ yaflStatusEn yafl_ekf_base_update(yaflKalmanBaseSt * self, yaflFloat * z, \
                                   yaflKalmanScalarUpdateP scalar_update);
 
 /*---------------------------------------------------------------------------*/
-#define YAFL_KALMAN_PREDICT_WRAPPER(sname, stype) \
-static inline yaflStatusEn _yafl_##sname##_predict_wrapper(stype * self) \
-{                                                                        \
-    return yafl_ekf_base_predict((yaflKalmanBaseSt *)self);              \
-}
+#define YAFL_EKF_PREDICT_WRAPPER(func, self_type)                        \
+    YAFL_KALMAN_PREDICT_WRAPPER(yafl_ekf_base_predict, yaflKalmanBaseSt, \
+                                func, self_type)
 
 /*---------------------------------------------------------------------------*/
-#define YAFL_KALMAN_UPDATE_IMPL(bname, sname, stype)                                           \
-yaflStatusEn yafl_##bname##_##sname##_scalar_update(yaflKalmanBaseSt * self, yaflInt i);       \
-static inline yaflStatusEn yafl_##bname##_##sname##_update(stype * self, yaflFloat * z)        \
-{                                                                                              \
-    return yafl_ekf_base_update((yaflKalmanBaseSt *)self, z, yafl_##bname##_##sname##_scalar_update); \
-}
+#define YAFL_EKF_UPDATE_IMPL(func, self_type)                       \
+    YAFL_KALMAN_UPDATE_IMPL(yafl_ekf_base_update, yaflKalmanBaseSt, \
+                            func, self_type)
 
 /*---------------------------------------------------------------------------*/
-//static inline yaflStatusEn _yafl_ekf_predict_wrapper(yaflEKFBaseSt * self)
-//{
-//    return yafl_ekf_base_predict((yaflKalmanBaseSt *)self);
-//}
-YAFL_KALMAN_PREDICT_WRAPPER(ekf, yaflEKFBaseSt)
+YAFL_EKF_PREDICT_WRAPPER(_yafl_ekf_predict_wrapper, yaflEKFBaseSt)
+
 /*-----------------------------------------------------------------------------
                                Bierman filter
 -----------------------------------------------------------------------------*/
 #define YAFL_EKF_BIERMAN_PREDICT _yafl_ekf_predict_wrapper
+YAFL_EKF_UPDATE_IMPL(yafl_ekf_bierman_update, yaflEKFBaseSt)
 
-//yaflStatusEn yafl_ekf_bierman_scalar_update(yaflKalmanBaseSt * self, yaflInt i);
-//
-//static inline yaflStatusEn yafl_ekf_bierman_update(yaflEKFBaseSt * self, \
-//                                                   yaflFloat * z)
-//{
-//    return yafl_ekf_base_update((yaflKalmanBaseSt *)self, z, \
-//                                yafl_ekf_bierman_scalar_update);
-//}
-YAFL_KALMAN_UPDATE_IMPL(ekf, bierman, yaflEKFBaseSt)
 /*-----------------------------------------------------------------------------
                                Joseph filter
 -----------------------------------------------------------------------------*/
 #define YAFL_EKF_JOSEPH_PREDICT _yafl_ekf_predict_wrapper
-
-yaflStatusEn yafl_ekf_joseph_scalar_update(yaflKalmanBaseSt * self, yaflInt i);
-
-static inline yaflStatusEn yafl_ekf_joseph_update(yaflEKFBaseSt * self, \
-                                                  yaflFloat * z)
-{
-    return yafl_ekf_base_update((yaflKalmanBaseSt *)self, z, \
-                                yafl_ekf_joseph_scalar_update);
-}
+YAFL_EKF_UPDATE_IMPL(yafl_ekf_joseph_update, yaflEKFBaseSt)
 
 /*=============================================================================
                     Adaptive UD-factorized EKF definitions
@@ -217,40 +208,19 @@ Default value for chi2 is:
 */
 
 /*---------------------------------------------------------------------------*/
-static inline yaflStatusEn _yafl_ada_ekf_predict_wrapper(yaflEKFAdaptiveSt * self)
-{
-    return yafl_ekf_base_predict((yaflKalmanBaseSt *)self);
-}
+YAFL_EKF_PREDICT_WRAPPER(_yafl_ada_ekf_predict_wrapper, yaflEKFAdaptiveSt)
 
 /*-----------------------------------------------------------------------------
                            Adaptive Bierman filter
 -----------------------------------------------------------------------------*/
 #define YAFL_EKF_ADAPTIVE_BIERAMN_PREDICT _yafl_ada_ekf_predict_wrapper
-
-yaflStatusEn yafl_ekf_adaptive_bierman_scalar_update(yaflKalmanBaseSt * self, \
-                                                     yaflInt i);
-
-static inline yaflStatusEn \
-    yafl_ekf_adaptive_bierman_update(yaflEKFAdaptiveSt * self, yaflFloat * z)
-{
-    return yafl_ekf_base_update((yaflKalmanBaseSt *)self, z, \
-                                yafl_ekf_adaptive_bierman_scalar_update);
-}
+YAFL_EKF_UPDATE_IMPL(yafl_ekf_adaptive_bierman_update, yaflEKFAdaptiveSt)
 
 /*-----------------------------------------------------------------------------
                            Adaptive Joseph filter
 -----------------------------------------------------------------------------*/
 #define YAFL_EKF_ADAPTIVE_JOSEPH_PREDICT _yafl_ada_ekf_predict_wrapper
-
-yaflStatusEn yafl_ekf_adaptive_joseph_scalar_update(yaflKalmanBaseSt * self, \
-                                                    yaflInt i);
-
-static inline yaflStatusEn \
-    yafl_ekf_adaptive_joseph_update(yaflEKFAdaptiveSt * self, yaflFloat * z)
-{
-    return yafl_ekf_base_update((yaflKalmanBaseSt *)self, z, \
-                                yafl_ekf_adaptive_joseph_scalar_update);
-}
+YAFL_EKF_UPDATE_IMPL(yafl_ekf_adaptive_joseph_update, yaflEKFAdaptiveSt)
 
 /*-----------------------------------------------------------------------------
                                  WARNING!!!
@@ -260,14 +230,14 @@ static inline yaflStatusEn \
      It was implemented to show some flaws of the corresponding algorithm!
 -----------------------------------------------------------------------------*/
 yaflStatusEn \
-    yafl_ekf_do_not_use_this_scalar_update(yaflKalmanBaseSt * self, yaflInt i);
+    yafl_ekf_do_not_use_this_update_scalar(yaflKalmanBaseSt * self, yaflInt i);
 
 
 static inline yaflStatusEn \
     yafl_ekf_do_not_use_this_update(yaflEKFAdaptiveSt * self, yaflFloat * z)
 {
     return yafl_ekf_base_update((yaflKalmanBaseSt *)self, z, \
-                                yafl_ekf_do_not_use_this_scalar_update);
+                                yafl_ekf_do_not_use_this_update_scalar);
 }
 
 /*=============================================================================
@@ -299,41 +269,19 @@ typedef struct {
 }
 
 /*---------------------------------------------------------------------------*/
-static inline yaflStatusEn _yafl_rob_ekf_predict_wrapper(yaflEKFRobustSt * self)
-{
-    return yafl_ekf_base_predict((yaflKalmanBaseSt *)self);
-}
+YAFL_EKF_PREDICT_WRAPPER(_yafl_rob_ekf_predict_wrapper, yaflEKFRobustSt)
 
 /*-----------------------------------------------------------------------------
                            Robust Bierman filter
 -----------------------------------------------------------------------------*/
 #define YAFL_EKF_ROBUST_BIERAMN_PREDICT _yafl_rob_ekf_predict_wrapper
-
-yaflStatusEn \
-    yafl_ekf_robust_bierman_scalar_update(yaflKalmanBaseSt * self, yaflInt i);
-
-static inline yaflStatusEn \
-    yafl_ekf_robust_bierman_update(yaflEKFRobustSt * self, yaflFloat * z)
-{
-    return yafl_ekf_base_update((yaflKalmanBaseSt *)self, z,
-                                yafl_ekf_robust_bierman_scalar_update);
-}
+YAFL_EKF_UPDATE_IMPL(yafl_ekf_robust_bierman_update, yaflEKFRobustSt)
 
 /*-----------------------------------------------------------------------------
                            Robust Joseph filter
 -----------------------------------------------------------------------------*/
 #define YAFL_EKF_ROBUST_JOSEPH_PREDICT _yafl_rob_ekf_predict_wrapper
-
-yaflStatusEn \
-    yafl_ekf_robust_joseph_scalar_update(yaflKalmanBaseSt * self, yaflInt i);
-
-static inline yaflStatusEn \
-    yafl_ekf_robust_joseph_update(yaflEKFRobustSt * self, yaflFloat * z)
-{
-    return yafl_ekf_base_update((yaflKalmanBaseSt *)self, z, \
-                                yafl_ekf_robust_joseph_scalar_update);
-}
-
+YAFL_EKF_UPDATE_IMPL(yafl_ekf_robust_joseph_update, yaflEKFRobustSt)
 
 /*=============================================================================
                  Adaptive robust UD-factorized EKF definitions
@@ -357,45 +305,21 @@ Default value for chi2 is:
 */
 
 /*---------------------------------------------------------------------------*/
-static inline yaflStatusEn \
-    _yafl_ada_rob_predict_wrapper(yaflEKFAdaptiveRobustSt * self)
-{
-    return yafl_ekf_base_predict((yaflKalmanBaseSt *)self);
-}
-
+YAFL_EKF_PREDICT_WRAPPER(_yafl_ada_rob_predict_wrapper, \
+                         yaflEKFAdaptiveRobustSt)
 /*-----------------------------------------------------------------------------
                            Adaptive Bierman filter
 -----------------------------------------------------------------------------*/
 #define YAFL_EKF_ADAPTIVE_ROBUST_BIERAMN_PREDICT _yafl_ada_rob_predict_wrapper
-
-yaflStatusEn \
-    yafl_ekf_adaptive_robust_bierman_scalar_update(yaflKalmanBaseSt * self, \
-                                               yaflInt i);
-
-static inline yaflStatusEn \
-    yafl_ekf_adaptive_robust_bierman_update(yaflEKFAdaptiveRobustSt * self, \
-                                            yaflFloat * z)
-{
-    return yafl_ekf_base_update((yaflKalmanBaseSt *)self, z, \
-                                yafl_ekf_adaptive_robust_bierman_scalar_update);
-}
+YAFL_EKF_UPDATE_IMPL(yafl_ekf_adaptive_robust_bierman_update, \
+                     yaflEKFAdaptiveRobustSt)
 
 /*-----------------------------------------------------------------------------
                            Adaptive Joseph filter
 -----------------------------------------------------------------------------*/
 #define YAFL_EKF_ADAPTIVE_ROBUST_JOSEPH_PREDICT(self) _yafl_ada_rob_predict_wrapper
-
-yaflStatusEn \
-    yafl_ekf_adaptive_robust_joseph_scalar_update(yaflKalmanBaseSt * self, \
-                                              yaflInt i);
-
-static inline yaflStatusEn \
-    yafl_ekf_adaptive_robust_joseph_update(yaflEKFAdaptiveRobustSt * self, \
-                                            yaflFloat * z)
-{
-    return yafl_ekf_base_update((yaflKalmanBaseSt *)self, z, \
-                                yafl_ekf_adaptive_robust_joseph_scalar_update);
-}
+YAFL_EKF_UPDATE_IMPL(yafl_ekf_adaptive_robust_joseph_update, \
+                     yaflEKFAdaptiveRobustSt)
 
 /*=============================================================================
                     Basic UD-factorized UKF definitions
@@ -526,20 +450,21 @@ yaflStatusEn yafl_ukf_base_predict(yaflUKFBaseSt * self);
 yaflStatusEn yafl_ukf_base_update(yaflUKFBaseSt * self, yaflFloat * z, \
                                   yaflKalmanScalarUpdateP scalar_update);
 
+/*---------------------------------------------------------------------------*/
+#define YAFL_UKF_PREDICT_WRAPPER(func, self_type)                        \
+    YAFL_KALMAN_PREDICT_WRAPPER(yafl_ukf_base_predict, yaflUKFBaseSt, \
+                                func, self_type)
+
+/*---------------------------------------------------------------------------*/
+#define YAFL_UKF_UPDATE_IMPL(func, self_type)                       \
+    YAFL_KALMAN_UPDATE_IMPL(yafl_ukf_base_update, yaflUKFBaseSt, \
+                            func, self_type)
+
 /*=============================================================================
                                Bierman UKF
 =============================================================================*/
-#define YAFL_UKF_BIERMAN_PREDICT(self) \
-    yafl_ukf_base_predict((yaflUKFBaseSt *)self)
-
-yaflStatusEn yafl_ukf_bierman_update_scalar(yaflKalmanBaseSt * self, yaflInt i);
-
-static inline yaflStatusEn \
-    yafl_ukf_bierman_update(yaflUKFBaseSt * self, yaflFloat * z)
-{
-    return yafl_ukf_base_update(self, z, yafl_ukf_bierman_update_scalar);
-}
-
+YAFL_UKF_PREDICT_WRAPPER(yafl_ukf_bierman_predict, yaflUKFBaseSt)
+YAFL_UKF_UPDATE_IMPL(yafl_ukf_bierman_update, yaflUKFBaseSt)
 /*=============================================================================
                           Adaptive Bierman UKF
 =============================================================================*/
@@ -558,18 +483,8 @@ typedef struct {
 }
 
 /*---------------------------------------------------------------------------*/
-#define YAFL_UKF_ADAPTIVE_BIERMAN_PREDICT(self) \
-    yafl_ukf_base_predict((yaflUKFBaseSt *)self)
-
-yaflStatusEn yafl_ukf_adaptive_bierman_update_scalar(yaflKalmanBaseSt * self, \
-                                                     yaflInt i);
-
-static inline yaflStatusEn \
-    yafl_ukf_adaptive_bierman_update(yaflUKFAdaptivedSt * self, yaflFloat * z)
-{
-    return yafl_ukf_base_update((yaflUKFBaseSt *)self, z, \
-                                yafl_ukf_adaptive_bierman_update_scalar);
-}
+YAFL_UKF_PREDICT_WRAPPER(yafl_ukf_adaptive_bierman_predict, yaflUKFAdaptivedSt)
+YAFL_UKF_UPDATE_IMPL(yafl_ukf_adaptive_bierman_update, yaflUKFAdaptivedSt)
 
 /*=============================================================================
                            Robust Bierman UKF
@@ -593,15 +508,8 @@ typedef struct {
 }
 
 /*---------------------------------------------------------------------------*/
-yaflStatusEn yafl_ukf_robust_bierman_update_scalar(yaflKalmanBaseSt * self, \
-                                                     yaflInt i);
-
-static inline yaflStatusEn \
-    yafl_ukf_robust_bierman_update(yaflUKFAdaptivedSt * self, yaflFloat * z)
-{
-    return yafl_ukf_base_update((yaflUKFBaseSt *)self, z, \
-                                yafl_ukf_robust_bierman_update_scalar);
-}
+YAFL_UKF_PREDICT_WRAPPER(yafl_ukf_robust_bierman_predict, yaflUKFRobustSt)
+YAFL_UKF_UPDATE_IMPL(yafl_ukf_robust_bierman_update, yaflUKFRobustSt)
 
 /*=============================================================================
                         Adaptive robust Bierman UKF
@@ -621,17 +529,10 @@ typedef struct {
 }
 
 /*---------------------------------------------------------------------------*/
-yaflStatusEn \
-    yafl_ukf_adaptive_robust_bierman_update_scalar(yaflKalmanBaseSt * self, \
-                                                   yaflInt i);
-
-static inline yaflStatusEn \
-    yafl_ukf_adaptive_robust_bierman_update(yaflUKFAdaptivedSt * self, \
-                                            yaflFloat * z)
-{
-    return yafl_ukf_base_update((yaflUKFBaseSt *)self, z, \
-                                yafl_ukf_adaptive_robust_bierman_update_scalar);
-}
+YAFL_UKF_PREDICT_WRAPPER(yafl_ukf_adaptive_robust_bierman_predict, \
+                         yaflUKFAdaptiveRobustSt)
+YAFL_UKF_UPDATE_IMPL(yafl_ukf_adaptive_robust_bierman_update, \
+                     yaflUKFAdaptiveRobustSt)
 
 /*=============================================================================
             Full UKF, not sequential square root version of UKF

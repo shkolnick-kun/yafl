@@ -30,6 +30,7 @@
 
 yaflStatusEn fx(yaflKalmanBaseSt * self, yaflFloat * x, yaflFloat * xz)
 {
+    (void)xz;
     YAFL_CHECK(self,          YAFL_ST_INV_ARG_1);
     YAFL_CHECK(4 == self->Nx, YAFL_ST_INV_ARG_1);
     YAFL_CHECK(x,             YAFL_ST_INV_ARG_2);
@@ -45,6 +46,7 @@ yaflStatusEn jfx(yaflKalmanBaseSt * self, yaflFloat * w, yaflFloat * x)
     yaflInt nx;
     yaflInt nx2;
 
+    (void)x;
     YAFL_CHECK(self,          YAFL_ST_INV_ARG_1);
     YAFL_CHECK(4 == self->Nx, YAFL_ST_INV_ARG_1);
     YAFL_CHECK(w,             YAFL_ST_INV_ARG_2);

@@ -251,7 +251,7 @@ do {                                         \
 } while (0)
 
 /*---------------------------------------------------------------------------*/
-yaflStatusEn yafl_ekf_bierman_scalar_update(yaflKalmanBaseSt * self, yaflInt i)
+yaflStatusEn yafl_ekf_bierman_update_scalar(yaflKalmanBaseSt * self, yaflInt i)
 {
     yaflStatusEn status = YAFL_ST_OK;
     yaflFloat * h;
@@ -346,7 +346,7 @@ do {                                         \
 } while (0)
 
 /*---------------------------------------------------------------------------*/
-yaflStatusEn yafl_ekf_joseph_scalar_update(yaflKalmanBaseSt * self, yaflInt i)
+yaflStatusEn yafl_ekf_joseph_update_scalar(yaflKalmanBaseSt * self, yaflInt i)
 {
     yaflStatusEn status = YAFL_ST_OK;
     yaflFloat s = 0.0;
@@ -434,7 +434,7 @@ static inline yaflStatusEn \
 }
 
 /*---------------------------------------------------------------------------*/
-yaflStatusEn yafl_ekf_adaptive_bierman_scalar_update(yaflKalmanBaseSt * self, \
+yaflStatusEn yafl_ekf_adaptive_bierman_update_scalar(yaflKalmanBaseSt * self, \
                                                      yaflInt i)
 {
     yaflStatusEn status = YAFL_ST_OK;
@@ -475,7 +475,7 @@ yaflStatusEn yafl_ekf_adaptive_bierman_scalar_update(yaflKalmanBaseSt * self, \
                            Adaptive Joseph filter
 =============================================================================*/
 yaflStatusEn \
-    yafl_ekf_adaptive_joseph_scalar_update(yaflKalmanBaseSt * self, yaflInt i)
+    yafl_ekf_adaptive_joseph_update_scalar(yaflKalmanBaseSt * self, yaflInt i)
 {
     yaflStatusEn status = YAFL_ST_OK;
     yaflFloat s  = 1.0;
@@ -525,7 +525,7 @@ yaflStatusEn \
     It was implemented to show some flaws of the corresponding algorithm!
 =============================================================================*/
 //yaflStatusEn \
-//    yafl_ekf_do_not_use_this_scalar_update(yaflKalmanBaseSt * self, yaflInt i)
+//    yafl_ekf_do_not_use_this_update_scalar(yaflKalmanBaseSt * self, yaflInt i)
 //{
 //    yaflStatusEn status = YAFL_ST_OK;
 //    yaflFloat c = 0.0;
@@ -672,7 +672,7 @@ static inline yaflStatusEn \
 
 /*---------------------------------------------------------------------------*/
 yaflStatusEn \
-    yafl_ekf_robust_bierman_scalar_update(yaflKalmanBaseSt * self, yaflInt i)
+    yafl_ekf_robust_bierman_update_scalar(yaflKalmanBaseSt * self, yaflInt i)
 {
     yaflStatusEn status = YAFL_ST_OK;
     yaflFloat gdot = 1.0;
@@ -711,7 +711,7 @@ yaflStatusEn \
                             Robust Joseph filter
 =============================================================================*/
 yaflStatusEn \
-    yafl_ekf_robust_joseph_scalar_update(yaflKalmanBaseSt * self, yaflInt i)
+    yafl_ekf_robust_joseph_update_scalar(yaflKalmanBaseSt * self, yaflInt i)
 {
     yaflStatusEn status = YAFL_ST_OK;
     yaflFloat gdot = 0.0;
@@ -762,7 +762,7 @@ yaflStatusEn \
                         Adaptive robust Bierman filter
 =============================================================================*/
 yaflStatusEn \
-    yafl_ekf_adaptive_robust_bierman_scalar_update(yaflKalmanBaseSt * self, \
+    yafl_ekf_adaptive_robust_bierman_update_scalar(yaflKalmanBaseSt * self, \
                                                    yaflInt i)
 {
     yaflStatusEn status = YAFL_ST_OK;
@@ -810,7 +810,7 @@ yaflStatusEn \
                         Adaptive robust Joseph filter
 =============================================================================*/
 yaflStatusEn \
-    yafl_ekf_adaptive_robust_joseph_scalar_update(yaflKalmanBaseSt * self, \
+    yafl_ekf_adaptive_robust_joseph_update_scalar(yaflKalmanBaseSt * self, \
                                                   yaflInt i)
 {
     yaflStatusEn status = YAFL_ST_OK;
@@ -988,6 +988,7 @@ static yaflStatusEn _unscented_transform(yaflUKFBaseSt * self,   \
 
     if (noise_u)
     {
+        YAFL_CHECK(noise_d, YAFL_ST_INV_ARG_8);
         /*res_u, res_d = noise_u.copy(), noise_d.copy()*/
         memcpy((void *)res_u, (void *)noise_u, (res_sz * (res_sz - 1)) / 2 * sizeof(yaflFloat));
         memcpy((void *)res_d, (void *)noise_d, res_sz * sizeof(yaflFloat));

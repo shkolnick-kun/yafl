@@ -128,11 +128,11 @@ cdef extern from "yafl.c":
 
     #--------------------------------------------------------------------------
     cdef yaflStatusEn \
-        yafl_ekf_bierman_scalar_update(yaflKalmanBaseSt * self, yaflInt i)
+        yafl_ekf_bierman_update_scalar(yaflKalmanBaseSt * self, yaflInt i)
 
     #--------------------------------------------------------------------------
     cdef yaflStatusEn \
-        yafl_ekf_joseph_scalar_update(yaflKalmanBaseSt * self, yaflInt i)
+        yafl_ekf_joseph_update_scalar(yaflKalmanBaseSt * self, yaflInt i)
 
 
     #==========================================================================
@@ -142,12 +142,12 @@ cdef extern from "yafl.c":
 
     #--------------------------------------------------------------------------
     cdef yaflStatusEn \
-        yafl_ekf_adaptive_bierman_scalar_update(yaflKalmanBaseSt * self, \
+        yafl_ekf_adaptive_bierman_update_scalar(yaflKalmanBaseSt * self, \
                                                 yaflInt i)
 
     #--------------------------------------------------------------------------
     cdef yaflStatusEn \
-        yafl_ekf_adaptive_joseph_scalar_update(yaflKalmanBaseSt * self, \
+        yafl_ekf_adaptive_joseph_update_scalar(yaflKalmanBaseSt * self, \
                                                yaflInt i)
 
     #--------------------------------------------------------------------------
@@ -164,12 +164,12 @@ cdef extern from "yafl.c":
 
     #--------------------------------------------------------------------------
     cdef yaflStatusEn \
-        yafl_ekf_robust_bierman_scalar_update(yaflKalmanBaseSt * self, \
+        yafl_ekf_robust_bierman_update_scalar(yaflKalmanBaseSt * self, \
                                               yaflInt i)
 
     #--------------------------------------------------------------------------
     cdef yaflStatusEn \
-        yafl_ekf_robust_joseph_scalar_update(yaflKalmanBaseSt * self, \
+        yafl_ekf_robust_joseph_update_scalar(yaflKalmanBaseSt * self, \
                                              yaflInt i)
 
     #==========================================================================
@@ -179,12 +179,12 @@ cdef extern from "yafl.c":
 
     #--------------------------------------------------------------------------
     cdef yaflStatusEn \
-        yafl_ekf_adaptive_robust_bierman_scalar_update(yaflKalmanBaseSt * self, \
+        yafl_ekf_adaptive_robust_bierman_update_scalar(yaflKalmanBaseSt * self, \
                                                        yaflInt i)
 
     #--------------------------------------------------------------------------
     cdef yaflStatusEn \
-        yafl_ekf_adaptive_robust_joseph_scalar_update(yaflKalmanBaseSt * self, \
+        yafl_ekf_adaptive_robust_joseph_update_scalar(yaflKalmanBaseSt * self, \
                                                       yaflInt i)
 
     #==========================================================================
@@ -802,13 +802,13 @@ cdef yaflStatusEn yafl_py_ekf_jhx(yaflPyKalmanBaseSt * self, yaflFloat * h, \
 cdef class Bierman(yaflExtendedBase):
     def _update(self):
         return yafl_ekf_base_update(&self.c_self.base.base, &self.v_z[0], \
-                                    yafl_ekf_bierman_scalar_update)
+                                    yafl_ekf_bierman_update_scalar)
 
 #------------------------------------------------------------------------------
 cdef class Joseph(yaflExtendedBase):
     def _update(self):
         return yafl_ekf_base_update(&self.c_self.base.base, &self.v_z[0], \
-                                    yafl_ekf_joseph_scalar_update)
+                                    yafl_ekf_joseph_update_scalar)
 
 #==============================================================================
 #                        Adaptive filter basic class
@@ -834,13 +834,13 @@ cdef class yaflAdaptiveBase(yaflExtendedBase):
 cdef class AdaptiveBierman(yaflAdaptiveBase):
     def _update(self):
         return yafl_ekf_base_update(&self.c_self.base.base, &self.v_z[0], \
-                                    yafl_ekf_adaptive_bierman_scalar_update)
+                                    yafl_ekf_adaptive_bierman_update_scalar)
 
 #------------------------------------------------------------------------------
 cdef class AdaptiveJoseph(yaflAdaptiveBase):
     def _update(self):
         return yafl_ekf_base_update(&self.c_self.base.base, &self.v_z[0], \
-                                    yafl_ekf_adaptive_joseph_scalar_update)
+                                    yafl_ekf_adaptive_joseph_update_scalar)
 
 #------------------------------------------------------------------------------
 # cdef class DoNotUseThisFilter(yaflAdaptiveBase):
@@ -946,13 +946,13 @@ cdef yaflFloat yafl_py_ekf_rob_gdotz(yaflPyKalmanBaseSt * self, yaflFloat nu):
 cdef class RobustBierman(yaflRobustBase):
     def _update(self):
         return yafl_ekf_base_update(&self.c_self.base.base, &self.v_z[0], \
-                                    yafl_ekf_robust_bierman_scalar_update)
+                                    yafl_ekf_robust_bierman_update_scalar)
 
 #------------------------------------------------------------------------------
 cdef class RobustJoseph(yaflRobustBase):
     def _update(self):
         return yafl_ekf_base_update(&self.c_self.base.base, &self.v_z[0], \
-                                    yafl_ekf_robust_joseph_scalar_update)
+                                    yafl_ekf_robust_joseph_update_scalar)
 
 #==============================================================================
 #                   Adaptive robust filter basic class
@@ -981,13 +981,13 @@ cdef class yaflAdaptiveRobustBase(yaflRobustBase):
 cdef class AdaptiveRobustBierman(yaflAdaptiveRobustBase):
     def _update(self):
         return yafl_ekf_base_update(&self.c_self.base.base, &self.v_z[0], \
-                                    yafl_ekf_adaptive_robust_bierman_scalar_update)
+                                    yafl_ekf_adaptive_robust_bierman_update_scalar)
 
 #------------------------------------------------------------------------------
 cdef class AdaptiveRobustJoseph(yaflAdaptiveRobustBase):
     def _update(self):
         return yafl_ekf_base_update(&self.c_self.base.base, &self.v_z[0], \
-                                    yafl_ekf_adaptive_robust_joseph_scalar_update)
+                                    yafl_ekf_adaptive_robust_joseph_update_scalar)
 
 #==============================================================================
 #                          UD-factorized UKF API
