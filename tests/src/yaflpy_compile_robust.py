@@ -18,6 +18,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pyximport
+import scipy.stats
 import sys
 import time
 

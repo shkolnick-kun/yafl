@@ -15,11 +15,12 @@
 
     See the License for the specific language governing permissions
 """
-import time
 import matplotlib.pyplot as plt
 import numpy as np
 import pyximport
+import scipy.stats
 import sys
+import time
 
 sys.path.insert(0,'../../src')
 

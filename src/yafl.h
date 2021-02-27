@@ -26,7 +26,7 @@
 =============================================================================*/
 typedef struct _yaflKalmanBaseSt yaflKalmanBaseSt;
 
-typedef yaflStatusEn (* yaflKalmanFuncP)(yaflKalmanBaseSt *, yaflFloat *,    \
+typedef yaflStatusEn (* yaflKalmanFuncP)(yaflKalmanBaseSt *, yaflFloat *, \
                                          yaflFloat *);
 
 typedef yaflStatusEn (* yaflKalmanResFuncP)(yaflKalmanBaseSt *, yaflFloat *, \
@@ -113,11 +113,11 @@ static inline yaflStatusEn func(self_type * self)                        \
 }
 
 /*---------------------------------------------------------------------------*/
-#define YAFL_KALMAN_UPDATE_IMPL(update, base_type, func, self_type) \
-yaflStatusEn func##_scalar(yaflKalmanBaseSt * self, yaflInt i);     \
-static inline yaflStatusEn func(self_type * self, yaflFloat * z)    \
-{                                                                   \
-    return update((base_type *)self, z, func##_scalar);             \
+#define YAFL_KALMAN_UPDATE_IMPL(update, base_type, func, self_type)    \
+extern yaflStatusEn func##_scalar(yaflKalmanBaseSt * self, yaflInt i); \
+static inline yaflStatusEn func(self_type * self, yaflFloat * z)       \
+{                                                                      \
+    return update((base_type *)self, z, func##_scalar);                \
 }
 
 /*=============================================================================
@@ -317,7 +317,8 @@ YAFL_EKF_UPDATE_IMPL(yafl_ekf_adaptive_robust_bierman_update, \
 /*-----------------------------------------------------------------------------
                            Adaptive Joseph filter
 -----------------------------------------------------------------------------*/
-#define YAFL_EKF_ADAPTIVE_ROBUST_JOSEPH_PREDICT(self) _yafl_ada_rob_predict_wrapper
+#define YAFL_EKF_ADAPTIVE_ROBUST_JOSEPH_PREDICT(self) \
+    _yafl_ada_rob_predict_wrapper
 YAFL_EKF_UPDATE_IMPL(yafl_ekf_adaptive_robust_joseph_update, \
                      yaflEKFAdaptiveRobustSt)
 
@@ -335,7 +336,8 @@ yaflFloat factor
 Does:
 delta_x = x0 + factor * delta_x
 */
-typedef yaflStatusEn (* yaflUKFSigmaAddP)(yaflUKFBaseSt *, yaflFloat *, yaflFloat *, yaflFloat);
+typedef yaflStatusEn (* yaflUKFSigmaAddP)(yaflUKFBaseSt *, yaflFloat *, \
+                                          yaflFloat *, yaflFloat);
 
 /*Sigma point generator info base type*/
 typedef struct _yaflUKFSigmaSt {
@@ -451,12 +453,12 @@ yaflStatusEn yafl_ukf_base_update(yaflUKFBaseSt * self, yaflFloat * z, \
                                   yaflKalmanScalarUpdateP scalar_update);
 
 /*---------------------------------------------------------------------------*/
-#define YAFL_UKF_PREDICT_WRAPPER(func, self_type)                        \
+#define YAFL_UKF_PREDICT_WRAPPER(func, self_type)                     \
     YAFL_KALMAN_PREDICT_WRAPPER(yafl_ukf_base_predict, yaflUKFBaseSt, \
                                 func, self_type)
 
 /*---------------------------------------------------------------------------*/
-#define YAFL_UKF_UPDATE_IMPL(func, self_type)                       \
+#define YAFL_UKF_UPDATE_IMPL(func, self_type)                    \
     YAFL_KALMAN_UPDATE_IMPL(yafl_ukf_base_update, yaflUKFBaseSt, \
                             func, self_type)
 
@@ -564,11 +566,34 @@ Warning: sigmas_x and _sigmas_z aren't defined in this mixin, see
 }
 
 /*---------------------------------------------------------------------------*/
-#define YAFL_UKF_PREDICT(self) \
-    yafl_ukf_base_predict((yaflUKFBaseSt *)self)
-
+YAFL_UKF_PREDICT_WRAPPER(yafl_ukf_predict, yaflUKFSt)
 yaflStatusEn yafl_ukf_update(yaflUKFBaseSt * self, yaflFloat * z);
 
+/*=============================================================================
+        Full adaptive UKF, not sequential square root version of UKF
+=============================================================================*/
+typedef struct {
+    yaflUKFSt base; /* Base type                   */
+    yaflFloat chi2; /*Divergence test threshold (chi-squared criteria)*/
+} yaflUKFFullAdapiveSt;
+
+/*---------------------------------------------------------------------------*/
+#define YAFL_UKF_FULL_ADAPTIVE_INITIALIZER(_p, _pm, _f, _xmf, _xrf, _h, _zmf, \
+                                   _zrf, _nx, _nz, _chi2, _mem)               \
+{                                                                             \
+    .base = YAFL_UKF_BASE_INITIALIZER(_p, _pm, _f, _xmf, _xrf, _h, _zmf,      \
+                                      _zrf, _nx, _nz, _mem),                  \
+    .chi2 = _chi2                                                             \
+}
+
+/*---------------------------------------------------------------------------*/
+static inline \
+    yaflStatusEn yafl_ukf_adaptive_predict(yaflUKFFullAdapiveSt * self)
+{
+    return yafl_ukf_predict((yaflUKFSt *)self);
+}
+
+yaflStatusEn yafl_ukf_adaptive_update(yaflUKFBaseSt * self, yaflFloat * z);
 /*=============================================================================
                      Van der Merwe sigma point generator
 =============================================================================*/

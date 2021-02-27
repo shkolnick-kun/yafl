@@ -284,9 +284,16 @@ cdef extern from "yafl.c":
     #--------------------------------------------------------------------------
     cdef yaflStatusEn yafl_ukf_update(yaflUKFBaseSt * self, yaflFloat * z)
 
-    #--------------------------------------------------------------------------
+    #==========================================================================
+    ctypedef struct yaflUKFFullAdapiveSt:
+        yaflUKFSt base
+        yaflFloat chi2
+
+    yaflStatusEn yafl_ukf_adaptive_update(yaflUKFBaseSt * self, yaflFloat * z)
+
+    #==========================================================================
     #                  Van der Merwe sigma point generator
-    #--------------------------------------------------------------------------
+    #==========================================================================
     ctypedef struct yaflUKFMerweSt:
         yaflUKFSigmaSt base
         yaflFloat alpha
@@ -301,6 +308,8 @@ cdef extern from "yafl.c":
 # We need numpy for Pythonic interfaces
 cimport numpy as np
 import  numpy as np#WTF??
+
+import scipy.stats as st
 
 # We need traceback to print pythonic callback exceptions
 import traceback as tb
@@ -351,6 +360,7 @@ ctypedef union yaflPyKalmanBaseUn:
     yaflUKFRobustSt         ukf_robust
     yaflUKFAdaptiveRobustSt ukf_ada_rob
     yaflUKFSt               ukf_full
+    yaflUKFFullAdapiveSt    ukf_full_adaptive
 
 #------------------------------------------------------------------------------
 # Kalman filter C-structure with Python callback
@@ -1525,11 +1535,61 @@ cdef class Unscented(yaflUnscentedBase):
         self.v_Ds = self._Ds
         self.c_self.base.ukf_full.Ds = &self.v_Ds[0]
 
+    #==========================================================================
+    #Decorators
+    @property
+    def Us(self):
+        return self._Us
+
+    @Us.setter
+    def Us(self, value):
+        raise AttributeError('Unscented does not support this!')
+
+    #--------------------------------------------------------------------------
+    @property
+    def Ds(self):
+        return self._Ds
+
+    @Ds.setter
+    def Ds(self, value):
+        raise AttributeError('Unscented does not support this!')
+
+    #==========================================================================
     """
     UD-factorized UKF implementation
     """
     def _update(self):
         return yafl_ukf_update(&self.c_self.base.ukf, &self.v_z[0])
+
+#==============================================================================
+#       Full adaptive UKF, not sequential square root version of UKF
+#==============================================================================
+cdef class UnscentedAdaptive(Unscented):
+
+    def __init__(self, int dim_x, int dim_z, yaflFloat dt, hx, fx, points, \
+                 aplha = 0.000001, **kwargs):
+
+        super().__init__(dim_x, dim_z, dt, hx, fx, points, **kwargs)
+
+        self.c_self.base.ukf_full_adaptive.chi2 = \
+            st.chi2.ppf(1.0 - aplha, dim_z)
+
+    #==========================================================================
+    #Decorators
+    @property
+    def chi2(self):
+        return self.c_self.base.ukf_full_adaptive.chi2
+
+    @chi2.setter
+    def chi2(self, value):
+        self.c_self.base.ukf_full_adaptive.chi2 = <yaflFloat>value
+
+    #==========================================================================
+    """
+    UD-factorized UKF implementation
+    """
+    def _update(self):
+        return yafl_ukf_adaptive_update(&self.c_self.base.ukf, &self.v_z[0])
 
 #==============================================================================
 cdef class MerweSigmaPoints(yaflSigmaBase):
