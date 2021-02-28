@@ -63,6 +63,7 @@ Release/
 *.log
 .metadata/
 __pycache__/
+.ipynb_checkpoints/
 
 # Something else #
 ##################
