@@ -524,101 +524,101 @@ yaflStatusEn \
 
     It was implemented to show some flaws of the corresponding algorithm!
 =============================================================================*/
-//yaflStatusEn \
-//    yafl_ekf_do_not_use_this_update_scalar(yaflKalmanBaseSt * self, yaflInt i)
-//{
-//    yaflStatusEn status = YAFL_ST_OK;
-//    yaflFloat c = 0.0;
-//    yaflFloat s = 0.0;
-//    yaflInt nx;
-//    yaflInt nx1;
-//    yaflFloat * d;
-//    yaflFloat * u;
-//    yaflFloat * h;
-//    yaflFloat * f;
-//    yaflFloat * v;
-//    yaflFloat * w;
-//    yaflFloat nu;
-//    yaflFloat r;
-//    yaflFloat ac;
-//
-//    _SCALAR_UPDATE_ARGS_CHECKS();
-//
-//    nx = _NX;
-//    _EKF_JOSEPH_SELF_INTERNALS_CHECKS();
-//
-//    nx1 = nx + 1;
-//
-//    d = _UP;
-//    u = _DP;
-//
-//    h = _HY + nx * i;
-//
-//    v = _D;
-//    f = v + nx;
-//
-//    w = _W;
-//
-//    nu = _Y[i];
-//    r  = _DR[i];
-//
-//    /* f = h.dot(Up) */
-//    YAFL_TRY(status, yafl_math_set_vtu(nx, f, h, u));
-//
-//    /* v = f.dot(Dp).T = Dp.dot(f.T).T */
-//    YAFL_TRY(status, YAFL_MATH_SET_DV(nx, v, d, f));
-//
-//    /* s = r + f.dot(v)*/
-//    YAFL_TRY(status, yafl_math_vtv(nx, &c, f, v));
-//    s = c + r;
-//
-//    /* Divergence test */
-//    ac = (nu * (nu / (((yaflEKFAdaptiveSt *)self)->chi2))) - s;
-//    if (ac > 0.0)
-//    {
-//        /*Adaptive correction with no limitations approach*/
-//        YAFL_TRY(status, yafl_math_set_uv(nx, f, u, v));
-//        YAFL_TRY(status, yafl_math_udu_up(nx, u, d, (ac / c) / c, f));
-//
-//        /*Recompute f,v,s*/
-//        /* f = h.dot(Up) */
-//        YAFL_TRY(status, yafl_math_set_vtu(nx, f, h, u));
-//
-//        /* v = f.dot(Dp).T = Dp.dot(f.T).T */
-//        YAFL_TRY(status, YAFL_MATH_SET_DV(nx, v, d, f));
-//
-//        /* s = r + f.dot(v)*/
-//        YAFL_TRY(status, yafl_math_vtv(nx, &c, f, v));
-//        s = c + r;
-//    }
-//
-//    /* K = Up.dot(v * ac / s) = Up.dot(v) * (ac / s) */
-//#define K h /*Don't need h any more, use it to store K*/
-//#define D v
-//    YAFL_TRY(status, yafl_math_set_uv(nx, K, u, v));
-//    YAFL_TRY(status, yafl_math_set_vrn(nx, K, K, s)); /*May be used in place*/
-//
-//    /*Set W and D*/
-//    YAFL_TRY(status, yafl_math_bset_vvt(nx1, w, nx, K, f));
-//    YAFL_TRY(status, yafl_math_bsub_u(nx1, w, nx, u));
-//
-//    /* Now w is (Kf - Up|***) */
-//    YAFL_TRY(status, YAFL_MATH_BSET_V(nx1, 0, nx, w, nx, K));
-//    /* Now w is (Kf - Up|K) */
-//
-//    /* D = concatenate([Dp, np.array([r])]) */
-//    memcpy((void *)D, (void *)d, nx * sizeof(yaflFloat));
-//    D[nx] = r;
-//
-//    /* Up, Dp = MWGSU(W, D)*/
-//    YAFL_TRY(status, yafl_math_mwgsu(nx, nx1, u, d, w, D));
-//
-//    /* self.x += K * nu */
-//    YAFL_TRY(status, yafl_math_add_vxn(nx, _X, K, nu));
-//#undef D /*Don't nee D any more*/
-//#undef K /*Don't nee K any more*/
-//    return status;
-//}
+yaflStatusEn \
+    yafl_ekf_do_not_use_this_update_scalar(yaflKalmanBaseSt * self, yaflInt i)
+{
+    yaflStatusEn status = YAFL_ST_OK;
+    yaflFloat c = 0.0;
+    yaflFloat s = 0.0;
+    yaflInt nx;
+    yaflInt nx1;
+    yaflFloat * d;
+    yaflFloat * u;
+    yaflFloat * h;
+    yaflFloat * f;
+    yaflFloat * v;
+    yaflFloat * w;
+    yaflFloat nu;
+    yaflFloat r;
+    yaflFloat ac;
+
+    _SCALAR_UPDATE_ARGS_CHECKS();
+
+    nx = _NX;
+    _EKF_JOSEPH_SELF_INTERNALS_CHECKS();
+
+    nx1 = nx + 1;
+
+    d = _DP;
+    u = _UP;
+
+    h = _HY + nx * i;
+
+    v = _D;
+    f = v + nx;
+
+    w = _W;
+
+    nu = _Y[i];
+    r  = _DR[i];
+
+    /* f = h.dot(Up) */
+    YAFL_TRY(status, yafl_math_set_vtu(nx, f, h, u));
+
+    /* v = f.dot(Dp).T = Dp.dot(f.T).T */
+    YAFL_TRY(status, YAFL_MATH_SET_DV(nx, v, d, f));
+
+    /* s = r + f.dot(v)*/
+    YAFL_TRY(status, yafl_math_vtv(nx, &c, f, v));
+    s = c + r;
+
+    /* Divergence test */
+    ac = (nu * (nu / (((yaflEKFAdaptiveSt *)self)->chi2))) - s;
+    if (ac > 0.0)
+    {
+        /*Adaptive correction with no limitations approach*/
+        YAFL_TRY(status, yafl_math_set_uv(nx, f, u, v));
+        YAFL_TRY(status, yafl_math_udu_up(nx, u, d, (ac / c) / c, f));
+
+        /*Recompute f,v,s*/
+        /* f = h.dot(Up) */
+        YAFL_TRY(status, yafl_math_set_vtu(nx, f, h, u));
+
+        /* v = f.dot(Dp).T = Dp.dot(f.T).T */
+        YAFL_TRY(status, YAFL_MATH_SET_DV(nx, v, d, f));
+
+        /* s = r + f.dot(v)*/
+        YAFL_TRY(status, yafl_math_vtv(nx, &c, f, v));
+        s = c + r;
+    }
+
+    /* K = Up.dot(v * ac / s) = Up.dot(v) * (ac / s) */
+#define K h /*Don't need h any more, use it to store K*/
+#define D v
+    YAFL_TRY(status, yafl_math_set_uv(nx, K, u, v));
+    YAFL_TRY(status, yafl_math_set_vrn(nx, K, K, s)); /*May be used in place*/
+
+    /*Set W and D*/
+    YAFL_TRY(status, yafl_math_bset_vvt(nx1, w, nx, K, f));
+    YAFL_TRY(status, yafl_math_bsub_u(nx1, w, nx, u));
+
+    /* Now w is (Kf - Up|***) */
+    YAFL_TRY(status, YAFL_MATH_BSET_V(nx1, 0, nx, w, nx, K));
+    /* Now w is (Kf - Up|K) */
+
+    /* D = concatenate([Dp, np.array([r])]) */
+    memcpy((void *)D, (void *)d, nx * sizeof(yaflFloat));
+    D[nx] = r;
+
+    /* Up, Dp = MWGSU(W, D)*/
+    YAFL_TRY(status, yafl_math_mwgsu(nx, nx1, u, d, w, D));
+
+    /* self.x += K * nu */
+    YAFL_TRY(status, yafl_math_add_vxn(nx, _X, K, nu));
+#undef D /*Don't nee D any more*/
+#undef K /*Don't nee K any more*/
+    return status;
+}
 
 /*=============================================================================
                             Robust Bierman filter

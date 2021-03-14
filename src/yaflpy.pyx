@@ -152,8 +152,8 @@ cdef extern from "yafl.c":
 
     #--------------------------------------------------------------------------
     # For demonstration purposes only
-    # cdef yaflStatusEn \
-    # yafl_ekf_do_not_use_this_update_scalar(yaflKalmanBaseSt * self, yaflInt i)
+    cdef yaflStatusEn \
+    yafl_ekf_do_not_use_this_update_scalar(yaflKalmanBaseSt * self, yaflInt i)
 
     #==========================================================================
     ctypedef struct yaflEKFRobustSt:
@@ -852,15 +852,15 @@ cdef class AdaptiveJoseph(yaflAdaptiveBase):
                                     yafl_ekf_adaptive_joseph_update_scalar)
 
 #------------------------------------------------------------------------------
-# cdef class DoNotUseThisFilter(yaflAdaptiveBase):
-#     """
-#     WARNING!!!
-#     DO NOT USE THIS variant of Adaptive Joseph filter !!!
-#     It was implemented to show some flaws of the corresponding algorithm!
-#     """
-#     def _update(self):
-#         return yafl_ekf_base_update(&self.c_self.base.base, &self.v_z[0], \
-#                                     yafl_ekf_do_not_use_this_update_scalar)
+cdef class DoNotUseThisFilter(yaflAdaptiveBase):
+    """
+    WARNING!!!
+    DO NOT USE THIS variant of Adaptive Joseph filter !!!
+    It was implemented to show some flaws of the corresponding algorithm!
+    """
+    def _update(self):
+        return yafl_ekf_base_update(&self.c_self.base.base, &self.v_z[0], \
+                                    yafl_ekf_do_not_use_this_update_scalar)
 
 ###########
 
