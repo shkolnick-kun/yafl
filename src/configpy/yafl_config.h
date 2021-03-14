@@ -32,6 +32,7 @@ typedef int32_t yaflInt;
 
 #define YAFL_SQRT sqrt
 #define YAFL_ABS  abs
+#define YAFL_UNLIKELY(x) __builtin_expect((x), 0)
 
 /* WARNING!!!
 Fast UKF SSR updates may give dramatically incorrect results in case of adaptive Bierman filter

@@ -23,7 +23,7 @@
 
 #define _YAFL_CHECK(cond, err, file, func, line)                           \
 do {                                                                       \
-    if (!(cond))                                                           \
+    if (YAFL_UNLIKELY(!(cond)))                                            \
     {                                                                      \
         YAFL_LOG("YAFL:The expression (%s) is false in \n function: %s",   \
                  #cond, func);                                             \
@@ -78,7 +78,7 @@ typedef enum {
 #define _YAFL_TRY(status, exp, file, func, line)                              \
 do {                                                                          \
     (status) |= (exp);                                                        \
-    if (YAFL_ST_ERR_THR <= (status))                                          \
+    if (YAFL_UNLIKELY(YAFL_ST_ERR_THR <= (status)))                           \
     {                                                                         \
         YAFL_LOG("YAFL:The expression (%s) gave an error in \n function: %s", \
                  #exp, func);                                                 \
