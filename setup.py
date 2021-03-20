@@ -45,6 +45,7 @@ setup(
         ],
       setup_requires=deps,
       install_requires=deps,
+      python_requires='>=3',
       platforms = ['any'],
       ext_modules = cythonize(extensions,
                               compiler_directives={'language_level' : '3'})

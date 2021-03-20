@@ -1,1 +1,1 @@
-include src/* src/configpy/*
+include src/* src/configpy/* LICENSE Readme.md

@@ -3,7 +3,7 @@
 <head><meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>AdaptiveCorrection</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
+<title>UsingEKFTricksWithSPKF</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
 
 
 
@@ -14259,196 +14259,32 @@ a.anchor-link {
 
 <div class="jp-Cell-inputWrapper"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h1 id="What-we-are-doing-here:-the-idea-of-adaptive-correction">What we are doing here: the idea of adaptive correction<a class="anchor-link" href="#What-we-are-doing-here:-the-idea-of-adaptive-correction">&#182;</a></h1><p>We have a system which can be cheracterised with the following set of equatins:</p>
-<p><a name="1"></a>$\mathbf{x}_k = f(\mathbf{x}_{k-1}, \mathbf{u}_k, \mathbf{w}_k) \quad (1),$</p>
-<p><a name="2"></a>$\mathbf{z}_k = h(\mathbf{x}_k) + \mathbf{v}_k \quad (2),$</p>
-<p>Where <a href="#1">(1)</a> is state transition equation and <a href="#2">(2)</a> is measurement equation, $\mathbf w_k$ and $\mathbf v_k$ are process and measurement noise respectively, $\mathbf u_k$ is control vector.</p>
-<p>We use the Extended Kalman Filter (EKF) as our main estimation algorithm and the $H_{\infty}$ filter as backup algorithm to deal with Kalman filter divergenсe.</p>
-
-</div>
-</div>
-<div class="jp-Cell-inputWrapper"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h1 id="The-EKF-algorithm">The EKF algorithm<a class="anchor-link" href="#The-EKF-algorithm">&#182;</a></h1><h2 id="Prediction-step">Prediction step<a class="anchor-link" href="#Prediction-step">&#182;</a></h2><p><a name="3"></a>$\mathbf{x}_{k|k-1} = f(\mathbf{x}_{k-1|k-1}, \mathbf{u}_k, 0) \quad (3),$</p>
-<p><a name="4"></a>$\mathbf{P}_{k|k-1} =  \mathbf{F}_{k} \mathbf{P}_{k-1|k-1} \mathbf{F}_{k}^{\top} + \mathbf{B}_{k} \mathbf{Q}_{k} \mathbf{B}_{k}^{\top} \quad (4),$</p>
-<p><a name="5"></a>$\mathbf{y}_{k} = \mathbf{z}_{k} - h(\mathbf{x}_{k|k-1}) \quad (5),$</p>
-<h2 id="Correction-step">Correction step<a class="anchor-link" href="#Correction-step">&#182;</a></h2><p>The convenient form of correction step is:</p>
-<p><a name="6"></a>$\mathbf{S}_{k} = \mathbf{H}_{k} \mathbf{P}_{k|k-1} \mathbf{H}_{k}^{\top} + \mathbf{R}_{k} \quad (6),$</p>
-<p><a name="7"></a>$\mathbf{K}_{k} = \mathbf{P}_{k|k-1} \mathbf{H}_{k}^{\top} \mathbf{S}_{k}^{-1} \quad (7),$</p>
-<p><a name="8"></a>$\mathbf{x}_{k|k} = \mathbf{x}_{k|k-1} + \mathbf{K}_{k} \mathbf{y}_{k} \quad (8),$</p>
-<p><a name="9"></a>$\mathbf{P}_{k|k} = \left( \mathbf{I} - \mathbf{K}_{k} \mathbf{H}_{k} \right) \mathbf{P}_{k|k-1} \left( \mathbf{I} - \mathbf{K}_{k} \mathbf{H}_{k} \right)^{\top} + \mathbf{K}_{k} \mathbf{R}_{k} \mathbf{K}_{k}^{\top} \quad (9),$</p>
-<p>To compare the EKF with the $H_\infty$ filter we need to rewrite the correction step in the following form:</p>
-<p><a name="10"></a>$\mathbf{P}_{k|k} = \left( \mathbf{P}_{k|k-1}^{-1} + \mathbf{H}_{k}^{\top} \mathbf{R}_{k}^{-1} \mathbf{H}_{k} \right)^{-1} \quad (10),$</p>
-<p><a name="11"></a>$\mathbf{K}_{k} = \mathbf{P}_{k|k} \mathbf{H}_{k}^{\top} \mathbf{R}_{k}^{-1} \quad (11),$</p>
-<p><a name="12"></a>$\mathbf{x}_{k|k} = \mathbf{x}_{k|k-1} + \mathbf{K}_{k} \mathbf{y}_{k} \quad (12),$</p>
-<h2 id="Where:">Where:<a class="anchor-link" href="#Where:">&#182;</a></h2><p>$\mathbf{F}_{k} = \left . \frac{\partial f}{\partial \mathbf{x} } \right \vert _{\mathbf{x}_{k-1|k-1}, \mathbf{u}_{k}}, \quad$ 
-$\mathbf{B}_{k} = \left . \frac{\partial f}{\partial \mathbf{v} } \right \vert _{\mathbf{x}_{k-1|k-1}, \mathbf{u}_{k}}, \quad$
-$\mathbf{H}_{k} = \left . \frac{\partial h}{\partial \mathbf{x} } \right \vert _{\mathbf{x}_{k|k-1}}, \quad$
-$\mathbf{Q}_{k} \ge 0$ is the process noise covariance
-$, \quad \mathbf{R}_{k} \ge 0$ is the measurement noise covariance</p>
-
-</div>
-</div>
-<div class="jp-Cell-inputWrapper"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h1 id="The-$H_{\infty}$-filter-algorithm">The $H_{\infty}$ filter algorithm<a class="anchor-link" href="#The-$H_{\infty}$-filter-algorithm">&#182;</a></h1><p>The $H_{\infty}$ filter algorithm is given in <a href="#banavar"><strong>[Banavar1992]</strong></a> this algorithm can be written as follows:</p>
-<h2 id="Prediction-step">Prediction step<a class="anchor-link" href="#Prediction-step">&#182;</a></h2><p><a name="13"></a>$\mathbf{x}_{k|k-1} = f(\mathbf{x}_{k-1|k-1}, \mathbf{u}_k, 0) \quad (13),$</p>
-<p><a name="14"></a>$\mathbf{P}_{k|k-1} =  \mathbf{F}_{k} \mathbf{P}_{k-1|k-1} \mathbf{F}_{k}^{\top} + \mathbf{B}_{k} \mathbf{Q}_{k} \mathbf{B}_{k}^{\top} \quad (14),$</p>
-<p><a name="15"></a>$\mathbf{y}_{k} = \mathbf{z}_{k} - h(\mathbf{x}_{k|k-1}) \quad (15),$</p>
-<h2 id="Correction-step">Correction step<a class="anchor-link" href="#Correction-step">&#182;</a></h2><p><a name="16"></a>$\mathbf{\tilde{S}}_{k} =  \mathbf{L}_{b}^{\top} \mathbf{\bar{S}}_{k} \mathbf{L}_{k} \quad (16),$</p>
-<p><a name="17"></a>$\mathbf{P}_{k|k} = \left( \mathbf{P}_{k|k-1}^{-1} - \theta \cdot \mathbf{\tilde{S}}_{k} + \mathbf{H}_{k}^{\top} \mathbf{R}_{k}^{-1} \mathbf{H}_{k} \right)^{-1} \quad (17),$</p>
-<p><a name="18"></a>$\mathbf{K}_{k} = \mathbf{P}_{k|k} \mathbf{H}_{k}^{\top} \mathbf{R}_{k}^{-1} \quad (18),$</p>
-<p><a name="19"></a>$\mathbf{x}_{k|k} = \mathbf{x}_{k|k-1} + \mathbf{K}_{k} \mathbf{y}_{k} \quad (19),$</p>
-<h2 id="Where:">Where:<a class="anchor-link" href="#Where:">&#182;</a></h2><p>$\mathbf{\bar{S}}_{k} \gt 0$ is user defined matrix, 
-$\mathbf{L}_{k}$ is full rank user defined state weigthing matrix,
-$\theta$is user defined performance bounary value.</p>
-<h1 id="Filtering-algorithms-comparizon">Filtering algorithms comparizon<a class="anchor-link" href="#Filtering-algorithms-comparizon">&#182;</a></h1><p>If we compare equations <a href="#10">(10)</a> and <a href="#17">(17)</a> then we cen see that the least equation can be computed in two steps:</p>
-<p><a name="20"></a>$\mathbf{P}_{b} = \left( \mathbf{P}_{b-1}^{-1} - \theta \cdot \mathbf{\tilde{S}}_{b} \right)^{-1} = \mathbf{P}_{b-1} + \Delta{\mathbf{Q}_{b}} \quad (20),$</p>
-<p><a name="21"></a>$\mathbf{P}_{d} = \left( \mathbf{P}_{d-1}^{-1} + \mathbf{H}_{d}^{\top} \mathbf{R}_{d}^{-1} \mathbf{H}_{d} \right)^{-1} \quad (21),$</p>
-<p>The order of these steps may vary, but the result should be ste same.</p>
-<p>The step <a href="#21">(21)</a> is exactly the same as <a href="#10">(10)</a> which is used in the Kalman filter state covariance update.</p>
-<p>The step <a href="#20">(20)</a> can be viewed as an additional process noise. Note that $\Delta \mathbf{Q}_{b}$ must be positive defnite for the existence of the filter.</p>
-
-</div>
-</div>
-<div class="jp-Cell-inputWrapper"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h1 id="Adaptive-correction-derivation">Adaptive correction derivation<a class="anchor-link" href="#Adaptive-correction-derivation">&#182;</a></h1><h2 id="Divergence-criterion">Divergence criterion<a class="anchor-link" href="#Divergence-criterion">&#182;</a></h2><p>Kalman filter divergence is detected when the folowing criterion is met:</p>
-<p><a name="22"></a> $\mathbf{y}_{b}^{\top} \mathbf{S}_{b}^{-1} \mathbf{y}_{b} \gt {\beta}_{n} \quad (22),$</p>
-<p>where ${\beta}_{n}$ is threshold ${\chi}_{\alpha,n}^{2}$ value.</p>
-<h2 id="Correction:-Initial-derivation">Correction: Initial derivation<a class="anchor-link" href="#Correction:-Initial-derivation">&#182;</a></h2><p>After adaptive correction step case we get:</p>
-<p><a name="23"></a> $\mathbf{y}_{b}^{\top} \mathbf{S}_{corr}^{-1} \mathbf{y}_{b} = {\beta}_{n} \quad (23),$</p>
-<p>By multimlication of the equation <a href="#23">(23)</a> by $\mathbf{y}_{b}$ on the left and by $\mathbf{y}_{b} ^ {\top}$ on the rigth sides we get:</p>
-<p><a name="24"></a> $\mathbf{y}_{b} \mathbf{y}_{b}^{\top} \mathbf{S}_{corr}^{-1} \mathbf{y}_{b} \mathbf{y}_{b}^{\top} = {\beta}_{n} \cdot \mathbf{y}_{b} \mathbf{y}_{b}^{\top} \quad (24),$</p>
-<p>By compating left and igth sides of the equation <a href="#24">(24)</a> we get:</p>
-<p>$\mathbf{y}_{b} {y}_{b}^{\top} \mathbf{S}_{corr}^{-1} = {\beta}_{n} \cdot \mathbf{I} ,$</p>
-<p>or</p>
-<p>$\mathbf{y}_{b} \mathbf{y}_{b}^{\top} = {\beta}_{n} \cdot \mathbf{S}_{corr} ,$</p>
-<p>or</p>
-<p><a name="25"></a> $\mathbf{S}_{corr} = \cfrac {\mathbf{y}_{b} \mathbf{y}_{b}^{\top}} {{\beta}_{n}} \quad (25),$</p>
-
-</div>
-</div>
-<div class="jp-Cell-inputWrapper"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h2 id="Correction:-No-limits-approach">Correction: No limits approach<a class="anchor-link" href="#Correction:-No-limits-approach">&#182;</a></h2><p>By substitution of <a href="#20">(20)</a> rigth side to <a href="#16">(16)</a> we get:</p>
-<p><a name="26"></a> $\mathbf{S}_{corr} = {S}_{b} + \mathbf{H}_{b} {\Delta \mathbf{Q}_{b}} \mathbf{H}_{b}^{\top} \quad (26),$</p>
-<p>and so substitution <a href="#26">(26)</a> to <a href="#25">(25)</a> gives us:</p>
-<p><a name="27"></a> ${S}_{b} + \mathbf{H}_{b} {\Delta \mathbf{Q}_{b}} \mathbf{H}_{b}^{\top} = \cfrac {\mathbf{y}_{b} \mathbf{y}_{b}^{\top}} {{\beta}_{n}} \quad (27),$</p>
-<p>or</p>
-<p><a name="28"></a> ${A}_{b} = \mathbf{H}_{b} {\Delta \mathbf{Q}_{b}} \mathbf{H}_{b}^{\top} = \cfrac {\mathbf{y}_{b} \mathbf{y}_{b}^{\top}} {{\beta}_{n}} - {S}_{b} \quad (28),$</p>
-<p>on the other hand <a href="#20">(20)</a> gives us:</p>
-<p>$\mathbf{P}_{b} = \left( \mathbf{P}_{b-1}^{-1} - \theta \cdot \mathbf{\tilde{S}}_{b} \right)^{-1} = \mathbf{P}_{b-1} + \Delta \mathbf{Q}_{b}$</p>
-<p>or</p>
-<p>$\mathbf{P}_{b} = \left( \mathbf{P}_{b-1}^{-1} - \theta \cdot \mathbf{L}_{b}^{\top} \mathbf{\bar{S}}_{b} \mathbf{L}_{b} \right)^{-1} = \left( \mathbf{P}_{b-1}^{-1} - \mathbf{L}_{b}^{\top} \mathbf{M}_{b}^{-1} \mathbf{L}_{b} \right)^{-1} \quad ,$ 
-where $\mathbf{M}_{b}^{-1} =  \theta \cdot \mathbf{\bar{S}}_{b}$</p>
-<p>or</p>
-<p>$\mathbf{P}_{b} = \mathbf{P}_{b-1} + \mathbf{P}_{b-1}  \mathbf{L}_{b}^{\top} \left( \mathbf{M}_{b} - \mathbf{L}_{b} \mathbf{P}_{b-1} \mathbf{L}_{b}^{\top} \right)^{-1} \mathbf{L}_{b} \mathbf{P}_{b-1}$</p>
-<p>which means that:</p>
-<p><a name="29"></a> ${\Delta \mathbf{Q}_{b}} = \mathbf{P}_{b-1} \mathbf{L}_{b}^{\top} \left( \mathbf{M}_{b} - \mathbf{L}_{b} \mathbf{P}_{b-1} \mathbf{L}_{b}^{\top} \right)^{-1} \mathbf{L}_{b} \mathbf{P}_{b-1} \quad (29),$</p>
-<p>from <a href="#28">(28)</a> we get:</p>
-<p>$\mathbf{A}_{b} = \mathbf{H}_{b} {\Delta \mathbf{Q}_{b}} \mathbf{H}_{b}^{\top} = \mathbf{H}_{b} \mathbf{P}_{b-1} \mathbf{L}_{b}^{\top} \left( \mathbf{M}_{b} - \mathbf{L}_{b} \mathbf{P}_{b-1} \mathbf{L}_{b}^{\top} \right)^{-1} \mathbf{L}_{b} \mathbf{P}_{b-1} \mathbf{H}_{b}^{\top} = \mathbf{C}_{b} \left( \mathbf{M}_{b} - \mathbf{L}_{b} \mathbf{P}_{b-1} \mathbf{L}_{b}^{\top} \right)^{-1} \mathbf{C}_{b}^{\top}$</p>
-<p>or</p>
-<p>$\mathbf{A}_{b} = \mathbf{C}_{b} \left( \mathbf{M}_{b} - \mathbf{L}_{b} \mathbf{P}_{b-1} \mathbf{L}_{b}^{\top} \right)^{-1} \mathbf{C}_{b}^{\top}$</p>
-<p>or</p>
-<p>$\mathbf{C}_{b}^{+} \mathbf{A}_{b} = \left( \mathbf{M}_{b} - \mathbf{L}_{b} \mathbf{P}_{b-1} \mathbf{L}_{b}^{\top} \right)^{-1} \mathbf{C}_{b}^{\top}$</p>
-<p>or</p>
-<p>$\left( \mathbf{M}_{b} - \mathbf{L}_{b} \mathbf{P}_{b-1} \mathbf{L}_{b}^{\top} \right) \mathbf{C}_{b}^{+} = \mathbf{C}_{b}^{\top} \mathbf{A}_{b}^{-1}$</p>
-<p>or</p>
-<p>$\mathbf{M}_{b} - \mathbf{L}_{b} \mathbf{P}_{b-1} \mathbf{L}_{b}^{\top} = \mathbf{C}_{b}^{\top} \mathbf{A}_{b}^{-1} \mathbf{C}_{b}$</p>
-<p>or</p>
-<p><a name="30"></a> $\mathbf{M}_{b} = \mathbf{C}_{b}^{\top} \mathbf{A}_{b}^{-1} \mathbf{C}_{b} + \mathbf{L}_{b} \mathbf{P}_{b-1} \mathbf{L}_{b}^{\top} \quad (30),$</p>
+<h1 id="Using-EKF-tweaks-with-Sigma-Point-Kalman-Filters">Using EKF tweaks with Sigma Point Kalman Filters<a class="anchor-link" href="#Using-EKF-tweaks-with-Sigma-Point-Kalman-Filters">&#182;</a></h1><p>In Sigma Point Kalman Filters (SPKF, see <a href="#merwe"><strong>[Merwe2004]</strong></a>) Weighted Statistical Linear Regression technique is used to approximate nonlinear process and measurement functions:</p>
+<p>$\mathbf{y} = g(\mathbf{x}) = \mathbf{A} \mathbf{x} + \mathbf{b} + \mathbf{e}$,</p>
+<p>$\mathbf{P}_{ee} = \mathbf{P}_{yy} - \mathbf{A} \mathbf{P}_{xx} \mathbf{A}^{\top}$</p>
 <p>where:</p>
-<p><a name="31"></a> $\mathbf{C}_{b} = \mathbf{L}_{b} \mathbf{P}_{b-1} \mathbf{H}_{b}^{\top} \quad (31),$</p>
-<p>so for $\Delta \mathbf{Q}_{b}$ we have:</p>
-<p>${\Delta \mathbf{Q}_{b}} = \mathbf{P}_{b-1}  \mathbf{L}_{b}^{\top} \left( \mathbf{C}_{b}^{\top} \mathbf{A}_{b}^{-1} \mathbf{C}_{b} + \mathbf{L}_{b} \mathbf{P}_{b-1} \mathbf{L}_{b}^{\top} - \mathbf{L}_{b} \mathbf{P}_{b-1} \mathbf{L}_{b}^{\top} \right)^{-1} \mathbf{L}_{b} \mathbf{P}_{b-1}  = \mathbf{P}_{b-1}  \mathbf{L}_{b}^{\top} \left( \mathbf{C}_{b}^{\top} \mathbf{A}_{b}^{-1} \mathbf{C}_{b} \right)^{-1} \mathbf{L}_{b} \mathbf{P}_{b-1}$</p>
-<p>or</p>
-<p><a name="32"></a> ${\Delta \mathbf{Q}_{b}} = \mathbf{P}_{b-1} \mathbf{L}_{b}^{\top} \mathbf{C}_{b}^{+} \mathbf{A}_{b} \mathbf{C}_{b}^{+ \top} \mathbf{L}_{b} \mathbf{P}_{b-1}  \quad (32),$</p>
-<p>The Kalman filter with $H_\infty$ correction <a href="#32">(32)</a> exists when:</p>
-<p>${\Delta \mathbf{Q}_{b}} = \mathbf{P}_{b-1} \mathbf{L}_{b}^{\top} \mathbf{C}_{b}^{+} \mathbf{A}_{b} \mathbf{C}_{b}^{+ \top} \mathbf{L}_{b} \mathbf{P}_{b-1}  \gt 0 ,$</p>
-<p>According to <a href="#horn_et_al"><strong>[Horn et al]</strong></a> the above citeria is met when:</p>
-<ul>
-<li>Maxtix $\mathbf{Z}_{b} = \mathbf{P}_{b-1} \mathbf{L}_{b}^{\top} \mathbf{C}_{b}^{+}$ has full rank and</li>
-<li>$\mathbf{A}_{b} \gt 0$</li>
-</ul>
-<p>Let us consider $\mathbf{Z}_{b} = \mathbf{P}_{b-1} \mathbf{L}_{b}^{\top} \mathbf{C}_{b}^{+}$ :</p>
-<ul>
-<li><p>as $\mathbf{P}_{b-1} \gt 0$ and $\mathbf{L}_{b}$ has full rank then $\mathbf{P}_{b-1} \mathbf{L}_{b}$ also has full rank;</p>
-</li>
-<li><p>as both $\mathbf{H}_{b}$ and $\mathbf{L}_{b}$ have full rank, аnd $\mathbf{P}_{b-1} \gt 0$, then $\mathbf{C}_{b-1}$ also has full rank, consequently: the product $\mathbf{C}_{b}^{\top} \mathbf{C}_{b} \gt 0$ (see <a href="#horn_et_al"><strong>[Horn et al]</strong></a>), and so, $\mathbf{C}_{b}^{+} = \left( \mathbf{C}_{b}^{\top} \mathbf{C}_{b} \right)^{-1} \mathbf{C}_{b}^{\top}$ also have full rank;</p>
-</li>
-<li><p>as both product $\mathbf{P}_{b-1} \mathbf{L}_{b}$ and the matrix $\mathbf{C}_{b}^{+}$ have full rank, then $\mathbf{Z}_{b}$ also has full rank.</p>
-</li>
-</ul>
-<p>Let us consider the matrix $\mathbf{A}_{b}$ :</p>
-<ul>
-<li><p>$\mathbf{S}_{b} \ge \mathbf{H}_{b} {\Delta \mathbf{P}_{b-1}} \mathbf{H}_{b}^{\top} \gt 0$</p>
-</li>
-<li><p>now we must consider the product $\mathbf{x}^{\top} \left( \mathbf{y}_{b} \mathbf{y}_{b}^{\top} \right) \mathbf{x}$ for $\mathbf{x} \ne 0$:</p>
-<ul>
-<li><p>if the dimensionality of x is greater than one, then $\mathbf{x}^{\top} \left( \mathbf{y}_{b} \mathbf{y}_{b}^{\top} \right) \mathbf{x} = \left( \mathbf{x}^{\top} \mathbf{y}_{b} \right) \left( \mathbf{y}_{b}^{\top} \mathbf{x} \right) \ge 0$, consequently, regarding to positive definiteness of S b , we can not guarante the existense of the filter;</p>
-</li>
-<li><p>if the dimensionality of x is one (when we implement sequential filter), then $\mathbf{x}^{\top} \left( \mathbf{y}_{b} \mathbf{y}_{b}^{\top} \right) \mathbf{x} = {y}_{b}^{2} {x}^(2) \gt 0$ ,</p>
-<ul>
-<li><p>in such case the equation <a href="#28">(28)</a> reduces to ${a}_{b} = \cfrac{{y}_{b}^{2}}{{\beta}_{n}} - {s}_{b}$</p>
-</li>
-<li><p>the criterion <a href="#22">(22)</a> is met when $\cfrac{{y}_{b}^{2}}{{\beta}_{1}} \gt {s}_{b}$ or $\cfrac{{y}_{b}^{2}}{{\beta}_{n}} - {s}_{b} \gt 0$</p>
-</li>
-<li><p>so when thecriterion <a href="#22">(22)</a> is met we have $\mathbf{A}_{b} = {a}_{b} \gt 0$,</p>
-</li>
-</ul>
-<p>thus trere is at least one sequential filter implementation.</p>
-</li>
-</ul>
-</li>
-</ul>
-<p>So we can select  $\mathbf{L}_{b}$, $\mathbf{\bar{S}}_{b}$, $\theta$ parameters of $H_{\infty}$ filter so that we can use operation <a href="#20">(20)</a> to correct the Kalman filter divergence. Our selection is reduced to definition of $\mathbf{L}_{b}$ and ${y}_{b}$ to be used in certain filtering algorithm.</p>
+<p>$\mathbf{e}$ is an approximation error,</p>
+<p>$\mathbf{A} = \mathbf{P}_{xy}^{\top} \mathbf{P}_{xx}^{-1}$,</p>
+<p>$\mathbf{b} = \mathbf{\bar{y}} - \mathbf{A} \mathbf{\bar{x}}$,</p>
+<p>$\mathbf{P}_{xx} = \displaystyle\sum_{i} {w}_{ci} \left( \mathbf{\chi}_{i} - \mathbf{\bar{x}} \right) \left( \mathbf{\chi}_{i} - \mathbf{\bar{x}} \right)$,</p>
+<p>$\mathbf{P}_{yy} = \displaystyle\sum_{i} {w}_{ci} \left( \mathbf{\gamma}_{i} - \mathbf{\bar{y}} \right) \left( \mathbf{\gamma}_{i} - \mathbf{\bar{y}} \right)$,</p>
+<p>$\mathbf{P}_{xy} = \displaystyle\sum_{i} {w}_{ci} \left( \mathbf{\chi}_{i} - \mathbf{\bar{x}} \right) \left( \mathbf{\gamma}_{i} - \mathbf{\bar{y}} \right)$,</p>
+<p>$\mathbf{\gamma}_{i} = g(\mathbf{\chi}_{i})$</p>
+<p>$\mathbf{\bar{x}} = \displaystyle\sum_{i} {w}_{mi} \mathbf{\chi}_{i}$,</p>
+<p>$\mathbf{\bar{y}} = \displaystyle\sum_{i} {w}_{mi} \mathbf{\gamma}_{i}$,</p>
+<p>${w}_{ci}$ are covariation weghts, ${w}_{mi}$ are mean weights.</p>
+<p>This means that approximation errors of measurements may be treated as a part of additive noise and so we show that in SPKF we can use the following approximation of $\mathbf{S}_{k}$:</p>
+<p>$\mathbf{S}_{k} = \mathbf{H}_{k} \mathbf{P}_{k|k-1} \mathbf{H}_{k}^{\top} + \mathbf{\tilde{R}}_{k}$,</p>
+<p>where</p>
+<p>$\mathbf{H}_{k} = \mathbf{P}_{xz, k}^{\top} \mathbf{P}_{xx, k}^{-1}$,</p>
+<p>$\mathbf{\tilde{R}}_{k} = \mathbf{R}_{k} + \mathbf{P}_{ee, k}$,</p>
+<p>this enables us to use some EKF tricks such as adaptive correction or generalized linear models with SPKF.</p>
 
 </div>
 </div>
 <div class="jp-Cell-inputWrapper"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h2 id="Correction:-An-approach-with-limitations-on-$H_{\infty}$-filter-parameters">Correction: An approach with limitations on $H_{\infty}$ filter parameters<a class="anchor-link" href="#Correction:-An-approach-with-limitations-on-$H_{\infty}$-filter-parameters">&#182;</a></h2><p>I order to correct Kalman filter divergence we will use $H_{\infty}$ filter with th following parameters:</p>
-<p>$\mathbf{L}_{k} = \mathbf{I}$,</p>
-<p>$\mathbf{\bar{S}}_{k} = \cfrac{\alpha_{k}}{1 + \alpha_{k}}\mathbf{P}_{k-1}^{-1}$,</p>
-<p>$\theta = 1$.</p>
-<p>So the step <a href="#20">(20)</a> will reduce to:</p>
-<p>$\mathbf{P}_{b} = \left( \mathbf{P}_{b-1}^{-1} - \cfrac{\alpha_{b}}{1 + \alpha_{b}}\mathbf{P}_{b-1}^{-1} \right)^{-1} = \mathbf{P}_{b-1} + \alpha_{b} \mathbf{P}_{b-1}$,</p>
-<p>so</p>
-<p><a name="33"></a> ${\Delta \mathbf{Q}_{b}} = \alpha_{b} \mathbf{P}_{b-1} \quad (33)$</p>
-<p>Let's substitude the eq. <a href="#33">(33)</a> to the eq. <a href="#28">(28)</a>:</p>
-<p>$\alpha_{b} \mathbf{H}_{b} \mathbf{P}_{b-1} \mathbf{H}_{b}^{\top} = \cfrac {\mathbf{y}_{b} \mathbf{y}_{b}^{\top}} {{\beta}_{n}} - {S}_{b}$,</p>
-<p>or</p>
-<p>$\alpha_{b} \mathbf{D}_{b} = \cfrac {\mathbf{y}_{b} \mathbf{y}_{b}^{\top}} {{\beta}_{n}} - {S}_{b}$,</p>
-<p>or</p>
-<p>$\cfrac{1}{\alpha_{b}} \mathbf{D}_{b}^{-1} = \left( \cfrac {\mathbf{y}_{b} \mathbf{y}_{b}^{\top}} {{\beta}_{n}} - {S}_{b} \right)^{-1} = \left( - {S}_{b} + \mathbf{y}_{b} \cfrac{1}{\beta}_{n} \mathbf{y}_{b}^{\top} \right)^{-1}$,</p>
-<p>or</p>
-<p><a name="34">$\cfrac{1}{\alpha_{b}} \mathbf{D}_{b}^{-1} = - {S}_{b}^{-1} + {S}_{b}^{-1} \mathbf{y}_{b} \left( \mathbf{y}_{b}^{\top} \mathbf{S}_{b}^{-1} \mathbf{y}_{b} - {\beta}_{n} \right)^{-1} \mathbf{y}_{b}^{\top} {S}_{b}^{-1} \quad (34)$</a>,</p>
-<p>where:</p>
-<p>$\mathbf{D}_{b} = \mathbf{H}_{b} \mathbf{P}_{b-1} \mathbf{H}_{b}^{\top}$</p>
-<p>Let's multiply the eq. <a href="#34">(34)</a> with $\mathbf{y}_{b}^{\top}$ on the left and with $\mathbf{y}_{b}$ on the rigth:</p>
-<p>$\cfrac{1}{\alpha_{b}} \mathbf{y}_{b}^{\top} \mathbf{D}_{b}^{-1} \mathbf{y}_{b} = - \mathbf{y}_{b}^{\top} {S}_{b}^{-1} \mathbf{y}_{b} + \mathbf{y}_{b}^{\top} {S}_{b}^{-1} \mathbf{y}_{b} \left( \mathbf{y}_{b}^{\top} \mathbf{S}_{b}^{-1} \mathbf{y}_{b} - {\beta}_{n} \right)^{-1} \mathbf{y}_{b}^{\top} {S}_{b}^{-1} \mathbf{y}_{b} = \mathbf{y}_{b}^{\top} {S}_{b}^{-1} \mathbf{y}_{b} \left( \cfrac{\mathbf{y}_{b}^{\top} {S}_{b}^{-1} \mathbf{y}_{b}}{\mathbf{y}_{b}^{\top} {S}_{b}^{-1} \mathbf{y}_{b} - {\beta}_{n}}  - 1 \right) = {\beta}_{n} \cfrac{\mathbf{y}_{b}^{\top} {S}_{b}^{-1} \mathbf{y}_{b}}{\mathbf{y}_{b}^{\top} {S}_{b}^{-1} \mathbf{y}_{b} - {\beta}_{n}}$,</p>
-<p>or</p>
-<p>$\cfrac{\alpha_{b}}{\mathbf{y}_{b}^{\top} \mathbf{D}_{b}^{-1} \mathbf{y}_{b}} = \cfrac{1}{{\beta}_{n}} - \cfrac{1}{\mathbf{y}_{b}^{\top} {S}_{b}^{-1} \mathbf{y}_{b}}$</p>
-<p>or</p>
-<p><a name="35">$\alpha_{b} = \mathbf{y}_{b}^{\top} \mathbf{D}_{b}^{-1} \mathbf{y}_{b} \left( \cfrac{1}{{\beta}_{n}} - \cfrac{1}{\mathbf{y}_{b}^{\top} {S}_{b}^{-1} \mathbf{y}_{b}} \right) \quad (35)$</a></p>
-<p>The $H_{\infty}$ filter exists as long as $\alpha_{b} \ge 0$.</p>
-<ul>
-<li><p>Since $\mathbf{H}_{b}$ has full rank and $\mathbf{P}_{b-1} \gt 0$ the matrix $\mathbf{D}_{b}$ is positive definite and</p>
-<p>$\mathbf{y}_{b}^{\top} \mathbf{D}_{b}^{-1} \mathbf{y}_{b} \gt 0$.</p>
-</li>
-<li><p>According to the expression <a href="#22">(22)</a>:</p>
-<p>$\left( \cfrac{1}{{\beta}_{n}} - \cfrac{1}{\mathbf{y}_{b}^{\top} {S}_{b}^{-1} \mathbf{y}_{b}} \right) \gt 0$</p>
-</li>
-</ul>
-<p>So $\alpha_{b} \gt 0$ for all cases when the correction is necessary i.e. the existence of $H_{\infty}$ filter is proven.</p>
-
-</div>
-</div>
-<div class="jp-Cell-inputWrapper"><div class="jp-InputPrompt jp-InputArea-prompt">
-</div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput " data-mime-type="text/markdown">
-<h1 id="References">References<a class="anchor-link" href="#References">&#182;</a></h1><p><a name="banavar"></a><strong>[Banavar1992]</strong> R. Banavar, “A game theoretic approach to linear dynamic estimation”, Doctoral Dissertation, University of Texas at Austin, May 1992.</p>
-<p><a name="horn_et_al"></a><strong>[Horn et al]</strong> R.A. Horn, C.R Johnson, Charles R. “Matrix Analysis (2nd ed.).”, Cambridge University Press, 2013, ISBN 978-0-521-38632-6.</p>
+<h1 id="References">References<a class="anchor-link" href="#References">&#182;</a></h1><p><a name="merwe"></a><strong>[Merwe2004]</strong> R. van der Merwe, "Sigma-Point Kalman Filters for ProbabilisticInference in Dynamic State-Space Models",  PhD Thesis, OGI School of Science &amp; Engineering, Oregon Health &amp; Science University, USA</p>
 
 </div>
 </div>
