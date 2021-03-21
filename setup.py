@@ -5,12 +5,15 @@ from setuptools import Extension, setup
 from Cython.Build import cythonize #must be after setuptools
 
 #------------------------------------------------------------------------------
+EXT_NAME = 'yaflpy'
+
 setup_dir = dirname(__file__)
 src_dir   = join(setup_dir, 'src')
+ext_dir   = join(src_dir, EXT_NAME)
 
 extensions = [
-    Extension('yaflpy', [join(src_dir, 'yaflpy.pyx')],
-        include_dirs=[numpy.get_include(), src_dir, join(src_dir, 'configpy')],
+    Extension(EXT_NAME, [join(ext_dir, EXT_NAME + '.pyx')],
+        include_dirs=[numpy.get_include(), src_dir, ext_dir],
         define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")])
     ]
 

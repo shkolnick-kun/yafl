@@ -26,7 +26,7 @@
 			<Add option="-g" />
 			<Add directory="../src" />
 			<Add directory="../../src" />
-			<Add directory="../../src/configpy" />
+			<Add directory="../../src/yaflpy" />
 		</Compiler>
 		<Linker>
 			<Add library="/usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5.a" />
@@ -37,7 +37,6 @@
 			<Add library="m" />
 			<Add directory="/home/anon/Documents/Projects/hdf5_test/" />
 		</Linker>
-		<Unit filename="../../src/configpy/yafl_config.h" />
 		<Unit filename="../../src/yafl.c">
 			<Option compilerVar="CC" />
 		</Unit>
@@ -46,6 +45,7 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="../../src/yafl_math.h" />
+		<Unit filename="../../src/yaflpy/yafl_config.h" />
 		<Unit filename="../src/hdf5utils.c">
 			<Option compilerVar="CC" />
 		</Unit>

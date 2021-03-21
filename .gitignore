@@ -1,6 +1,6 @@
 # Setup tools outputs #
 #######################
-src/yaflpy.c
+src/yaflpy/yaflpy.c
 *.egg-*
 
 # Compiled Object files #

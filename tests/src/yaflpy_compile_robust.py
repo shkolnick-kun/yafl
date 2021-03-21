@@ -22,7 +22,7 @@ import scipy.stats
 import sys
 import time
 
-sys.path.insert(0,'../../src')
+sys.path.insert(0,'../../src/yaflpy')
 
 pyximport.install(
     build_dir='../projects/obj',
@@ -30,9 +30,9 @@ pyximport.install(
     reload_support=True,
     language_level=3,
     setup_args={
-        'include_dirs': [np.get_include(), '../../src', '../../src/configpy'],
+        'include_dirs': [np.get_include(), '../../src', '../../src/yaflpy'],
         }
-    )
+    ))
 
 import yaflpy
 
