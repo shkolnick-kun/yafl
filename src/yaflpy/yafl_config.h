@@ -27,12 +27,16 @@
 typedef double  yaflFloat;
 typedef int32_t yaflInt;
 
-/*TODO: уточнить*/
 #define YAFL_EPS  (1.0e-15)
 
 #define YAFL_SQRT sqrt
 #define YAFL_ABS  abs
-#define YAFL_UNLIKELY(x) __builtin_expect((x), 0)
+
+#ifdef __GNUC__
+#   define YAFL_UNLIKELY(x) __builtin_expect((x), 0)
+#else
+#   define YAFL_UNLIKELY(x) (x)
+#endif
 
 /* WARNING!!!
 Fast UKF SSR updates may give dramatically incorrect results in case of adaptive Bierman filter

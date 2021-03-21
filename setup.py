@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 import numpy
 import os
-from os.path import dirname, join, splitext
+from os.path import dirname, isfile, join, splitext
+import sys
 from setuptools import Extension, setup
 
 try:
@@ -36,7 +37,10 @@ extensions = [
         define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")])
     ]
 
-CYTHONIZE = bool(int(os.getenv("CYTHONIZE", 0))) and cythonize is not None
+if not isfile(join(EXT_DIR, EXT_NAME + ".c")):
+    CYTHONIZE = cythonize is not None
+else:
+    CYTHONIZE = bool(int(os.getenv("CYTHONIZE", 0))) and cythonize is not None
 
 if CYTHONIZE:
     compiler_directives = {"language_level": 3, "embedsignature": True}
