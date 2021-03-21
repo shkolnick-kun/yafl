@@ -1,0 +1,5 @@
+Cython >= 0.29.21
+numpy >= 1.17
+scipy >= 1.5
+setuptools >= 51.0.0
+wheel >= 0.36.2

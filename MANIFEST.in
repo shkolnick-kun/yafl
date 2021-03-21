@@ -1,1 +1,2 @@
-include src/* src/yaflpy/* LICENSE Readme.md
+include src/* src/yaflpy/* requirements.txt requirements-dev.txt
+include LICENSE Readme.md
