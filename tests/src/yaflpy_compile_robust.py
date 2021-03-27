@@ -22,7 +22,6 @@ import scipy.stats
 import sys
 import time
 
-
 sys.path.insert(0,'../../src/yaflpy')
 
 pyximport.install(
