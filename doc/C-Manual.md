@@ -74,7 +74,7 @@ Now you should:
 #define NX 4 /* State vector dimension       */
 #define NZ 2 /* Observation vectio dimention */
 
-/* This is our first state transition function */
+/* This is our state transition function */
 yaflStatusEn fx(yaflKalmanBaseSt * self, yaflFloat * x, yaflFloat * xz)
 {
     (void)xz;
@@ -88,7 +88,7 @@ yaflStatusEn fx(yaflKalmanBaseSt * self, yaflFloat * x, yaflFloat * xz)
     return YAFL_ST_OK;
 }
 
-/* This is fx Jacobian function */
+/* This is state transition Jacobian function */
 yaflStatusEn jfx(yaflKalmanBaseSt * self, yaflFloat * w, yaflFloat * x)
 {
     yaflInt i;
@@ -251,3 +251,44 @@ zrf    - measurement Residual function pointer (needed to calculate the distance
 memory - the name of the memeory structure.
 */
 ```
+
+So we've just declared the **EKF** memory structure, initiated it, we also declared and initiated **EKF** control block.
+Now we may want to filter some measurements:
+
+```C
+extern yaflStatusEn get_some_measurement(yaflFloat * measurement_vector);
+
+yaflFloat zp[NZ]; /*Memory for measurement vectors*/
+
+yaflStatusEn status;
+
+while (some_condition)
+{
+    /* This is Joseph filter predict step */
+    status = YAFL_EKF_JOSEPH_PREDICT(&kf);
+    if (YAFL_ST_OK != status)
+    {
+        /*Handle errors here*/
+        (void)status;
+    }
+
+    /*Now get one measurement vector*/
+    status = get_some_measurement(&zp[0]);
+    if (YAFL_ST_OK != status)
+    {
+        /*Handle errors here*/
+        (void)status;
+    }
+
+    /*OK! We have a correct measurement at this point. Let's handle it...*/
+    status = yafl_ekf_joseph_update(&kf, &zp[0]);
+    if (YAFL_ST_OK != status)
+    {
+        /*Handle errors here*/
+        (void)status;
+    }
+}
+```
+Yeah! Thats it! We've jut used Joseph filter to filter our measurements.
+
+## OK! What else do we have in [yafl.h](./src/yafl.h)?
