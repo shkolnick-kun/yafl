@@ -193,7 +193,7 @@ yaflStatusEn jhx(yaflKalmanBaseSt * self, yaflFloat * h, yaflFloat * x)
 /*This is our filter memory structure*/
 typedef struct
 {
-    YAFL_EKF_BASE_MEMORY_MIXIN(NX, NZ); /*T his mixin is actuallly used to declare EKF data storage*/
+    YAFL_EKF_BASE_MEMORY_MIXIN(NX, NZ); /*This mixin is actually used to declare EKF data storage*/
     yaflFloat dummy[30]; /*We may need some additional memory...*/
 } kfMemorySt;
 
