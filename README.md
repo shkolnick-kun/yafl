@@ -17,17 +17,19 @@ where:
 * **EKF** means Extended Kalman Filter
 * **UKF** means Unscented Kalman Filter
 * **Basic** means basic algorithm
-* **Adaptive** means a **Kalman filter** with **adaptive divergence correction**. We use H-infinity filter to correct the divergence
+* **Adaptive** means a **Kalman filter** with [**adaptive divergence correction**](./doc/AdaptiveCorrection.pdf). We use H-infinity filter to correct the divergence
 * **Robust**   means **Robustified Kalman filter**, see [**West1981**](#west_1981)
 
 For all **EKF** variants we have **Bierman** and **Joseph** updates.
 For sequential UD-factorized **UKF** only **Bierman** updates are available.
 
+And yes, we [can](./doc/UsingEKFTricksWithSPKF.pdf) use **EKF** trick with **UKF**!
+
 The library is written in C and is intended for embedded systems usage:
 * We use static memory allocation
 * We use cache-friendly algorithms when available.
 * Regularization techniques used if necessary. The code is numerically stable.
-* Depends only on C standart library.
+* Depends only on C standard library.
 
 To use the libabry you need to:
 * go to [Releases](https://github.com/shkolnick-kun/yafl/releases),
@@ -91,7 +93,7 @@ Fast UKF SSR updates may give dramatically incorrect results in case of adaptive
 
 ```
 * read the [C-Manual](./doc/C-Manual.md) for usage details,
-* use the library in you project.
+* acctually use the library in you project.
 
 
 ## Using with Python
@@ -107,7 +109,7 @@ To use the extension you need to:
 pip install path_to/yaflpy-\<latest version\>.tar.gz
 ```
 * read the [Python-Manual](./doc/Python-Manual.md) for usage details.
-* use the extension.
+* actually use the extension.
 
 ## References
 <a name="west_1981"> **\[West1981\]** M. West, "Robust Sequential Approximate Bayesian Estimation", J. R. Statist. Soc. B (1981), 43, No. 2, pp. 157-166 </a>
