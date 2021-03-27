@@ -23,7 +23,7 @@ where:
 For all **EKF** variants we have **Bierman** and **Joseph** updates.
 For sequential UD-factorized **UKF** only **Bierman** updates are available.
 
-And yes, we [can](./doc/UsingEKFTricksWithSPKF.pdf) use **EKF** trick with **UKF**!
+And yes, we [**can actuyally**](./doc/UsingEKFTricksWithSPKF.pdf) use **EKF** tricks with **UKF**!
 
 The library is written in C and is intended for embedded systems usage:
 * We use static memory allocation
@@ -31,9 +31,9 @@ The library is written in C and is intended for embedded systems usage:
 * Regularization techniques used if necessary. The code is numerically stable.
 * Depends only on C standard library.
 
-To use the libabry you need to:
-* go to [Releases](https://github.com/shkolnick-kun/yafl/releases),
-* download and unpack the latest releae source code archive,
+To use the library you need to:
+* go to our [Releases page](https://github.com/shkolnick-kun/yafl/releases),
+* download and unpack the latest release source code archive,
 * add the folowing files to you C/C++ project:
   * [src/yafl_math.c](./src/yafl_math.c)
   * [src/yafl_math.h](./src/yafl_math.h)
@@ -93,7 +93,7 @@ Fast UKF SSR updates may give dramatically incorrect results in case of adaptive
 
 ```
 * read the [C-Manual](./doc/C-Manual.md) for usage details,
-* acctually use the library in you project.
+* write some usefull code which use our library in you project.
 
 
 ## Using with Python
@@ -109,7 +109,11 @@ To use the extension you need to:
 pip install path_to/yaflpy-\<latest version\>.tar.gz
 ```
 * read the [Python-Manual](./doc/Python-Manual.md) for usage details.
-* actually use the extension.
+* import the extension:
+```Python
+import yaflpy
+```
+* write some code which use the extension.
 
 ## References
 <a name="west_1981"> **\[West1981\]** M. West, "Robust Sequential Approximate Bayesian Estimation", J. R. Statist. Soc. B (1981), 43, No. 2, pp. 157-166 </a>
