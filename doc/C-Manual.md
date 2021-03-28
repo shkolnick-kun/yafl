@@ -259,7 +259,7 @@ Now we may want to filter some measurements:
 extern volatile int some_condition;
 extern yaflStatusEn get_some_measurement(yaflFloat * measurement_vector);
 
-yaflFloat zp[NZ]; /*Memory for measurement vectors*/
+yaflFloat z[NZ]; /*Memory for measurement vectors*/
 
 yaflStatusEn status;
 
@@ -274,7 +274,7 @@ while (some_condition)
     }
 
     /*Now get one measurement vector*/
-    status = get_some_measurement(&zp[0]);
+    status = get_some_measurement(&z[0]);
     if (YAFL_ST_OK != status)
     {
         /*Handle errors here*/
@@ -282,7 +282,7 @@ while (some_condition)
     }
 
     /*OK! We have a correct measurement at this point. Let's process it...*/
-    status = yafl_ekf_bierman_update(&kf, &zp[0]);
+    status = yafl_ekf_bierman_update(&kf, &z[0]);
     if (YAFL_ST_OK != status)
     {
         /*Handle errors here*/
@@ -516,7 +516,7 @@ In **EKF** case `result == b == self.y` so you actually do `self.y = self.zrf(me
 In **UKF** case `result == self.y`, `a == self.zp` and `b` is some of measurement sigma points respectively.
 
 #### Memory
-Memory pools are dclared using mixins:
+Memory pools are declared using mixins:
 ```C
 typedef struct {
     YAFL_EKF_BASE_MEMORY_MIXIN(NX, NZ); /* This is for EKF storage. */
@@ -525,7 +525,7 @@ typedef struct {
 ```
 The most convenient way to initiate a filter memory is:
 ```C
-kfMemorySt kf_memory =
+someMemorySt memory =
 {
     /*Initial state vector*/
     .x = {
@@ -571,7 +571,35 @@ kfMemorySt kf_memory =
 };
 ```
 
-#### Basic EKF
-For basic sequential UD-factorized EKF we have yaflEKFBaseSt
+#### Basic EKF variants
+Basic **EKF** control block can be initialized with:
+```C
+yaflEKFBaseSt kf = YAFL_EKF_BASE_INITIALIZER(fx, jfx, hx, jhx, zrf, nx, nx, memory);
+```
+
+Predict macros are:
+* `YAFL_EKF_BIERMAN_PREDICT(self)` for Bierman filter
+* `YAFL_EKF_JOSEPH_PREDICT(self)` for Joseph sequential UD-factorized filter
+These macros call `yaflStatusEn _yafl_ekf_predict_wrapper(yaflEKFBaseSt * self);` which is not supposed to be called directly by the user.
+
+Where `self` is a pointer to a filter.
+
+The example of filter predict call is:
+```C
+    status = YAFL_EKF_BIERMAN_PREDICT(&kf);
+```
+
+Update functions are:
+* `yaflStatusEn yafl_ekf_bierman_update(yaflEKFBaseSt * self, yaflFloat *z)` for Bierman filter
+* `yaflStatusEn yafl_ekf_joseph_update(yaflEKFBaseSt * self, yaflFloat *z)` for Joseph sequential UD-factorized filter
+
+Where:
+* `self` is a pointer to a filter,
+* `z`    is a pointer to a measurement vector.
+
+The example of filter predict call is:
+```C
+    status = yafl_ekf_bierman_update(&kf, &z[0]);
+```
 
 Work in progress...
