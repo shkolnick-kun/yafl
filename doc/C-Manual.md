@@ -248,6 +248,8 @@ jfx    - state transition Jacobian function pointer
 hx     - measurement function pointer
 jhx    - measurement Jacobian function pointer
 zrf    - measurement Residual function pointer (needed to calculate the distance between forecast and measurement vectors)
+nx     - the dimension of state vector
+nz     - the dimension of measurement vector
 memory - the name of a memory structure.
 */
 ```
@@ -529,7 +531,7 @@ typedef struct {
 ```
 Where:
 * `NX` - A state vector size.
-* `Nz` - A measurement vector size.
+* `NZ` - A measurement vector size.
 
 The most convenient way to initiate a filter memory is somthing like this:
 ```C
@@ -671,7 +673,8 @@ The noise model is Normal with Poisson outliers.
 See:
 
 A.V. Chernodarov, G.I. Djandjgava and A.P. Rogalev (1999).
-Monitoring and adaptive robust protection of the integrity of air data inertial satellite navigation systems for maneuverable aircraft.
+Monitoring and adaptive robust protection of the integrity of air data 
+inertial satellite navigation systems for maneuverable aircraft.
 
 In: Proceedings of the RTO SCI International Conference on Integrated Navigation Systems,
 
@@ -725,7 +728,7 @@ typedef struct {
     yaflEKFBaseSt base;
     yaflKalmanRobFuncP g;    /* g = -d(ln(pdf(y))) / dy */
     yaflKalmanRobFuncP gdot; /* gdot = G = d(g) / dy */
-} yaflEKFRobustSt
+} yaflEKFRobustSt;
 ```
 The memory mixin used is `YAFL_EKF_BASE_MEMORY_MIXIN`.
 
@@ -769,5 +772,49 @@ The example of filter predict call is:
     status = yafl_ekf_robust_bierman_update(&kf, &z[0]);
 ```
 
+#### Adaptive robust EKF variants
+These EKF variants use both generalized linear model and adaptive correction.
+
+The filter control block type is:
+```C
+typedef struct {
+    yaflEKFRobustSt base;
+    yaflFloat chi2;
+} yaflEKFAdaptiveRobustSt;
+```
+The memory mixin used is `YAFL_EKF_BASE_MEMORY_MIXIN`.
+
+The initilizer macro is:
+```C
+YAFL_EKF_ADAPTIVE_ROBUST_INITIALIZER(fx, jfx, hx, jhx, zrf, g, gdot,  nx, nz, memory)
+```
+
+As you can see it takes the same parameter list as `YAFL_EKF_ROBUST_INITIALIZER`. the `chi2` field is set to `scipy.stats.chi2.ppf(0.997, 1)`
+
+Predict macros are:
+* `YAFL_EKF_ADAPTIVE_ROBUST_BIERAMN_PREDICT(self)` for Bierman filter
+* `YAFL_EKF_ADAPTIVE_ROBUST_JOSEPH_PREDICT(self)` for Joseph sequential UD-factorized filter
+
+Where `self` is a pointer to a filter.
+
+These macros call `yaflStatusEn _yafl_ada_rob_predict_wrapper(yaflEKFAdaptiveRobustSt * self);` which is not supposed to be called directly by the user.
+
+The example of filter predict call is:
+```C
+    status = YAFL_EKF_ADAPTIVE_ROBUST_BIERAMN_PREDICT(&kf);
+```
+
+Update functions are:
+* `yaflStatusEn yafl_ekf_adaptive_robust_bierman_update(yaflEKFAdaptiveRobustSt * self, yaflFloat *z);` for Bierman filter
+* `yaflStatusEn yafl_ekf_adaptive_robust_joseph_update(yaflEKFAdaptiveRobustSt * self, yaflFloat *z);` for Joseph sequential UD-factorized filter
+
+Where:
+* `self` is a pointer to a filter,
+* `z`    is a pointer to a measurement vector.
+
+The example of filter predict call is:
+```C
+    status = yafl_ekf_adaptive_robust_bierman_update(&kf, &z[0]);
+```
 
 Work in progress...
