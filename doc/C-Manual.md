@@ -351,23 +351,174 @@ where:
 
 The filter control block does not store any data it has only pointers to data storage, so we must have som separate data storage called `memory`.
 
-Functions `fx`, `jfx`, `hx`, `jhx`, must have prototypes which must be similar to: `yaflStatusEn fn(yaflKalmanBaseSt * self, yaflFloat *a, yaflFloat *b)`.
-Th function `zrf` must have the prototype which must be similar to: `yaflStatusEn fn(yaflKalmanBaseSt * self, yaflFloat *result, yaflFloat *measurement, yaflFloat *forecast)` 
-it is utilized to compute the error vector as there are some cases when we can't use Euclid distance.
+Functions `fx`, `jfx`, `hx`, `jhx`, must have prototypes which must be similar to:
+
+`yaflStatusEn fn(yaflKalmanBaseSt * self, yaflFloat *a, yaflFloat *b)`.
+
+The function `zrf` must have the prototype which must be similar to:
+
+`yaflStatusEn fn(yaflKalmanBaseSt * self, yaflFloat *result, yaflFloat *measurement, yaflFloat *forecast)`
+
+it is utilized to compute the error vectors as there are some cases when we can't use the Euclid distance.
 
 As you can see all functions have `yaflKalmanBaseSt * self` as their first parameter this is done to enable passing additional data to these functions. 
 So all these functions are **"methods"** of some **"class"** which has `yaflKalmanBaseSt` as its **"basic class"**. As you can see we are using **OOP** approach here.
 
-Now let's talk about memory. We use **mixins** to declare filters meemories so users can put more fields to filters memory pools.
-This also enables us to do nexted **mixin** macros calls while keeping memory pool strustures flat.
+Now let's talk about memory. We use **mixins** to declare filter memory pools so users can put more fields at their filter memory pools.
+This also enables us to do nested **mixin** macros calls while keeping memory pool strustures flat.
 
 ### EKF stuff
+The basic type for all **EKF** control blocks is `yaflEKFBaseSt`. It is initialized with `YAFL_EKF_BASE_INITIALIZER` macro.
+In the example above we gave the initial explanation of its work. Now let's go deeper.
 
+We will use numpy code to explain stuf so you should learn something about numpy.
+
+#### State transition function
+Here is the basic definition:
+```C
+yaflStatusEn fx(yaflKalmanBaseSt * self, yaflFloat * new_x, yaflFloat * old_x)
+{
+    (void)xz;
+    YAFL_CHECK(self,           YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(NX == self->Nx, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(new_x,          YAFL_ST_INV_ARG_2);
+    YAFL_CHECK(old_x,          YAFL_ST_INV_ARG_3);
+
+    /*
+    Here we must update state, numpy code is:
+
+    new_x = self.fx(old_x)
+    */
+
+    return YAFL_ST_OK;
+}
+```
+This definition applies to both **EKF** and **UKF**.
+
+In **EKF** case `new_x == old_x` so you can just do `self.x = self.fx(self.x)`.
+
+In **UKF** case `new_x != old_x`.
+
+#### State transition function Jacobian
+Tbe basic definition is:
+```C
+yaflStatusEn jfx(yaflKalmanBaseSt * self, yaflFloat * w, yaflFloat * x)
+{
+    yaflInt i;
+    yaflInt nx;
+    yaflInt nx2;
+
+    YAFL_CHECK(self,           YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(NX == self->Nx, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(w,              YAFL_ST_INV_ARG_2);
+    YAFL_CHECK(x,              YAFL_ST_INV_ARG_3);
+
+    nx  = self->Nx;
+    nx2 = nx * 2;
+
+    /* Here we must compute Jacobian of state transition function.
+
+    w has: nx rows and 2*nx columns so we will do:
+
+    w[:,0:nx] = self.jfx(self.x)
+    */
+
+    return YAFL_ST_OK;
+}
+```
+This definition is **EKF** specific.
+
+#### Measurement function
+Tbe basic definition is:
+```C
+yaflStatusEn hx(yaflKalmanBaseSt * self, yaflFloat * y, yaflFloat * x)
+{
+    YAFL_CHECK(self,          YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(NZ == self->Nz, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(y,             YAFL_ST_INV_ARG_2);
+    YAFL_CHECK(x,             YAFL_ST_INV_ARG_3);
+
+    /*
+    Here we must do:
+
+    y = self.hx(x)
+    */
+    return YAFL_ST_OK;
+}
+```
+This definition applies to both **EKF** and **UKF**.
+
+In **EKF** case so you actually do `self.y = self.hx(self.x)`.
+
+For **UKF** `x` and `y` are state and measurement sigma points respectively.
+
+#### Jacobian of measurement function
+The basic defeinition is:
+```C
+yaflStatusEn jhx(yaflKalmanBaseSt * self, yaflFloat * h, yaflFloat * x)
+{
+    yaflInt i;
+    yaflInt nx;
+    yaflInt nz;
+
+    YAFL_CHECK(self,           YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(NX == self->Nx, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(NZ == self->Nz, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(h,              YAFL_ST_INV_ARG_2);
+    YAFL_CHECK(x,              YAFL_ST_INV_ARG_3);
+
+    nx = self->Nx;
+    nz = self->Nz;
+
+    /* Here we will use a full H matrix which has nz rows and nx columns
+    We must do:
+
+    self.h = self.jhx(self.x)
+    */
+    return YAFL_ST_OK;
+}
+```
+This definition is **EKF** specific.
+
+#### Measurement residual function:
+The basic definition is:
+
+```C
+yaflStatusEn zrf(yaflKalmanBaseSt * self, yaflFloat *result, yaflFloat *a, yaflFloat *b)
+{
+    yaflInt i;
+    yaflInt nz;
+
+    YAFL_CHECK(self,           YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(NZ == self->Nz, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(result,         YAFL_ST_INV_ARG_2);
+    YAFL_CHECK(a,              YAFL_ST_INV_ARG_2);
+    YAFL_CHECK(b,              YAFL_ST_INV_ARG_3);
+
+    /*
+    Here we must do:
+
+    result = self.zrf(a, b)
+
+    for linear case:
+
+    result = a - b
+    */
+
+    return YAFL_ST_OK;
+}
+```
+
+This definition applies to both **EKF** and **UKF**.
+
+In **EKF** case `result == b == self.y` so you actually do `self.y = self.zrf(measurement, self.y)`.
+
+In **UKF** case `result == self.y`, `a == self.zp` and `b` is some of measurement sigma points respectively.
+
+#### Memory
 
 
 #### Basic EKF
-
-
-
 For basic sequential UD-factorized EKF we have yaflEKFBaseSt
 
+Work in progress...
