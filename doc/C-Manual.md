@@ -248,7 +248,7 @@ jfx    - state transition Jacobian function pointer
 hx     - measurement function pointer
 jhx    - measurement Jacobian function pointer
 zrf    - measurement Residual function pointer (needed to calculate the distance between forecast and measurement vectors)
-memory - the name of the memeory structure.
+memory - the name of the memory structure.
 */
 ```
 
@@ -347,7 +347,7 @@ where:
 * `hx`     - measurement function pointer
 * `jhx`    - measurement Jacobian function pointer
 * `zrf`    - measurement Residual function pointer (needed to calculate the distance between forecast and measurement vectors)
-* `memory` - the name of the memeory structure.
+* `memory` - the name of the memory structure.
 
 The filter control block does not store any data it has only pointers to data storage, so we must have som separate data storage called `memory`.
 
@@ -516,7 +516,60 @@ In **EKF** case `result == b == self.y` so you actually do `self.y = self.zrf(me
 In **UKF** case `result == self.y`, `a == self.zp` and `b` is some of measurement sigma points respectively.
 
 #### Memory
+Memory pools are dclared using mixins:
+```C
+typedef struct {
+    YAFL_EKF_BASE_MEMORY_MIXIN(NX, NZ); /* This is for EKF storage. */
+    /* You can declare som more storage here */
+} someMemorySt;
+```
+The most convenient way to initiate a filter memory is:
+```C
+kfMemorySt kf_memory =
+{
+    /*Initial state vector*/
+    .x = {
+        /*Initiate x[0]...x[NX-1]*/
+    },
 
+    /*State covariance components*/
+    .Up = {
+        /*
+        Here we have a unit upper triangular matrix.
+        We don't need to store ones, so, only upper parts of three columns are stored
+        */
+        0,               /*1st column*/
+        0,0,             /*2nd column*/
+        0,0,0,           /*3rd column*/
+        /*...*/
+        0,0,0, /*...*/ 0 /*(NX - 1)-th column*/
+    },
+    /*     0    1   2       (NX - 1) elements*/
+    .Dp = {DP, DP, DP, /*...*/ DP}, /*Diagonal matrix is stored in a vector*/
+
+    /*State noise covariance components*/
+    .Uq = {
+        0,               /*1st column*/
+        0,0,             /*2nd column*/
+        0,0,0,           /*3rd column*/
+        /*...*/
+        0,0,0, /*...*/ 0 /*(NX - 1)-th column*/
+    },
+    /*     0    1   2       (NX - 1) elements*/
+    .Dq = {DX, DX, DX, /*...*/ DX},
+
+    /*Measurement noise covariance components*/
+    .Ur = {
+        0,               /*1st column*/
+        0,0,             /*2nd column*/
+        0,0,0,           /*3rd column*/
+        /*...*/
+        0,0,0, /*...*/ 0 /*(NZ - 1)-th column*/
+    },
+    /*     0    1   2       (NZ - 1) elements*/
+    .Dr = {DX, DX, DX, /*...*/ DX},
+};
+```
 
 #### Basic EKF
 For basic sequential UD-factorized EKF we have yaflEKFBaseSt
