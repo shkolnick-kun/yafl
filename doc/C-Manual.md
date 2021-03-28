@@ -294,7 +294,7 @@ Yeah! Thats it! We've used Sequential Bierman filter to process our measurements
 
 ## What else do we have in YAFL
 
-Filter algorithms and data strustures are declared in [src/yafl.h](./src/yafl.h).
+Filter algorithms and data structures are declared in [src/yafl.h](./src/yafl.h).
 To power the filtering code we need some math functions which are declared in [src/yafl_math](./src/yafl_math.h).
 
 Functions declared in [src/yafl.h](./src/yafl.h) and [src/yafl_math](./src/yafl_math.h) return result code, defined in `yaflStatusEn`.
@@ -306,7 +306,7 @@ Here is the bit field list:
   * `YAFL_ST_MSK_GLITCH_LARGE` - a **large** error signal glitch detected, the error signal is too large and only its sign should be used for filter update. This field is used n **Robust** filters.
   * `YAFL_ST_MSK_ANOMALY` - an error signal anomaly detected, adaptive correction was done to handle it. This field is used in **Adaptive** filters.
 
-* Error bit fields:
+* Error bit field values:
   * `YAFL_ST_INV_ARG_1` - invalid argument 1
   * `YAFL_ST_INV_ARG_2` - invalid argument 2
   * `YAFL_ST_INV_ARG_3` - invalid argument 3
@@ -315,7 +315,7 @@ Here is the bit field list:
 
 The execution of the YAFL code is stoped on the first error, so only one error may appear during YAFL function call.
 We think that errors are actually unlikely to happen so every error check in our code is wrapped in `YAFL_UNLIKELY` macro.
-If this macro doesn't mean **never** and if some **printf-like** stuf is used for `YAFL_LOG` macro, then you can get something like **stacktrace** in your console og log file if error hapens.
+If this macro doesn't mean **never** and if some **printf-like** function oe macro is used in `YAFL_LOG` macro, then you can get something like **stacktrace** in your console og log file if error happens.
 
 On the other hand a single call to some YAFL function may yield many warning bits.
 To disthiguish between warinings and errors `YAFL_ST_ERR_THR` is used, e.g.:
@@ -336,9 +336,38 @@ To disthiguish between warinings and errors `YAFL_ST_ERR_THR` is used, e.g.:
     }
 ```
 
+We prefer using static memory allocation so filter structure initializers look like this:
+```C
+/*yaflKalmanBaseSt is for internal usage only, so our code axemple is about EKF*/
+yaflEKFBaseSt kf = YAFL_EKF_BASE_INITIALIZER(fx, jfx, hx, jhx, zrf, nx, nx, memory);
+```
+where:
+* `fx`     - state transition function pointer
+* `jfx`    - state transition Jacobian function pointer
+* `hx`     - measurement function pointer
+* `jhx`    - measurement Jacobian function pointer
+* `zrf`    - measurement Residual function pointer (needed to calculate the distance between forecast and measurement vectors)
+* `memory` - the name of the memeory structure.
+
+The filter control block does not store any data it has only pointers to data storage, so we must have som separate data storage called `memory`.
+
+Functions `fx`, `jfx`, `hx`, `jhx`, must have prototypes which must be similar to: `yaflStatusEn fn(yaflKalmanBaseSt * self, yaflFloat *a, yaflFloat *b)`.
+Th function `zrf` must have the prototype which must be similar to: `yaflStatusEn fn(yaflKalmanBaseSt * self, yaflFloat *result, yaflFloat *measurement, yaflFloat *forecast)` 
+it is utilized to compute the error vector as there are some cases when we can't use Euclid distance.
+
+As you can see all functions have `yaflKalmanBaseSt * self` as their first parameter this is done to enable passing additional data to these functions. 
+So all these functions are **"methods"** of some **"class"** which has `yaflKalmanBaseSt` as its **"basic class"**. As you can see we are using **OOP** approach here.
+
+Now let's talk about memory. We use **mixins** to declare filters meemories so users can put more fields to filters memory pools.
+This also enables us to do nexted **mixin** macros calls while keeping memory pool strustures flat.
+
 ### EKF stuff
 
+
+
 #### Basic EKF
+
+
 
 For basic sequential UD-factorized EKF we have yaflEKFBaseSt
 
