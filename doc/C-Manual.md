@@ -183,9 +183,9 @@ yaflStatusEn jhx(yaflKalmanBaseSt * self, yaflFloat * h, yaflFloat * x)
 
     /*
     Now h is:
+
     | 1   0   0   0 |
     | 0   1   0   0 |
-
     */
     return YAFL_ST_OK;
 }
@@ -256,6 +256,7 @@ So we've just declared the **EKF** memory structure, initiated it, we also decla
 Now we may want to filter some measurements:
 
 ```C
+extern volatile int some_condition;
 extern yaflStatusEn get_some_measurement(yaflFloat * measurement_vector);
 
 yaflFloat zp[NZ]; /*Memory for measurement vectors*/
@@ -264,8 +265,8 @@ yaflStatusEn status;
 
 while (some_condition)
 {
-    /* This is Joseph filter predict step */
-    status = YAFL_EKF_JOSEPH_PREDICT(&kf);
+    /* This is Bierman filter predict step */
+    status = YAFL_EKF_BIERMAN_PREDICT(&kf);
     if (YAFL_ST_OK != status)
     {
         /*Handle errors here*/
@@ -280,8 +281,8 @@ while (some_condition)
         (void)status;
     }
 
-    /*OK! We have a correct measurement at this point. Let's handle it...*/
-    status = yafl_ekf_joseph_update(&kf, &zp[0]);
+    /*OK! We have a correct measurement at this point. Let's process it...*/
+    status = yafl_ekf_bierman_update(&kf, &zp[0]);
     if (YAFL_ST_OK != status)
     {
         /*Handle errors here*/
@@ -289,6 +290,55 @@ while (some_condition)
     }
 }
 ```
-Yeah! Thats it! We've jut used Joseph filter to filter our measurements.
+Yeah! Thats it! We've used Sequential Bierman filter to process our measurements.
 
-## OK! What else do we have in [yafl.h](./src/yafl.h)?
+## What else do we have in YAFL
+
+Filter algorithms and data strustures are declared in [src/yafl.h](./src/yafl.h).
+To power the filtering code we need some math functions which are declared in [src/yafl_math](./src/yafl_math.h).
+
+Functions declared in [src/yafl.h](./src/yafl.h) and [src/yafl_math](./src/yafl_math.h) return result code, defined in `yaflStatusEn`.
+If everything is OK then `YAFL_ST_OK = 0` is returned. If something went wrong the result code is actually a bit mask. 
+Here is the bit field list:
+* Warning bit fields:
+  * `YAFL_ST_MSK_REGULARIZED`  - we had to do regularization to maintain the filter integrity
+  * `YAFL_ST_MSK_GLITCH_SMALL` - a **small** error signal glitch detected: the error signal is large and its weigth is reduced. This field is used n **Robust** filters.
+  * `YAFL_ST_MSK_GLITCH_LARGE` - a **large** error signal glitch detected, the error signal is too large and only its sign should be used for filter update. This field is used n **Robust** filters.
+  * `YAFL_ST_MSK_ANOMALY` - an error signal anomaly detected, adaptive correction was done to handle it. This field is used in **Adaptive** filters.
+
+* Error bit fields:
+  * `YAFL_ST_INV_ARG_1` - invalid argument 1
+  * `YAFL_ST_INV_ARG_2` - invalid argument 2
+  * `YAFL_ST_INV_ARG_3` - invalid argument 3
+  * `...`
+  * `YAFL_ST_INV_ARG_11` - invalid argument 11
+
+The execution of the YAFL code is stoped on the first error, so only one error may appear during YAFL function call.
+We think that errors are actually unlikely to happen so every error check in our code is wrapped in `YAFL_UNLIKELY` macro.
+If this macro doesn't mean **never** and if some **printf-like** stuf is used for `YAFL_LOG` macro, then you can get something like **stacktrace** in your console og log file if error hapens.
+
+On the other hand a single call to some YAFL function may yield many warning bits.
+To disthiguish between warinings and errors `YAFL_ST_ERR_THR` is used, e.g.:
+
+```C
+    if (YAFL_ST_OK != status)
+    {
+        if (YAFL_ST_ERR_THR >= status)
+        {
+            /*Handle warnings*/
+            (void)status;
+        }
+        else
+        {
+            /*Handle errors*/
+            (void)status;
+        }
+    }
+```
+
+### EKF stuff
+
+#### Basic EKF
+
+For basic sequential UD-factorized EKF we have yaflEKFBaseSt
+

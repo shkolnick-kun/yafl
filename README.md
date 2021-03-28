@@ -23,7 +23,7 @@ where:
 For all **EKF** variants we have **Bierman** and **Joseph** updates.
 For sequential UD-factorized **UKF** only **Bierman** updates are available.
 
-And yes, we [**can actuyally**](./doc/UsingEKFTricksWithSPKF.pdf) use **EKF** tricks with **UKF**!
+And yes, we [**can actually**](./doc/UsingEKFTricksWithSPKF.pdf) use **EKF** tricks with **UKF**!
 
 The library is written in C and is intended for embedded systems usage:
 * We use static memory allocation
