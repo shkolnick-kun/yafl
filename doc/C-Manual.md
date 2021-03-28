@@ -834,11 +834,11 @@ It is quite similar to **EKF** base initializer but there are no Jacobian functi
 
 #### Siama points generators
 Sigma point generator is runtime extension to `yaflUKFBaseSt` data type.
- We desided to add such runtime extension to **UKF** types because user may
- need to customize sigma point generation processes.
+We desided to add such runtime extension to **UKF** types because user may
+need to customize sigma point generation processes.
 
 In `YAFL_UKF_BASE_INITIALIZER` call we must pass a pointer to Sigma point
- generator object and a pointer to corresponding vtable.
+generator object and a pointer to corresponding vtable.
 
 Vtable is an object of `yaflUKFSigmaMethodsSt` type and it has two methods pointers to functions like:
 * `yaflStatusEn wf(yaflUKFBaseSt * self);` which computes sigma points wegths
@@ -872,14 +872,14 @@ yaflStatusEn my_cool_addf(yaflUKFBaseSt * self, yaflFloat * delta, yaflFloat * p
 }
 ```
 
-Is is used by sigma point generator add deltas to initial state vector to get state sigma points
+It is used by sigma point generator to add deltas to initial state vector to get state sigma points
 in case when simple addition is not possible, e.g. in constrained **UKF** variants.
 
 **Currently we suppport only Van der Merwe sigma points generator, more planned.**
 
 To store sigma points we use corresponding **mixins**, e.g. `YAFL_UKF_MERWE_MEMORY_MIXIN`, see later.
 
-##### Van der Merwe sigma points generator
+#### Van der Merwe sigma points generator
 Vam der Merwe sigma point generator have `yaflUKFMerweSt` type.
 
 The `yaflUKFMerweSt` object can be defined as:
