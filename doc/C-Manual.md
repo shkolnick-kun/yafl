@@ -248,7 +248,7 @@ jfx    - state transition Jacobian function pointer
 hx     - measurement function pointer
 jhx    - measurement Jacobian function pointer
 zrf    - measurement Residual function pointer (needed to calculate the distance between forecast and measurement vectors)
-memory - the name of the memory structure.
+memory - the name of a memory structure.
 */
 ```
 
@@ -339,7 +339,7 @@ To disthiguish between warinings and errors `YAFL_ST_ERR_THR` is used, e.g.:
 We prefer using static memory allocation so filter structure initializers look like this:
 ```C
 /*yaflKalmanBaseSt is for internal usage only, so our code axemple is about EKF*/
-yaflEKFBaseSt kf = YAFL_EKF_BASE_INITIALIZER(fx, jfx, hx, jhx, zrf, nx, nx, memory);
+yaflEKFBaseSt kf = YAFL_EKF_BASE_INITIALIZER(fx, jfx, hx, jhx, zrf, nx, nz, memory);
 ```
 where:
 * `fx`     - state transition function pointer
@@ -347,9 +347,13 @@ where:
 * `hx`     - measurement function pointer
 * `jhx`    - measurement Jacobian function pointer
 * `zrf`    - measurement Residual function pointer (needed to calculate the distance between forecast and measurement vectors)
+* `nx`     - the dimension of state vector
+* `nz`     - the dimension of measurement vector
 * `memory` - the name of the memory structure.
 
-The filter control block does not store any data it has only pointers to data storage, so we must have som separate data storage called `memory`.
+The filter control block does not store an data it has only pointers to data storage, so we must have som separate data storage called `memory`.
+
+Actually **all** filter control block structures in YAFL have only **immutable** data so we can declare them as **constants** if needed.
 
 Functions `fx`, `jfx`, `hx`, `jhx`, must have prototypes which must be similar to:
 
@@ -523,7 +527,11 @@ typedef struct {
     /* You can declare som more storage here */
 } someMemorySt;
 ```
-The most convenient way to initiate a filter memory is:
+Where:
+* `NX` - A state vector size.
+* `Nz` - A measurement vector size.
+
+The most convenient way to initiate a filter memory is somthing like this:
 ```C
 someMemorySt memory =
 {
@@ -574,15 +582,16 @@ someMemorySt memory =
 #### Basic EKF variants
 Basic **EKF** control block can be initialized with:
 ```C
-yaflEKFBaseSt kf = YAFL_EKF_BASE_INITIALIZER(fx, jfx, hx, jhx, zrf, nx, nx, memory);
+yaflEKFBaseSt kf = YAFL_EKF_BASE_INITIALIZER(fx, jfx, hx, jhx, zrf, nx, nz, memory);
 ```
 
 Predict macros are:
 * `YAFL_EKF_BIERMAN_PREDICT(self)` for Bierman filter
 * `YAFL_EKF_JOSEPH_PREDICT(self)` for Joseph sequential UD-factorized filter
-These macros call `yaflStatusEn _yafl_ekf_predict_wrapper(yaflEKFBaseSt * self);` which is not supposed to be called directly by the user.
 
 Where `self` is a pointer to a filter.
+
+These macros call `yaflStatusEn _yafl_ekf_predict_wrapper(yaflEKFBaseSt * self);` which is not supposed to be called directly by the user.
 
 The example of filter predict call is:
 ```C
@@ -590,8 +599,8 @@ The example of filter predict call is:
 ```
 
 Update functions are:
-* `yaflStatusEn yafl_ekf_bierman_update(yaflEKFBaseSt * self, yaflFloat *z)` for Bierman filter
-* `yaflStatusEn yafl_ekf_joseph_update(yaflEKFBaseSt * self, yaflFloat *z)` for Joseph sequential UD-factorized filter
+* `yaflStatusEn yafl_ekf_bierman_update(yaflEKFBaseSt * self, yaflFloat *z);` for Bierman filter
+* `yaflStatusEn yafl_ekf_joseph_update(yaflEKFBaseSt * self, yaflFloat *z);` for Joseph sequential UD-factorized filter
 
 Where:
 * `self` is a pointer to a filter,
@@ -601,5 +610,164 @@ The example of filter predict call is:
 ```C
     status = yafl_ekf_bierman_update(&kf, &z[0]);
 ```
+
+#### Adaptive EKF variants
+In these EKF variants H-infinity filter algorithm is used to mitigate the Kalman filter divergence.
+The Chi-square test is used to detect the filter divergence.
+
+The filter control block type is:
+```C
+typedef struct {
+    yaflEKFBaseSt base;
+    yaflFloat chi2;
+} yaflEKFAdaptiveSt;
+```
+The memory mixin used is `YAFL_EKF_BASE_MEMORY_MIXIN`.
+
+The initilizer macro is:
+```C
+YAFL_EKF_ADAPTIVE_INITIALIZER(fx, jfx, hx, jhx, zrf, nx, nz, memory)
+```
+
+As you can see it takes the same parameter list as `YAFL_EKF_BASE_INITIALIZER`. the `chi2` field is set to `scipy.stats.chi2.ppf(0.999, 1)`
+
+Predict macros are:
+* `YAFL_EKF_ADAPTIVE_BIERAMN_PREDICT(self)` for Bierman filter
+* `YAFL_EKF_ADAPTIVE_JOSEPH_PREDICT(self)` for Joseph sequential UD-factorized filter
+
+Where `self` is a pointer to a filter.
+
+These macros call `yaflStatusEn _yafl_ada_ekf_predict_wrapper(yaflEKFAdaptiveSt * self);` which is not supposed to be called directly by the user.
+
+The example of filter predict call is:
+```C
+    status = YAFL_EKF_ADAPTIVE_BIERAMN_PREDICT(&kf);
+```
+
+Update functions are:
+* `yaflStatusEn yafl_ekf_adaptive_bierman_update(yaflEKFAdaptiveSt * self, yaflFloat *z);` for Bierman filter
+* `yaflStatusEn yafl_ekf_adaptive_joseph_update(yaflEKFAdaptiveSt * self, yaflFloat *z);` for Joseph sequential UD-factorized filter
+
+Where:
+* `self` is a pointer to a filter,
+* `z`    is a pointer to a measurement vector.
+
+The example of filter predict call is:
+```C
+    status = yafl_ekf_adaptive_bierman_update(&kf, &z[0]);
+```
+
+#### Robust EKF variants
+In these EKF variants generalized linear model is used to deal with measurement glithces and non-Gaussian noise.
+
+The influence function and it's first derivative are used to mitigate glitches.
+
+The functions which we have used for test are:
+```C
+
+/*
+The noise model is Normal with Poisson outliers.
+
+See:
+
+A.V. Chernodarov, G.I. Djandjgava and A.P. Rogalev (1999).
+Monitoring and adaptive robust protection of the integrity of air data inertial satellite navigation systems for maneuverable aircraft.
+
+In: Proceedings of the RTO SCI International Conference on Integrated Navigation Systems,
+
+held at "Electropribor", St. Petersburg, pp. 2111-10, RTO-MP-43 , NeuiIly-sur-Seine Cedex, France.
+*/
+yaflFloat psi(yaflKalmanBaseSt * self, yaflFloat normalized_error)
+{
+    (void)self;
+    if (3.0 >= normalized_error)
+    {
+        return normalized_error;
+    }
+
+    if (6.0 >= normalized_error)
+    {
+        /*Small glitch*/
+        return normalized_error / 3.0;
+    }
+
+    /*Large glitch*/
+    return (normalized_error >= 0.0) ? 1.0 : -1.0;
+}
+
+yaflFloat psi_dot(yaflKalmanBaseSt * self, yaflFloat normalized_error)
+{
+    (void)self;
+    if (3.0 >= normalized_error)
+    {
+        return 1.0;
+    }
+
+    if (6.0 >= normalized_error)
+    {
+        /*Small glitch*/
+        return 1.0 / 3.0;
+    }
+
+    /*Large glitch*/
+    return 0.0;
+}
+
+```
+
+Where normalized error is `error[i]/Dr[i]`.
+
+**Note that `Dr` vector now holds square roots of corresponding dispersions**
+
+The filter control block type is:
+```C
+typedef struct {
+    yaflEKFBaseSt base;
+    yaflKalmanRobFuncP g;    /* g = -d(ln(pdf(y))) / dy */
+    yaflKalmanRobFuncP gdot; /* gdot = G = d(g) / dy */
+} yaflEKFRobustSt
+```
+The memory mixin used is `YAFL_EKF_BASE_MEMORY_MIXIN`.
+
+The initilizer macro is:
+```C
+YAFL_EKF_ROBUST_INITIALIZER(fx, jfx, hx, jhx, zrf, g, gdot,  nx, nz, memory)
+```
+
+Note that we have two additional arguments:
+* `g` is influence function
+* `gdot` is influence function first derivative
+
+The example for `YAFL_EKF_ROBUST_INITIALIZER` call is:
+```C
+yaflEKFRobustSt kf = YAFL_EKF_ROBUST_INITIALIZER(fx, jfx, hx, jhx, zrf, psi, psi_dot,  nx, nz, memory);
+```
+
+Predict macros are:
+* `YAFL_EKF_ROBUST_BIERAMN_PREDICT(self)` for Bierman filter
+* `YAFL_EKF_ROBUST_JOSEPH_PREDICT(self)` for Joseph sequential UD-factorized filter
+
+Where `self` is a pointer to a filter.
+
+These macros call `yaflStatusEn _yafl_rob_ekf_predict_wrapper(yaflEKFRobustSt * self);` which is not supposed to be called directly by the user.
+
+The example of filter predict call is:
+```C
+    status = YAFL_EKF_ROBUST_BIERAMN_PREDICT(&kf);
+```
+
+Update functions are:
+* `yaflStatusEn yafl_ekf_robust_bierman_update(yaflEKFRobustSt * self, yaflFloat *z);` for Bierman filter
+* `yaflStatusEn yafl_ekf_robust_joseph_update(yaflEKFRobustSt * self, yaflFloat *z);` for Joseph sequential UD-factorized filter
+
+Where:
+* `self` is a pointer to a filter,
+* `z`    is a pointer to a measurement vector.
+
+The example of filter predict call is:
+```C
+    status = yafl_ekf_robust_bierman_update(&kf, &z[0]);
+```
+
 
 Work in progress...
