@@ -377,7 +377,7 @@ This also enables us to do nested **mixin** macros calls while keeping memory po
 The basic type for all **EKF** control blocks is `yaflEKFBaseSt`. It is initialized with `YAFL_EKF_BASE_INITIALIZER` macro.
 In the example above we gave the initial explanation of its work. Now let's go deeper.
 
-We will use numpy code to explain stuf so you should learn something about numpy.
+We will use numpy code to explain stuff so you should learn something about numpy.
 
 #### State transition function
 Here is the basic definition:
@@ -815,6 +815,209 @@ Where:
 The example of filter predict call is:
 ```C
     status = yafl_ekf_adaptive_robust_bierman_update(&kf, &z[0]);
+```
+
+### UKF stuff
+The basic type for all **UKF** control blocks is `yaflUKFBaseSt`.
+
+The memory mixin used is `YAFL_UKF_BASE_MEMORY_MIXIN` which is similar to other memory mixins in YAFL.
+
+```C
+YAFL_UKF_BASE_INITIALIZER(points, points_methods, fx, xmf, xrf, hx, zmf, zrf, nx, nz, memory)
+```
+It is quite similar to **EKF** base initializer but there are no Jacobian function pointers and there are som new parameters:
+* `points`         - a pointer to sigma point generator object
+* `points_methods` - a pointer to sigma point generator vtable
+* `xmf`            - a pointer to a state mean function
+* `xrf`            - a pointer to a state residual function
+* `zmf`            - a ponter to a measurement mean function
+
+#### Siama points generators
+Sigma point generator is runtime extension to `yaflUKFBaseSt` data type.
+ We desided to add such runtime extension to **UKF** types because user may
+ need to customize sigma point generation processes.
+
+In `YAFL_UKF_BASE_INITIALIZER` call we must pass a pointer to Sigma point
+ generator object and a pointer to corresponding vtable.
+
+Vtable is an object of `yaflUKFSigmaMethodsSt` type and it has two methods pointers to functions like:
+* `yaflStatusEn wf(yaflUKFBaseSt * self);` which computes sigma points wegths
+* `yaflStatusEn spgf(yaflUKFBaseSt * self);` which generates sigma points
+
+As you can see the `self` parameter has `yaflUKFBaseSt` type, so these methods are actually **UKF** virtual methods.
+
+On the other hand all sigma point generators have `yaflUKFSigmaSt` base type which is:
+```C
+typedef struct _yaflUKFSigmaSt {
+    yaflInt         np;    /* The number of sigma points          */
+    yaflUKFSigmaAddP addf; /* Sigma point addition function       */
+} yaflUKFSigmaSt;
+```
+
+The actual `addf` function is something like this:
+```C
+yaflStatusEn my_cool_addf(yaflUKFBaseSt * self, yaflFloat * delta, yaflFloat * pivot, yaflFloat mult)
+{
+    YAFL_CHECK(self,           YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(NX == self->Nx, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(delta,          YAFL_ST_INV_ARG_2);
+    YAFL_CHECK(pivot,          YAFL_ST_INV_ARG_3);
+
+    /*
+    Here we something like this:
+
+    delta = pivot + mult * delta;
+    */
+    return YAFL_ST_OK;
+}
+```
+
+Is is used by sigma point generator add deltas to initial state vector to get state sigma points
+in case when simple addition is not possible, e.g. in constrained **UKF** variants.
+
+**Currently we suppport only Van der Merwe sigma points generator, more planned.**
+
+To store sigma points we use corresponding **mixins**, e.g. `YAFL_UKF_MERWE_MEMORY_MIXIN`, see later.
+
+##### Van der Merwe sigma points generator
+Vam der Merwe sigma point generator have `yaflUKFMerweSt` type.
+
+The `yaflUKFMerweSt` object can be defined as:
+```C
+yaflUKFMerweSt my_sp_object = YAFL_UKF_MERWE_INITIALIZER(nx, addf, alpha, beta, kappa, memory);
+```
+
+Where:
+* `nx` - is state vector size
+* `alpha`, `beta`, `kappa` - are Van der Merwe sigma points parameters
+* `memory` - is a name of **UKF** memory pool object
+
+In case uf **UKF** memory pool structure declaration should look like this:
+```C
+typedef struct {
+    YAFL_UKF_BASE_MEMORY_MIXIN(NX, NZ);
+    YAFL_UKF_MERWE_MEMORY_MIXIN(NX, NZ);
+    /*Other fields*/
+} myUKFMemorySt;
+```
+
+Vam der Merwe sigma point generator is in
+```C
+const yaflUKFSigmaMethodsSt yafl_ukf_merwe_spm;
+```
+
+#### Mean and residual functions
+Mean and residual functions are used by **Unscented transform** in cases when simple weighted mean and Euclidian distance are unusable.
+
+State residual functions should look like this:
+```C
+yaflStatusEn xrf(yaflKalmanBaseSt * self, yaflFloat *result, yaflFloat *a, yaflFloat *b)
+{
+    yaflInt i;
+    yaflInt nz;
+
+    YAFL_CHECK(self,           YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(NX == self->Nx, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(result,         YAFL_ST_INV_ARG_2);
+    YAFL_CHECK(a,              YAFL_ST_INV_ARG_3);
+    YAFL_CHECK(b,              YAFL_ST_INV_ARG_4);
+
+    /*
+    Here we must do:
+
+    result = self.xrf(a, b)
+
+    for linear case:
+
+    result = a - b
+    */
+
+    return YAFL_ST_OK;
+}
+```
+
+State mean functions should look like this:
+```C
+#define _UKF_SELF ((yaflUKFBaseSt *)self) /*Or you can pass yaflUKFBaseSt * self as first argument*/
+yaflStatusEn xmf(yaflKalmanBaseSt * self, yaflFloat *result, yaflFloat *sigmas_x)
+{
+    yaflInt nx;
+    yaflInt np;
+
+    YAFL_CHECK(self,                YAFL_ST_INV_ARG_1);
+    nx = self->Nx;
+    YAFL_CHECK(NX == mx,            YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(_UKF_SELF->sp_info,  YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(_UKF_SELF->sp_meth,  YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(_UKF_SELF->sigmas_x, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(_UKF_SELF->wm,       YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(result,              YAFL_ST_INV_ARG_2);
+    YAFL_CHECK(sigmas_x,            YAFL_ST_INV_ARG_3);
+
+    np = _UKF_SELF->sp_info->np; /*Get number of sigmas*/
+    /*
+    Here we must do:
+
+    result = self.xmf(sigmas_x, self.wm)
+
+    for linear case:
+
+    result = self.wm.T.dot(sigmas_x)
+    */
+
+    return YAFL_ST_OK;
+}
+```
+
+Measurement mean functions should look like this:
+```C
+yaflStatusEn zmf(yaflKalmanBaseSt * self, yaflFloat *result, yaflFloat *sigmas_z)
+{
+    yaflInt nz;
+    yaflInt np;
+
+    YAFL_CHECK(self,                YAFL_ST_INV_ARG_1);
+    nz = self->Nz;
+    YAFL_CHECK(NX == nz,            YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(_UKF_SELF->sp_info,  YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(_UKF_SELF->sp_meth,  YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(_UKF_SELF->sigmas_z, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(_UKF_SELF->wm,       YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(result,              YAFL_ST_INV_ARG_2);
+    YAFL_CHECK(sigmas_z,            YAFL_ST_INV_ARG_3);
+
+    np = _UKF_SELF->sp_info->np; /*Get number of sigmas*/
+    /*
+    Here we must do:
+
+    result = self.zmf(sigmas_z, self.wm)
+
+    for linear case:
+
+    result = self.wm.T.dot(sigmas_z)
+    */
+
+    return YAFL_ST_OK;
+}
+```
+#### Common UFK functions
+Common UKF functions are:
+```C
+static inline yaflStatusEn yafl_ukf_post_init(yaflUKFBaseSt * self);
+/* and */
+static inline yaflStatusEn yafl_ukf_gen_sigmas(yaflUKFBaseSt * self);
+```
+These functions are applicable to all **UKF** variants.
+The `yafl_ukf_post_init` must be called before any prediction or correction step.
+The `yafl_ukf_gen_sigmas` may be called between prediction and correction steps to make the behaviour of filters more **"CLASSICAL"**.
+
+#### Basic Bierman UKF
+The type **Bierman UKF** control blocks is `yaflUKFBaseSt`.
+
+The memory mixin used is `YAFL_UKF_BASE_MEMORY_MIXIN` which is similar to other memory mixins in YAFL.
+
+```C
+YAFL_UKF_BASE_INITIALIZER(points, points_methods, fx, xmf, xrf, hx, zmf, zrf, nx, nz, memory)
 ```
 
 Work in progress...
