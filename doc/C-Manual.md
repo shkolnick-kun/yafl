@@ -880,7 +880,7 @@ in case when simple addition is not possible, e.g. in constrained **UKF** varian
 To store sigma points we use corresponding **mixins**, e.g. `YAFL_UKF_MERWE_MEMORY_MIXIN`, see later.
 
 #### Van der Merwe sigma points generator
-Vam der Merwe sigma point generator have `yaflUKFMerweSt` type.
+Van der Merwe sigma points generator have `yaflUKFMerweSt` type.
 
 The `yaflUKFMerweSt` object can be defined as:
 ```C
@@ -1000,7 +1000,7 @@ yaflStatusEn zmf(yaflKalmanBaseSt * self, yaflFloat *result, yaflFloat *sigmas_z
     return YAFL_ST_OK;
 }
 ```
-#### Common UFK functions
+#### Common UKF functions
 Common UKF functions are:
 ```C
 static inline yaflStatusEn yafl_ukf_post_init(yaflUKFBaseSt * self);
@@ -1016,8 +1016,198 @@ The type **Bierman UKF** control blocks is `yaflUKFBaseSt`.
 
 The memory mixin used is `YAFL_UKF_BASE_MEMORY_MIXIN` which is similar to other memory mixins in YAFL.
 
+The initializer used is `YAFL_UKF_BASE_INITIALIZER`.
+
+Predict and update functions are simmilar to their **EKF** counterparts.
+The predict function is `yafl_ukf_bierman_predict`.
+The update function is `yafl_ukf_bierman_update`.
+
+The filter bootstrap may look this:
 ```C
-YAFL_UKF_BASE_INITIALIZER(points, points_methods, fx, xmf, xrf, hx, zmf, zrf, nx, nz, memory)
+
+/*---------------------------------------------------------------------------*/
+/*This is our filter memory structure*/
+typedef struct {
+    YAFL_UKF_BASE_MEMORY_MIXIN(NX, NZ);
+    YAFL_UKF_MERWE_MEMORY_MIXIN(NX, NZ);
+    /*Other fields*/
+} myUKFMemorySt;
+
+/*Now we will initiate our memory*/
+/*Some constants*/
+#define DP (0.1)
+#define DX (1.0e-6)
+#define DZ (400)
+
+myUKFMemorySt ukf_memory =
+{
+    /*Initial state vector*/
+    .x = {
+        [0] = 50.0,
+        [2] = 10.0
+        /*Other values are zeros*/
+    },
+
+    /*State covariance components*/
+    .Up = {
+        /*
+        Here we have a unit upper triangular matrix.
+        We don't need to store ones, so, only upper parts of three columns are stored
+        */
+        0,    /*1st column*/
+        0,0,  /*2nd column*/
+        0,0,0 /*3rd column*/
+    },
+    .Dp = {DP, DP, DP, DP}, /*Diagonal matrix is stored in a vector*/
+
+    /*State noise covariance components*/
+    .Uq = {
+        0,
+        0,0,
+        0,0,0
+    },
+    .Dq = {DX, DX, DX, DX},
+
+    /*Measurement noise covariance components*/
+    .Ur = {0},
+    .Dr = {DZ, DZ}
+};
+
+/*Sigma points generator stuff*/
+extern yaflStatusEn my_cool_addf(yaflUKFBaseSt * self, yaflFloat * delta, yaflFloat * pivot, yaflFloat mult);
+
+/*                                             nx       addf     alpha beta kappa  memory*/
+yaflUKFMerweSt sp = YAFL_UKF_MERWE_INITIALIZER(NX, my_cool_addf,  0.1,  2.,   0, ukf_memory);
+
+/*Filter stuff*/
+extern yaflStatusEn  fx(yaflKalmanBaseSt * self, yaflFloat * new_x, yaflFloat * old_x);
+extern yaflStatusEn xmf(yaflKalmanBaseSt * self, yaflFloat *result, yaflFloat *sigmas_x);
+extern yaflStatusEn xrf(yaflKalmanBaseSt * self, yaflFloat *result, yaflFloat *a, yaflFloat *b);
+
+extern yaflStatusEn  hx(yaflKalmanBaseSt * self, yaflFloat * y, yaflFloat * x)
+extern yaflStatusEn zmf(yaflKalmanBaseSt * self, yaflFloat *result, yaflFloat *sigmas_z);
+extern yaflStatusEn zrf(yaflKalmanBaseSt * self, yaflFloat *result, yaflFloat *a, yaflFloat *b)
+
+/*                                         points   points_metods    fx  xmf  xrf  hx  zmf  zrf  nx  nz   memory */
+yaflEKFBaseSt kf = YAFL_UKF_BASE_INITIALIZER(sp, yafl_ukf_merwe_spm, fx, xmf, xrf, hx, zmf, zrf, NX, NX, ukf_memory);
+
 ```
+
+The filter init sequence may look like this:
+```C
+yaflStatusEn status;
+
+status = yafl_ukf_post_init(&kf);
+if (YAFL_ST_OK != status)
+{
+    /*Handle errors here*/
+    (void)status;
+}
+```
+
+The filter run may look like this:
+```C
+extern volatile int some_condition;
+extern yaflStatusEn get_some_measurement(yaflFloat * measurement_vector);
+
+yaflFloat z[NZ]; /*Memory for measurement vectors*/
+
+while (some_condition)
+{
+    /* This is Bierman filter predict step */
+    status = yafl_ukf_bierman_predict(&kf);
+    if (YAFL_ST_OK != status)
+    {
+        /*Handle errors here*/
+        (void)status;
+    }
+
+    /*Now get one measurement vector*/
+    status = get_some_measurement(&z[0]);
+    if (YAFL_ST_OK != status)
+    {
+        /*Handle errors here*/
+        (void)status;
+    }
+
+    /*OK! We have a correct measurement at this point. Let's process it...*/
+
+    /*We have an option to generate sigma points here manually:*/
+    //status = yafl_ukf_post_init(&kf);
+    //if (YAFL_ST_OK != status)
+    //{
+    //    /*Handle errors here*/
+    //    (void)status;
+    //}
+
+    /*The filter update*/
+    status = yafl_ukf_bierman_update(&kf, &z[0]);
+    if (YAFL_ST_OK != status)
+    {
+        /*Handle errors here*/
+        (void)status;
+    }
+}
+```
+
+#### Adaptive Bierman UKF
+
+The type **Adaptive Bierman UKF** control blocks is `yaflUKFAdaptivedSt`. The basic type for `yaflUKFAdaptivedSt` is `yaflUKFBaseSt`.
+
+The memory mixin used is `YAFL_UKF_BASE_MEMORY_MIXIN` which is similar to other memory mixins in YAFL.
+
+The initializer used is `YAFL_UKF_ADAPTIVE_INITIALIZER` which is simmilar to `YAFL_UKF_BASE_INITIALIZER`.
+
+Predict and update functions are simmilar to their **Adaptive EKF** counterparts.
+The predict function is `yafl_ukf_adaptive_bierman_predict`.
+The update function is `yafl_ukf_adaptive_bierman_update`.
+
+The filter bootstap initialization and run are simmilar to **Basic Bierman UKF**.
+
+#### Robust Bierman UKF
+
+The type **Robust Bierman UKF** control blocks is `yaflUKFRobustSt`. The basic type for `yaflUKFRobustSt` is `yaflUKFBaseSt`.
+
+The memory mixin used is `YAFL_UKF_BASE_MEMORY_MIXIN` which is similar to other memory mixins in YAFL.
+
+The initializer used is:
+```C
+yaflEKFBaseSt kf = YAFL_UKF_ROBUST_INITIALIZER(points, points_methods, fx, xmf, xrf, hx, zmf, zrf, g, gdot, nx, nz, memory);
+```
+
+where:
+* `g` is influence function
+* `gdot` is influence function first derivative. Yes, we are using derivatives here!
+
+So **Robust Bierman UKF** is simmilar to **Robust Bierman EKF**.
+
+Predict and update functions are simmilar to their **Adaptive EKF** counterparts.
+The predict function is `yafl_ukf_robust_bierman_predict`.
+The update function is `yafl_ukf_robust_bierman_update`.
+
+The filter bootstap initialization and run are simmilar to **Basic Bierman UKF** whith the following exception:
+
+```C
+extern yaflFloat psi(yaflKalmanBaseSt * self, yaflFloat normalized_error);
+extern yaflFloat psi_dot(yaflKalmanBaseSt * self, yaflFloat normalized_error);
+
+/*The filter is initiated differently from basic UKF:*/
+/*                                           points   points_metods    fx  xmf  xrf  hx  zmf  zrf   g     gdot   nx  nz   memory */
+yaflEKFBaseSt kf = YAFL_UKF_ROBUST_INITIALIZER(sp, yafl_ukf_merwe_spm, fx, xmf, xrf, hx, zmf, zrf, psi, psi_dot, NX, NX, ukf_memory);
+```
+
+#### Adaptive robust Bierman UKF
+
+The type **Adaptive robust Bierman UKF** control blocks is `yaflUKFAdaptiveRobustSt`. The basic type for `yaflUKFAdaptiveRobustSt` is `yaflUKFRobustSt`.
+
+The memory mixin used is `YAFL_UKF_BASE_MEMORY_MIXIN` which is similar to other memory mixins in YAFL.
+
+The initializer used is `YAFL_UKF_ADAPTIVE_ROBUST_INITIALIZER` which is simmilar to `YAFL_UKF_ROBUST_INITIALIZER`.
+
+Predict and update functions are simmilar to their **Adaptive EKF** counterparts.
+The predict function is `yafl_ukf_adaptive_robust_bierman_predict`.
+The update function is `yafl_ukf_adaptive_robust_bierman_update`.
+
+The filter bootstap initialization and run are simmilar to **Robust Bierman UKF**.
 
 Work in progress...
