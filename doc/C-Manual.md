@@ -1011,8 +1011,8 @@ These functions are applicable to all **UKF** variants.
 The `yafl_ukf_post_init` must be called before any prediction or correction step.
 The `yafl_ukf_gen_sigmas` may be called between prediction and correction steps to make the behaviour of filters more **"CLASSICAL"**.
 
-#### Basic Bierman UKF
-The type **Bierman UKF** control blocks is `yaflUKFBaseSt`.
+#### Bierman UKF
+The type of **Bierman UKF** control blocks is `yaflUKFBaseSt`.
 
 The memory mixin used is `YAFL_UKF_BASE_MEMORY_MIXIN` which is similar to other memory mixins in YAFL.
 
@@ -1132,8 +1132,8 @@ while (some_condition)
 
     /*OK! We have a correct measurement at this point. Let's process it...*/
 
-    /*We have an option to generate sigma points here manually:*/
-    //status = yafl_ukf_post_init(&kf);
+    /*We have an option to generate sigma points manually at that point:*/
+    //status = yafl_ukf_gen_sigmas(&kf);
     //if (YAFL_ST_OK != status)
     //{
     //    /*Handle errors here*/
@@ -1152,21 +1152,23 @@ while (some_condition)
 
 #### Adaptive Bierman UKF
 
-The type **Adaptive Bierman UKF** control blocks is `yaflUKFAdaptivedSt`. The basic type for `yaflUKFAdaptivedSt` is `yaflUKFBaseSt`.
+The type of **Adaptive Bierman UKF** control blocks is `yaflUKFAdaptivedSt`. The basic type for `yaflUKFAdaptivedSt` is `yaflUKFBaseSt`.
 
 The memory mixin used is `YAFL_UKF_BASE_MEMORY_MIXIN` which is similar to other memory mixins in YAFL.
 
 The initializer used is `YAFL_UKF_ADAPTIVE_INITIALIZER` which is simmilar to `YAFL_UKF_BASE_INITIALIZER`.
 
 Predict and update functions are simmilar to their **Adaptive EKF** counterparts.
+
 The predict function is `yafl_ukf_adaptive_bierman_predict`.
+
 The update function is `yafl_ukf_adaptive_bierman_update`.
 
-The filter bootstap initialization and run are simmilar to **Basic Bierman UKF**.
+The filter bootstap initialization and run are simmilar to **Bierman UKF**.
 
 #### Robust Bierman UKF
 
-The type **Robust Bierman UKF** control blocks is `yaflUKFRobustSt`. The basic type for `yaflUKFRobustSt` is `yaflUKFBaseSt`.
+The type of **Robust Bierman UKF** control blocks is `yaflUKFRobustSt`. The basic type for `yaflUKFRobustSt` is `yaflUKFBaseSt`.
 
 The memory mixin used is `YAFL_UKF_BASE_MEMORY_MIXIN` which is similar to other memory mixins in YAFL.
 
@@ -1182,10 +1184,12 @@ where:
 So **Robust Bierman UKF** is simmilar to **Robust Bierman EKF**.
 
 Predict and update functions are simmilar to their **Adaptive EKF** counterparts.
+
 The predict function is `yafl_ukf_robust_bierman_predict`.
+
 The update function is `yafl_ukf_robust_bierman_update`.
 
-The filter bootstap initialization and run are simmilar to **Basic Bierman UKF** whith the following exception:
+The filter bootstap initialization and run are simmilar to **Bierman UKF** whith the following exception:
 
 ```C
 extern yaflFloat psi(yaflKalmanBaseSt * self, yaflFloat normalized_error);
@@ -1198,16 +1202,60 @@ yaflEKFBaseSt kf = YAFL_UKF_ROBUST_INITIALIZER(sp, yafl_ukf_merwe_spm, fx, xmf, 
 
 #### Adaptive robust Bierman UKF
 
-The type **Adaptive robust Bierman UKF** control blocks is `yaflUKFAdaptiveRobustSt`. The basic type for `yaflUKFAdaptiveRobustSt` is `yaflUKFRobustSt`.
+The type of **Adaptive robust Bierman UKF** control blocks is `yaflUKFAdaptiveRobustSt`. The basic type for `yaflUKFAdaptiveRobustSt` is `yaflUKFRobustSt`.
 
 The memory mixin used is `YAFL_UKF_BASE_MEMORY_MIXIN` which is similar to other memory mixins in YAFL.
 
 The initializer used is `YAFL_UKF_ADAPTIVE_ROBUST_INITIALIZER` which is simmilar to `YAFL_UKF_ROBUST_INITIALIZER`.
 
 Predict and update functions are simmilar to their **Adaptive EKF** counterparts.
+
 The predict function is `yafl_ukf_adaptive_robust_bierman_predict`.
+
 The update function is `yafl_ukf_adaptive_robust_bierman_update`.
 
 The filter bootstap initialization and run are simmilar to **Robust Bierman UKF**.
 
-Work in progress...
+#### UD-factorized UKF
+
+The filter does not use recusions simmilar to sequential filters.
+
+The type of **UD-factorized UKF** control blocks is `yaflUKFSt`. The basic type for `yaflUKFSt` is `yaflUKFBaseSt`.
+
+The memory mixin used is `YAFL_UKF_MEMORY_MIXIN` which is similar to other memory mixins in YAFL.
+
+The initializer used is `YAFL_UKF_INITIALIZER` which is simmilar to `YAFL_UKF_BASE_INITIALIZER`.
+
+Predict and update functions are simmilar to their **Bierman UKF** counterparts.
+
+The predict function is `yafl_ukf_predict`.
+
+The update function is `yafl_ukf_update`.
+
+The filter bootstap initialization and run are simmilar to **Bierman UKF**.
+
+#### UD-factorized adaptive UKF
+
+The filter does not use recusions simmilar to sequential filters.
+
+The type of **UD-factorized adaptive UKF** control blocks is `yaflUKFFullAdapiveSt`. The basic type for `yaflUKFFullAdapiveSt` is `yaflUKFSt`.
+
+The memory mixin used is `YAFL_UKF_MEMORY_MIXIN` which is similar to other memory mixins in YAFL.
+
+The initializer used is: `YAFL_UKF_INITIALIZER`
+```C
+/*                                                  points   points_metods    fx  xmf  xrf  hx  zmf  zrf  nx  nz  chi2    memory */
+yaflEKFBaseSt kf = YAFL_UKF_FULL_ADAPTIVE_INITIALIZER(sp, yafl_ukf_merwe_spm, fx, xmf, xrf, hx, zmf, zrf, NX, NX, chi2, ukf_memory);
+```
+where `chi2` must be set to `scipy.stats.chi2.ppf(1.0 - some_small_number, NZ)` as we can not predict `chi2` for specific `nz` at compile time using C-preprocessor.
+
+Predict and update functions are simmilar to their **Bierman UKF** counterparts.
+
+The predict function is `yafl_ukf_adaptive_predict`.
+
+The update function is `yafl_ukf_adaptive_update`.
+
+The filter bootstap initialization and run are simmilar to **UD-factorized UKF** with exception of `YAFL_UKF_FULL_ADAPTIVE_INITIALIZER` which needs `chi2` value.
+
+## Good luck \%username\%
+And we hope that you run YAFL on your MCUs and get some usefull results.
