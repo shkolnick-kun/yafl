@@ -34,6 +34,7 @@ pyximport.install(
         }
     )
 
+import yaflpy
 #from yaflpy import RobustJoseph as KF
 #from yaflpy import RobustBierman as KF
 #from yaflpy import AdaptiveRobustJoseph as KF
@@ -97,8 +98,8 @@ def _zrf(a,b):
 STD = 100.
 
 #kf = KF(4, 2, 1., _fx, _jfx, _hx, _jhx, residual_z=_zrf)
-#kf = KF(4, 2, 1., _fx, _jfx, _hx, _jhx, gz=_gz, gdotz=_gdotz)
-kf = KF(4, 2, 1., _fx, _jfx, _hx, _jhx)
+kf = KF(4, 2, 1., _fx, _jfx, _hx, _jhx, gz=_gz, gdotz=_gdotz)
+#kf = KF(4, 2, 1., _fx, _jfx, _hx, _jhx)
 kf.x[0] = 1000.
 kf.x[1] = -0.5
 kf.Dp *= .00001
@@ -108,9 +109,9 @@ kf.Dr *= STD
 kf.Dr[0] *= .87
 kf.Ur += 0.5
 
-#kf.chi2 = 8.807468393511947
+#kf.chi2 = scipy.stats.chi2.ppf(0.996, 1)
 
-N = 12000
+N = 6000
 
 clean = np.zeros((N, 2))
 noisy = np.zeros((N, 2))

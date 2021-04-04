@@ -862,8 +862,6 @@ cdef class DoNotUseThisFilter(yaflAdaptiveBase):
         return yafl_ekf_base_update(&self.c_self.base.base, &self.v_z[0], \
                                     yafl_ekf_do_not_use_this_update_scalar)
 
-###########
-
 #==============================================================================
 #                        Robust filter basic class
 #==============================================================================
