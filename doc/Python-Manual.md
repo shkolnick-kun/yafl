@@ -120,8 +120,8 @@ where:
 
 This class extends `yaflpy.yaflKalmanBase`. This class is not supposet to be used directly.
 
-#### Basic EKF variants:
-Basic UD-factorized **EKF** cariants are:
+#### Basic EKF variants
+Basic UD-factorized **EKF** variants are:
 ```Python
 class yaflpy.Bierman(dim_x, dim_z, dt, fx, jfx, hx, jhx, residual_z = None)
 ```
@@ -184,16 +184,15 @@ kf.Ur += 0.5
 # Generate some data
 N = 6000
 
-clean = np.zeros((N, 2))
-noisy = np.zeros((N, 2))
-t     = np.zeros((N,), dtype=np.float)
+clean  = np.zeros((N, 2))
+noisy  = np.zeros((N, 2))
+kf_out = np.zeros((N, 2))
+t      = np.zeros((N,), dtype=np.float)
 
 for i in range(1, len(clean)):
     clean[i] = clean[i-1] + np.array([1.,1.])
     noisy[i] = clean[i]   + np.random.normal(scale=STD, size=2)
     t[i] = i
-
-kf_out = np.zeros((N, 2))
 
 #Run the filter
 for i, z in enumerate(noisy):
@@ -201,5 +200,75 @@ for i, z in enumerate(noisy):
     kf.update(z)
     kf_out[i] = kf.x[::2]
 ```
+
+#### Adaptive EKF variants
+
+Basic class for adaptive UD-factorized **EKF** variants is
+```Python
+class yaflpy.yaflAdaptiveBase(dim_x, dim_z, dt, fx, jfx, hx, jhx, residual_z = None)
+```
+This class is based on `yaflpy.yaflExtendedBase` and adds `chi2` attribute to it.
+This class is not supposed to be used directly.
+
+Adaptive UD-factorized **EKF** variants are:
+```Python
+class yaflpy.AdaptiveBierman(dim_x, dim_z, dt, fx, jfx, hx, jhx, residual_z = None)
+```
+and
+```Python
+class yaflpy.AdaptiveJoseph(dim_x, dim_z, dt, fx, jfx, hx, jhx, residual_z = None)
+```
+
+Both classes extend `yaflpy.yaflAdaptiveBase` by implemrnting `_update(self)` method with corresponding update procedures.
+Both classes APIs are simmilar to basic variants.
+
+#### Robust EKF variants
+
+Basic class for adaptive UD-factorized **EKF** variants is
+```Python
+class yaflpy.yaflRobustBase(dim_x, dim_z, dt, fx, jfx, hx, jhx, gz=None, gdotz=None, **kwargs)
+```
+
+This class is based on `yaflpy.yaflExtendedBase` and adds the following attrbutes to it:
+* `gz :function(nu, **hx_args)` is influence function. Returns: `float`.
+* `gdotz :function(nu, **hx_args)` is influence function first derivative. Returns: `float`.
+Both functions take `hx_args` which is `hx` function **kwargs**
+
+This class is not supposed to be used directly.
+
+Adaptive UD-factorized **EKF** variants are:
+```Python
+class yaflpy.RobustBierman(dim_x, dim_z, dt, fx, jfx, hx, jhx, residual_z = None)
+```
+and
+```Python
+class yaflpy.RobustJoseph(dim_x, dim_z, dt, fx, jfx, hx, jhx, residual_z = None)
+```
+
+Both classes extend `yaflpy.yaflRobustBase` by implemrnting `_update(self)` method with corresponding update procedures.
+Both classes APIs are simmilar to basic variants.
+
+#### Adaptive robust EKF variants
+
+Basic class for adaptive UD-factorized **EKF** variants is
+```Python
+class yaflpy.yaflAdaptiveRobustBase(dim_x, dim_z, dt, fx, jfx, hx, jhx, gz=None, gdotz=None, **kwargs)
+```
+
+This class is based on `yaflpy.yaflRobustBase` and adds `chi2` attribute to it.
+This class is not supposed to be used directly.
+
+Adaptive UD-factorized **EKF** variants are:
+```Python
+class yaflpy.AdaptiveRobustBierman(dim_x, dim_z, dt, fx, jfx, hx, jhx, residual_z = None)
+```
+and
+```Python
+class yaflpy.AdaptiveRobustJoseph(dim_x, dim_z, dt, fx, jfx, hx, jhx, residual_z = None)
+```
+
+Both classes extend `yaflpy.yaflAdaptiveRobustBase` by implemrnting `_update(self)` method with corresponding update procedures.
+Both classes APIs are simmilar to basic variants.
+
 
 Work in progress...
