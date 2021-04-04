@@ -41,7 +41,7 @@ pyximport.install(
 import yaflpy
 ```
 
-## YAFLPY API
+## YAFL python extension API
 Actually the API is quite simmilar to [FilterPy](https://filterpy.readthedocs.io/en/latest/index.html).
 We will focus on YAFL features, goto FilterPy documentation for the rest.
 
@@ -94,6 +94,9 @@ where:
 
 All other classes extend `yaflKalmanBase`. This base class is not supposed to be used directly.
 Its API is based on [**UKF**](https://filterpy.readthedocs.io/en/latest/kalman/UnscentedKalmanFilter.html) from FilterPy.
+
+**NOTE: Only `predict` and `update` methods are supported by filters in YAFL at the moment.**
+
 
 #### Attributes
 The Kalman filter has these attrbutes:
@@ -219,7 +222,7 @@ and
 class yaflpy.AdaptiveJoseph(dim_x, dim_z, dt, fx, jfx, hx, jhx, residual_z = None)
 ```
 
-Both classes extend `yaflpy.yaflAdaptiveBase` by implemrnting `_update(self)` method with corresponding update procedures.
+Both classes extend `yaflpy.yaflAdaptiveBase` by implementing `_update(self)` method with corresponding update procedures.
 Both classes APIs are simmilar to basic variants.
 
 #### Robust EKF variants
@@ -229,10 +232,10 @@ Basic class for adaptive UD-factorized **EKF** variants is
 class yaflpy.yaflRobustBase(dim_x, dim_z, dt, fx, jfx, hx, jhx, gz=None, gdotz=None, **kwargs)
 ```
 
-This class is based on `yaflpy.yaflExtendedBase` and adds the following attrbutes to it:
+This class is based on `yaflpy.yaflExtendedBase` and adds the following hidden attrbutes to it:
 * `gz :function(nu, **hx_args)` is influence function. Returns: `float`.
 * `gdotz :function(nu, **hx_args)` is influence function first derivative. Returns: `float`.
-Both functions take `hx_args` which is `hx` function **kwargs**
+Both functions take `hx_args` which are `hx` function **kwargs**
 
 This class is not supposed to be used directly.
 
@@ -245,7 +248,7 @@ and
 class yaflpy.RobustJoseph(dim_x, dim_z, dt, fx, jfx, hx, jhx, residual_z = None)
 ```
 
-Both classes extend `yaflpy.yaflRobustBase` by implemrnting `_update(self)` method with corresponding update procedures.
+Both classes extend `yaflpy.yaflRobustBase` by implementing `_update(self)` method with corresponding update procedures.
 Both classes APIs are simmilar to basic variants.
 
 #### Adaptive robust EKF variants
@@ -267,8 +270,154 @@ and
 class yaflpy.AdaptiveRobustJoseph(dim_x, dim_z, dt, fx, jfx, hx, jhx, residual_z = None)
 ```
 
-Both classes extend `yaflpy.yaflAdaptiveRobustBase` by implemrnting `_update(self)` method with corresponding update procedures.
+Both classes extend `yaflpy.yaflAdaptiveRobustBase` by implementing `_update(self)` method with corresponding update procedures.
 Both classes APIs are simmilar to basic variants.
 
+### UKF stuf
+#### Sigma points generator base class
+The base class for sigma points generators is:
+```Python
+class yaflpy.yaflSigmaBase(dim_x, addf=None)
+```
+where:
+* `addf: function(mean, delta, mult)` which computes `sigma_point = mean + delta * mult`
 
-Work in progress...
+This class is a wrapper around `yaflUKFBaseSt` type from [src/yafl.h](../src/yafl.h).
+This class is not supposed to be used directly.
+
+#### Filter base class
+The base class for all **UKF** variants is
+```Python
+class yaflpy.yaflUnscentedBase(dim_x, dim_z, dt, hx, fx, points, x_mean_fn=None, z_mean_fn=None, residual_x=None, residual_z=None)
+```
+where:
+* `points :yaflSigmaBase` is a sigma points generator object.
+* `x_mean_fn :function(state_sigmas)` is function which computes state sigma points mean. Takes `np.array((points_number, dim_x))`, returns `np.array((dim_x,))`.
+* `z_mean_fn :function(measurement_sigmas)` is function which computes measurements sigma points mean. Takes `np.array((points_number, dim_z))`, returns `np.array((dim_z,))`.
+* `residual_x :function(a, b)`, optional, is state residual function.
+
+This class is very simmilar to `filterpy.kalman.UnscentedKalmanFilter`, see FilterPy [docs](https://filterpy.readthedocs.io/en/latest/kalman/UnscentedKalmanFilter.html).
+This class extends `yaflpy.yaflKalmanBase`. This class is not supposet to be used directly.
+
+#### Bierman UKF variants
+
+##### Basic Bierman **UKF** class
+```Python
+class yaflpy.UnscentedBierman(dim_x, dim_z, dt, hx, fx, points, x_mean_fn=None, z_mean_fn=None, residual_x=None, residual_z=None)
+```
+
+This class extends `yaflpy.yaflUnscentedBase` by implementing `_update(self)` method.
+
+The example code is:
+```Python
+from yaflpy import MerweSigmaPoints as SP
+from yaflpy import UnscentedBierman as KF
+
+# Bootstrap the filter
+STD = 100.
+
+def _fx(x, dt, **fx_args):
+    x = x.copy()
+    x[0] += x[1] * dt
+    x[2] += x[3] * dt
+    return x
+
+
+def _hx(x, **hx_args):
+    if hx_args:
+        print(hx_args)
+    return np.array([x[0], x[2]])
+
+
+def _zrf(a,b):
+    return a - b
+
+sp = SP(4, 0.1, 2., 0)
+kf = KF(4, 2, 1., _hx, _fx, sp, residual_z=_zrf)
+
+kf.x[0] = 0.
+kf.x[1] = 0.3
+kf.Dp *= .00001
+kf.Dq *= 1.0e-8
+kf.Dr *= STD*STD
+kf.Dr[0] *= .75
+kf.Ur += .5
+
+# Generate some data
+N = 6000
+clean = np.zeros((N, 2))
+noisy = np.zeros((N, 2))
+kf_out = np.zeros((N, 2))
+t     = np.zeros((N,), dtype=np.float)
+
+for i in range(1, len(clean)):
+    clean[i] = clean[i-1] + np.array([1.,1.])
+    noisy[i] = clean[i]   + np.random.normal(scale=STD, size=2)
+    t[i] = i
+
+# Run the filter
+for i, z in enumerate(noisy):
+    kf.predict()
+    kf.update(z)
+    kf_out[i] = kf.zp
+```
+
+##### Adaptive Bierman **UKF** class
+```Python
+class yaflpy.UnscentedAdaptiveBierman(dim_x, dim_z, yaflFloat dt, hx, fx, points, **kwargs)
+```
+This class extends `yaflpy.yaflUnscentedBase` by addition of `chi2` attribute and implementation of `_update(self)` method.
+
+THe usage is similar to `yaflpy.UnscentedBierman`.
+
+##### Robust Bierman **UKF** class
+```Python
+class yaflpy.UnscentedRobustBierman(dim_x, dim_z, dt, hx, fx, points, gz=None, gdotz=None, **kwargs)
+```
+
+This class extends `yaflpy.yaflRobustUKFBase` by implementation of `_update(self)` method.
+
+THe usage is similar to `yaflpy.UnscentedBierman`.
+
+The `yaflpy.yaflRobustUKFBase` class extends `yaflpy.yaflUnscentedBase` by addition of the following hidden attrbutes:
+* `gz :function(nu, **hx_args)` is influence function. Returns: `float`.
+* `gdotz :function(nu, **hx_args)` is influence function first derivative. Returns: `float`.
+
+##### Adaptive robust Bierman **UKF** class
+```Python
+class yaflpy.UnscentedAdaptiveRobustBierman(dim_x, dim_z, dt, hx, fx, points, **kwargs)
+```
+
+This class extends `yaflpy.yaflAdaptiveRobustUKFBase` by implementation of `_update(self)` method.
+
+THe usage is similar to `yaflpy.UnscentedBierman`.
+
+The `yaflpy.yaflAdaptiveRobustUKFBase` class extends `yaflpy.yaflRobustUKFBase` by addition `chi2` attribute.
+
+#### UD-factorized "Full" UKF variants
+##### Unscented
+```Python
+class yaflpy.Unscented(dim_x, dim_z, dt, hx, fx, points, **kwargs)
+```
+
+This class extends `yaflpy.yaflUnscentedBase` by implementation of `_update` method and by addition of the following attributes:
+* `Us :np.array((max(1, (dim_x * (dim_x - 1))//2), ))` is vector with upper triangular elements of S
+* `Ds :np.array((dim_x, ))` is vector with diagonal elements of S
+See FilterPy [docs](https://filterpy.readthedocs.io/en/latest/kalman/UnscentedKalmanFilter.html) for details.
+
+THe usage is similar to `yaflpy.UnscentedBierman`.
+
+##### UnscendedAdaptive
+```Python
+class yaflpy.UnscentedAdaptive(dim_x, dim_z, dt, hx, fx, points, aplha = 0.000001, **kwargs)
+```
+where:
+* `alpha: float` is probability margin which is use to initiate `chi2` attribute by `scipy.stats.chi2.ppf(1.0 - aplha, dim_z)`
+
+This class extends `yaflpy.Unscented` by implementation of `_update` method and by addition of `chi2` attribute.
+
+THe usage is similar to `yaflpy.UnscentedBierman`.
+
+## Good luck \%usename\%
+
+Happy prototyping with YAFL python extension.
