@@ -1,9 +1,17 @@
 # Yet Another Filtering library
 
-**YAFL** means Yet Another Filtering Library.
+**YAFL** means Yet Another Filtering Library. Our library is in **aplha** stage. So, if you need some mature lib then you should consider the dolutions listed below.
+
+There sre several libraries which implement Kalman filters for, e.g.:
+* [TinyEKF](https://github.com/simondlevy/TinyEKF) which is intended for usage on FPU enabled platforms;
+* [libfixkalman](https://github.com/sunsided/libfixkalman) which can be used without FPU.
+
+There are also libraries for python:
+* [FilterPy](https://github.com/rlabbe/filterpy)
+* [pykalman](https://github.com/pykalman/pykalman)
 
 ## The library
-Here you can find some **Kalman filter** variants:
+In our you can find some **Kalman filter** variants:
 
 | Algorithm family | Basic        | Adaptive     | Robust       | Adaptive robust |
 | :--------------- | :----------: | :----------: | :----------: | --------------: |
@@ -21,14 +29,14 @@ where:
 * **Robust**   means **Robustified Kalman filter**, see [**West1981**](#west_1981)
 
 For all **EKF** variants we have **Bierman** and **Joseph** updates.
-For sequential UD-factorized **UKF** only **Bierman** updates are available.
+For sequential UD-factorized **UKF** only **Bierman** updates have been implemented.
 
 And yes, we [**can actually**](./doc/UsingEKFTricksWithSPKF.pdf) use **EKF** tricks with **UKF**!
 
 The library is written in C and is intended for embedded systems usage:
 * We use static memory allocation
 * We use cache-friendly algorithms when available.
-* Regularization techniques used if necessary. The code is numerically stable.
+* Regularization techniques are used when necessary. The code is numerically stable.
 * Depends only on C standard library.
 
 To use the library you need to:
