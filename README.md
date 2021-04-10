@@ -1,14 +1,14 @@
 # Yet Another Filtering library
 
-**YAFL** means Yet Another Filtering Library. Our library is in **aplha** stage. So, if you need some mature lib then you should consider the dolutions listed below.
+**YAFL** means Yet Another Filtering Library. Our library is in **aplha** stage. So, if you need some mature lib then you should consider the solutions listed below.
 
 There sre several libraries which implement Kalman filters for, e.g.:
 * [TinyEKF](https://github.com/simondlevy/TinyEKF) which is intended for usage on FPU enabled platforms;
 * [libfixkalman](https://github.com/sunsided/libfixkalman) which can be used without FPU.
 
 There are also libraries for python:
-* [FilterPy](https://github.com/rlabbe/filterpy)
-* [pykalman](https://github.com/pykalman/pykalman)
+* [FilterPy](https://github.com/rlabbe/filterpy);
+* [pykalman](https://github.com/pykalman/pykalman).
 
 ## The library
 In our you can find some **Kalman filter** variants:
