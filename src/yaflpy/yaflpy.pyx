@@ -23,9 +23,14 @@
 from libc cimport stdint
 
 #------------------------------------------------------------------------------
-cdef extern from "yafl_config.h":
-    ctypedef double         yaflFloat
-    ctypedef stdint.int32_t yaflInt
+IF YAFLPY_USE_64_BIT:
+    cdef extern from "yafl_config.h":
+        ctypedef double         yaflFloat
+        ctypedef stdint.int32_t yaflInt
+ELSE:
+    cdef extern from "yafl_config.h":
+        ctypedef float          yaflFloat
+        ctypedef stdint.int32_t yaflInt
 
 #------------------------------------------------------------------------------
 cdef extern from "yafl_math.c":
@@ -314,6 +319,11 @@ import scipy.stats as st
 import traceback as tb
 
 #==============================================================================
+IF YAFLPY_USE_64_BIT:
+    NP_DTYPE = np.float64
+ELSE:
+    NP_DTYPE = np.float32
+
 #Status masks
 ST_MSK_REGULARIZED  = YAFL_ST_MSK_REGULARIZED
 ST_MSK_GLITCH_SMALL = YAFL_ST_MSK_GLITCH_SMALL
@@ -454,38 +464,38 @@ cdef class yaflKalmanBase:
             self._residual_z = None
 
         # Allocate memories and setup the rest of c_self
-        self._z  = np.zeros((dim_z,), dtype=np.float64)
+        self._z  = np.zeros((dim_z,), dtype=NP_DTYPE)
         self.v_z = self._z
 
-        self._x  = np.zeros((dim_x,), dtype=np.float64)
+        self._x  = np.zeros((dim_x,), dtype=NP_DTYPE)
         self.v_x = self._x
         self.c_self.base.base.x = &self.v_x[0]
 
-        self._y  = np.zeros((dim_z,), dtype=np.float64)
+        self._y  = np.zeros((dim_z,), dtype=NP_DTYPE)
         self.v_y = self._y
         self.c_self.base.base.y = &self.v_y[0]
 
-        self._Up  = np.zeros((_U_sz(dim_x),), dtype=np.float64)
+        self._Up  = np.zeros((_U_sz(dim_x),), dtype=NP_DTYPE)
         self.v_Up = self._Up
         self.c_self.base.base.Up = &self.v_Up[0]
 
-        self._Dp  = np.ones((dim_x,), dtype=np.float64)
+        self._Dp  = np.ones((dim_x,), dtype=NP_DTYPE)
         self.v_Dp = self._Dp
         self.c_self.base.base.Dp = &self.v_Dp[0]
 
-        self._Uq  = np.zeros((_U_sz(dim_x),), dtype=np.float64)
+        self._Uq  = np.zeros((_U_sz(dim_x),), dtype=NP_DTYPE)
         self.v_Uq = self._Uq
         self.c_self.base.base.Uq = &self.v_Uq[0]
 
-        self._Dq  = np.ones((dim_x,), dtype=np.float64)
+        self._Dq  = np.ones((dim_x,), dtype=NP_DTYPE)
         self.v_Dq = self._Dq
         self.c_self.base.base.Dq = &self.v_Dq[0]
 
-        self._Ur  = np.zeros((_U_sz(dim_z),), dtype=np.float64)
+        self._Ur  = np.zeros((_U_sz(dim_z),), dtype=NP_DTYPE)
         self.v_Ur = self._Ur
         self.c_self.base.base.Ur = &self.v_Ur[0]
 
-        self._Dr  = np.ones((dim_z,), dtype=np.float64)
+        self._Dr  = np.ones((dim_z,), dtype=NP_DTYPE)
         self.v_Dr = self._Dr
         self.c_self.base.base.Dr = &self.v_Dr[0]
 
@@ -729,15 +739,15 @@ cdef class yaflExtendedBase(yaflKalmanBase):
 
 
         # Allocate memories and setup the rest of c_self
-        self._H  = np.zeros((dim_z, dim_x), dtype=np.float64)
+        self._H  = np.zeros((dim_z, dim_x), dtype=NP_DTYPE)
         self.v_H = self._H
         self.c_self.base.ekf.H = &self.v_H[0, 0]
 
-        self._W  = np.zeros((dim_x, 2 * dim_x), dtype=np.float64)
+        self._W  = np.zeros((dim_x, 2 * dim_x), dtype=NP_DTYPE)
         self.v_W = self._W
         self.c_self.base.ekf.W = &self.v_W[0,0]
 
-        self._D  = np.ones((2 * dim_x,), dtype=np.float64)
+        self._D  = np.ones((2 * dim_x,), dtype=NP_DTYPE)
         self.v_D = self._D
         self.c_self.base.ekf.D = &self.v_D[0]
 
@@ -1140,32 +1150,32 @@ cdef class yaflUnscentedBase(yaflKalmanBase):
         # Sigma points and weights
         pnum = _points.pnum
 
-        self._wm  = np.zeros((pnum,), dtype=np.float64)
+        self._wm  = np.zeros((pnum,), dtype=NP_DTYPE)
         self.v_wm = self._wm
         self.c_self.base.ukf.wm = &self.v_wm[0]
 
-        self._wc  = np.zeros((pnum,), dtype=np.float64)
+        self._wc  = np.zeros((pnum,), dtype=NP_DTYPE)
         self.v_wc = self._wc
         self.c_self.base.ukf.wc = &self.v_wc[0]
 
-        self._sigmas_x  = np.zeros((pnum, dim_x), dtype=np.float64)
+        self._sigmas_x  = np.zeros((pnum, dim_x), dtype=NP_DTYPE)
         self.v_sigmas_x = self._sigmas_x
         self.c_self.base.ukf.sigmas_x = &self.v_sigmas_x[0, 0]
 
-        self._sigmas_z  = np.zeros((pnum, dim_z), dtype=np.float64)
+        self._sigmas_z  = np.zeros((pnum, dim_z), dtype=NP_DTYPE)
         self.v_sigmas_z = self._sigmas_z
         self.c_self.base.ukf.sigmas_z = &self.v_sigmas_z[0, 0]
 
         #Rest of rhe UKF
-        self._zp  = np.zeros((dim_z,), dtype=np.float64)
+        self._zp  = np.zeros((dim_z,), dtype=NP_DTYPE)
         self.v_zp = self._zp
         self.c_self.base.ukf.zp = &self.v_zp[0]
 
-        self._Pzx  = np.zeros((dim_z, dim_x), dtype=np.float64)
+        self._Pzx  = np.zeros((dim_z, dim_x), dtype=NP_DTYPE)
         self.v_Pzx = self._Pzx
         self.c_self.base.ukf.Pzx = &self.v_Pzx[0, 0]
 
-        self._Sx  = np.zeros((dim_x,), dtype=np.float64)
+        self._Sx  = np.zeros((dim_x,), dtype=NP_DTYPE)
         self.v_Sx = self._Sx
         self.c_self.base.ukf.Sx = &self.v_Sx[0]
 
@@ -1524,11 +1534,11 @@ cdef class Unscented(yaflUnscentedBase):
 
         super().__init__(dim_x, dim_z, dt, hx, fx, points, **kwargs)
 
-        self._Us  = np.zeros((_U_sz(dim_z),), dtype=np.float64)
+        self._Us  = np.zeros((_U_sz(dim_z),), dtype=NP_DTYPE)
         self.v_Us = self._Us
         self.c_self.base.ukf_full.Us = &self.v_Us[0]
 
-        self._Ds  = np.ones((dim_z,), dtype=np.float64)
+        self._Ds  = np.ones((dim_z,), dtype=NP_DTYPE)
         self.v_Ds = self._Ds
         self.c_self.base.ukf_full.Ds = &self.v_Ds[0]
 

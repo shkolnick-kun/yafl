@@ -24,13 +24,23 @@
 
 #define YAFL_LOG(...) fprintf(stderr, __VA_ARGS__)
 
-typedef double  yaflFloat;
 typedef int32_t yaflInt;
 
-#define YAFL_EPS  (1.0e-15)
+#ifndef YAFL_USE_64_BIT
+#   define YAFL_USE_64_BIT (0)
+#endif/*YAFL_USE_64_BIT*/
 
-#define YAFL_SQRT sqrt
-#define YAFL_ABS  abs
+#if YAFL_USE_64_BIT
+    typedef double  yaflFloat;
+#   define YAFL_EPS  (1.0e-15)
+#   define YAFL_SQRT sqrt
+#   define YAFL_ABS  fabs
+#else/*YAFL_USE_64_BIT*/
+    typedef float  yaflFloat;
+#   define YAFL_EPS  (1.0e-7)
+#   define YAFL_SQRT sqrtf
+#   define YAFL_ABS  fabsf
+#endif/*YAFL_USE_64_BIT*/
 
 #ifdef __GNUC__
 #   define YAFL_UNLIKELY(x) __builtin_expect((x), 0)

@@ -151,7 +151,6 @@ yaflStatusEn yafl_ekf_base_update(yaflKalmanBaseSt * self, yaflFloat * z, yaflKa
     }
 
     /* Decorrelate measurement noise */
-
     YAFL_TRY(status, yafl_math_ruv(_NZ,      _Y,  _UR));
     YAFL_TRY(status, yafl_math_rum(_NZ, _NX, _HY, _UR));
 

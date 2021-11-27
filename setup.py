@@ -50,6 +50,7 @@ from setuptools import Extension, setup
 
 try:
     from Cython.Build import cythonize
+    from Cython.Compiler.Main import default_options
 except ImportError:
     cythonize = None
 
@@ -74,10 +75,21 @@ SETUP_DIR = dirname(__file__)
 SRC_DIR   = join(SETUP_DIR, "src")
 EXT_DIR   = join(SRC_DIR, EXT_NAME)
 
+DEFINES = [("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")]
+CT_ENV  = {"YAFLPY_USE_64_BIT":False}
+
+if int(os.getenv("YAFL_64", 0)):
+    #Override defaults in 64 bit case
+    print('YAFL: The extensuion will be compiled in 64 bit variant!!!')
+    CT_ENV   = {"YAFLPY_USE_64_BIT":True}
+    DEFINES += [("YAFL_USE_64_BIT",1)]
+
 extensions = [
     Extension(EXT_NAME, [join(EXT_DIR, EXT_NAME + ".pyx")],
-        include_dirs=[numpy.get_include(), SRC_DIR, EXT_DIR],
-        define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")])
+              language='c',
+              include_dirs=[numpy.get_include(), SRC_DIR, EXT_DIR],
+              define_macros=DEFINES
+              )
     ]
 
 if not isfile(join(EXT_DIR, EXT_NAME + ".c")):
@@ -86,7 +98,11 @@ else:
     CYTHONIZE = bool(int(os.getenv("CYTHONIZE", 0))) and cythonize is not None
 
 if CYTHONIZE:
-    compiler_directives = {"language_level": 3, "embedsignature": True}
+    default_options["compile_time_env"] = CT_ENV
+    compiler_directives = {
+        "language_level": 3,
+        "embedsignature": True
+        }
     extensions = cythonize(extensions, compiler_directives=compiler_directives)
 else:
     extensions = no_cythonize(extensions)
