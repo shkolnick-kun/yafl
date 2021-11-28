@@ -1809,7 +1809,7 @@ static yaflStatusEn _merwe_generate_points(yaflUKFBaseSt * self)
         yaflFloat mult;
         mult = YAFL_SQRT(dp[i] * lambda_p_n);
         YAFL_TRY(status, \
-                 _add_delta(self, addf, nx, sigmas_x + nx * i, x,   mult));
+                 _add_delta(self, addf, nx, sigmas_x + nx * i,        x,   mult));
         YAFL_TRY(status, \
                  _add_delta(self, addf, nx, sigmas_x + nx * (nx + i), x, - mult));
     }
@@ -1822,6 +1822,110 @@ const yaflUKFSigmaMethodsSt yafl_ukf_merwe_spm =
 {
     .wf   = _merwe_compute_weights,
     .spgf = _merwe_generate_points
+};
+
+/*=============================================================================
+                    Julier sigma points generator
+=============================================================================*/
+static yaflStatusEn _julier_compute_weights(yaflUKFBaseSt * self)
+{
+    yaflStatusEn status = YAFL_ST_OK;
+    yaflInt np;
+    yaflInt nx;
+    yaflInt i;
+    yaflFloat * wc;
+    yaflFloat * wm;
+    yaflUKFSigmaSt * sp_info;
+    yaflFloat kappa;
+    yaflFloat c;
+
+    YAFL_CHECK(self, YAFL_ST_INV_ARG_1);
+    nx = _UNX;
+    YAFL_CHECK(_UNX, YAFL_ST_INV_ARG_1);
+
+    YAFL_CHECK(_WM, YAFL_ST_INV_ARG_1);
+    wm = _WM;
+
+    YAFL_CHECK(_WC, YAFL_ST_INV_ARG_1);
+    wc = _WC;
+
+    YAFL_CHECK(self->sp_info, YAFL_ST_INV_ARG_1);
+    sp_info = self->sp_info;
+
+    YAFL_CHECK(sp_info->np, YAFL_ST_INV_ARG_1);
+    np = sp_info->np - 1;    /*Achtung!!!*/
+
+    kappa = ((yaflUKFJulierSt *)sp_info)->kappa;
+
+    wm[np] = kappa / (nx + kappa);
+    wc[np] = wm[np];
+
+    c = 0.5 / (nx + kappa);
+    for (i = np - 1; i >= 0; i--)
+    {
+        wm[i] = c;
+        wc[i] = c;
+    }
+#undef ALPHA2
+    return status;
+}
+
+/*---------------------------------------------------------------------------*/
+static yaflStatusEn _julier_generate_points(yaflUKFBaseSt * self)
+{
+    yaflStatusEn status = YAFL_ST_OK;
+    yaflInt nx;
+    yaflInt i;
+    yaflFloat * x;
+    yaflFloat * sigmas_x;
+    yaflFloat * dp;
+    yaflUKFSigmaSt * sp_info;
+    yaflUKFSigmaAddP addf;
+    yaflFloat kappa_p_n;
+
+    YAFL_CHECK(self,     YAFL_ST_INV_ARG_1);
+    nx = _UNX;
+    YAFL_CHECK(nx, YAFL_ST_INV_ARG_1);
+
+    x = _UX;
+    YAFL_CHECK(x, YAFL_ST_INV_ARG_1);
+
+    YAFL_CHECK(_UUP, YAFL_ST_INV_ARG_1);
+
+    dp = _UDP;
+    YAFL_CHECK(dp, YAFL_ST_INV_ARG_1);
+
+    sigmas_x = _SIGMAS_X;
+    YAFL_CHECK(sigmas_x, YAFL_ST_INV_ARG_1);
+
+    YAFL_CHECK(self->sp_info, YAFL_ST_INV_ARG_1);
+    sp_info = self->sp_info;
+
+    kappa_p_n = ((yaflUKFJulierSt *)sp_info)->kappa + nx;
+
+    YAFL_TRY(status, yafl_math_bset_ut(nx, sigmas_x, nx, _UUP));
+    memcpy((void *)(sigmas_x + nx * nx), (void *)sigmas_x, \
+           nx * nx * sizeof(yaflFloat));
+
+    addf = sp_info->addf;
+    for (i = 0; i < nx; i++)
+    {
+        yaflFloat mult;
+        mult = YAFL_SQRT(dp[i] * kappa_p_n);
+        YAFL_TRY(status, \
+                 _add_delta(self, addf, nx, sigmas_x + nx * i,        x,   mult));
+        YAFL_TRY(status, \
+                 _add_delta(self, addf, nx, sigmas_x + nx * (nx + i), x, - mult));
+    }
+    memcpy((void *)(sigmas_x + 2 * nx * nx), (void *)x, nx * sizeof(yaflFloat));
+    return status;
+}
+
+/*---------------------------------------------------------------------------*/
+const yaflUKFSigmaMethodsSt yafl_ukf_julier_spm =
+{
+    .wf   = _julier_compute_weights,
+    .spgf = _julier_generate_points
 };
 
 /*=============================================================================

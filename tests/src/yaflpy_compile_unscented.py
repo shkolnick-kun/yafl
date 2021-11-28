@@ -36,7 +36,9 @@ pyximport.install(
         }
     )
 """
-from yaflpy import MerweSigmaPoints as SP
+#from yaflpy import MerweSigmaPoints as SP
+from yaflpy import JulierSigmaPoints as SP
+
 #from yaflpy import Unscented as KF
 #from yaflpy import UnscentedAdaptive as KF
 #from yaflpy import UnscentedBierman as KF
@@ -62,7 +64,8 @@ def _zrf(a,b):
 
 STD = 100.
 
-sp = SP(4, 0.1, 2., 0)
+#sp = SP(4, 0.1, 2., 0)
+sp = SP(4, 0.0)
 kf = KF(4, 2, 1., _hx, _fx, sp)
 #kf = KF(4, 2, 1., _hx, _fx, sp, residual_z=_zrf)
 

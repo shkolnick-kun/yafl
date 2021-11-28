@@ -623,4 +623,29 @@ typedef struct _yaflUKFMerweSt {
 /*---------------------------------------------------------------------------*/
 const yaflUKFSigmaMethodsSt yafl_ukf_merwe_spm;
 
+/*=============================================================================
+                     Julier sigma point generator
+=============================================================================*/
+typedef struct _yaflUKFJulierSt {
+    yaflUKFSigmaSt base;
+    yaflFloat kappa;
+} yaflUKFJulierSt;
+
+/*---------------------------------------------------------------------------*/
+#define YAFL_UKF_JULIER_MEMORY_MIXIN(nx, nz) \
+    yaflFloat wm[2 * nx + 1];               \
+    yaflFloat wc[2 * nx + 1];               \
+    yaflFloat sigmas_x[(2 * nx + 1) * nx];  \
+    yaflFloat sigmas_z[(2 * nx + 1) * nz]
+
+/*---------------------------------------------------------------------------*/
+#define YAFL_UKF_JULIER_INITIALIZER(_nx, _addf, _kappa, _mem) \
+{                                                                           \
+    .base  = YAFL_UKF_SIGMA_BASE_INITIALIZER((2 * _nx + 1), _addf, _mem),   \
+    .kappa = _kappa                                                         \
+}
+
+/*---------------------------------------------------------------------------*/
+const yaflUKFSigmaMethodsSt yafl_ukf_julier_spm;
+
 #endif // YAFL_H

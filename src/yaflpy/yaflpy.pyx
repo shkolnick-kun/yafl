@@ -306,6 +306,15 @@ cdef extern from "yafl.c":
 
     cdef const yaflUKFSigmaMethodsSt yafl_ukf_merwe_spm
 
+    #==========================================================================
+    #                  Julier sigma point generator
+    #==========================================================================
+    ctypedef struct yaflUKFJulierSt:
+        yaflUKFSigmaSt base
+        yaflFloat kappa
+
+    cdef const yaflUKFSigmaMethodsSt yafl_ukf_julier_spm
+
 #==============================================================================
 #Extension API
 #==============================================================================
@@ -1014,6 +1023,7 @@ cdef class AdaptiveRobustJoseph(yaflAdaptiveRobustBase):
 ctypedef union yaflPySigmaBaseUn:
     yaflUKFSigmaSt base
     yaflUKFMerweSt merwe
+    yaflUKFJulierSt julier
 
 #------------------------------------------------------------------------------
 ctypedef struct yaflPySigmaSt:
@@ -1640,3 +1650,28 @@ cdef class MerweSigmaPoints(yaflSigmaBase):
     @kappa.setter
     def kappa(self, value):
         raise AttributeError('MerweSigmaPoints does not support this!')
+
+#==============================================================================
+cdef class JulierSigmaPoints(yaflSigmaBase):
+    """
+    Van der Merwe sigma point generator implementation
+    """
+    def __init__(self, yaflInt dim_x, yaflFloat kappa=0.0, **kwargs):
+        super().__init__(dim_x, **kwargs)
+        self.c_self.base.julier.kappa = kappa
+
+    cdef yaflInt get_np(self, int dim_x):
+        return (2 * dim_x + 1)
+
+    cdef const yaflUKFSigmaMethodsSt * get_spm(self):
+        return &yafl_ukf_julier_spm
+
+    #==========================================================================
+    #Decorators
+    @property
+    def kappa(self):
+        return self.c_self.base.merwe.kappa
+
+    @kappa.setter
+    def kappa(self, value):
+        raise AttributeError('JulierSigmaPoints does not support this!')
