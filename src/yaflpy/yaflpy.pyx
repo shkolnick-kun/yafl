@@ -624,8 +624,8 @@ cdef yaflStatusEn yafl_py_kalman_fx(yaflPyKalmanBaseSt * self, \
         if nx <= 0:
             raise ValueError('nx must be > 0!')
 
-        _new_x = np.asarray(<yaflFloat[:nx]> new_x) #np.float64_t
-        _old_x = np.asarray(<yaflFloat[:nx]> old_x) #np.float64_t
+        _new_x = np.asarray(<yaflFloat[:nx]> new_x) #
+        _old_x = np.asarray(<yaflFloat[:nx]> old_x) #
 
         _new_x[:] = fx(_old_x, dt, **fx_args)
 
@@ -660,8 +660,8 @@ cdef yaflStatusEn yafl_py_kalman_hx(yaflPyKalmanBaseSt * self, \
         if nx <= 0:
             raise ValueError('nz must be > 0!')
 
-        _x = np.asarray(<yaflFloat[:nx]> x) #np.float64_t
-        _z = np.asarray(<yaflFloat[:nz]> z) #np.float64_t
+        _x = np.asarray(<yaflFloat[:nx]> x) #
+        _z = np.asarray(<yaflFloat[:nz]> z) #
 
         _z[:] = hx(_x, **hx_args)
 
@@ -688,9 +688,9 @@ cdef yaflStatusEn yafl_py_kalman_zrf(yaflPyKalmanBaseSt * self, yaflFloat * res,
         if nz <= 0:
             raise ValueError('nx must be > 0!')
 
-        _res   = np.asarray(<yaflFloat[:nz]> res)   #np.float64_t
-        _sigma = np.asarray(<yaflFloat[:nz]> sigma) #np.float64_t
-        _pivot = np.asarray(<yaflFloat[:nz]> pivot) #np.float64_t
+        _res   = np.asarray(<yaflFloat[:nz]> res)   #
+        _sigma = np.asarray(<yaflFloat[:nz]> sigma) #
+        _pivot = np.asarray(<yaflFloat[:nz]> pivot) #
 
         _res[:] = residual_z(_sigma, _pivot)
 
@@ -1108,7 +1108,6 @@ cdef class yaflUnscentedBase(yaflKalmanBase):
 
         super().__init__(dim_x, dim_z, dt, fx, hx, residual_z)
 
-
         if x_mean_fn:
             if not callable(x_mean_fn):
                 raise ValueError('x_mean_fn must be callable!')
@@ -1252,8 +1251,8 @@ cdef yaflStatusEn yafl_py_sigma_addf(yaflPyKalmanBaseSt * self, yaflFloat * delt
         if nx <= 0:
             raise ValueError('nx must be > 0!')
 
-        _delta = np.asarray(<yaflFloat[:nx]> delta) #np.float64_t
-        _pivot = np.asarray(<yaflFloat[:nx]> pivot) #np.float64_t
+        _delta = np.asarray(<yaflFloat[:nx]> delta) #
+        _pivot = np.asarray(<yaflFloat[:nx]> pivot) #
 
         _delta[:] = _addf(_delta, _pivot, mult)
 
@@ -1288,8 +1287,8 @@ cdef yaflStatusEn yafl_py_ukf_xmf(yaflPyKalmanBaseSt * self, \
         if pnum <= 0:
             raise ValueError('pnum must be > 0!')
 
-        _sigmas = np.asarray(<yaflFloat[:pnum, :nx]> sigmas) #np.float64_t
-        _res    = np.asarray(<yaflFloat[:nx]> res)           #np.float64_t
+        _sigmas = np.asarray(<yaflFloat[:pnum, :nx]> sigmas) #
+        _res    = np.asarray(<yaflFloat[:nx]> res)           #
 
         _res[:] = mean_x(_sigmas, _points._wm)
 
@@ -1316,9 +1315,9 @@ cdef yaflStatusEn yafl_py_ukf_xrf(yaflPyKalmanBaseSt * self, yaflFloat * res, \
         if nx <= 0:
             raise ValueError('nx must be > 0!')
 
-        _res   = np.asarray(<yaflFloat[:nx]> res)   #np.float64_t
-        _sigma = np.asarray(<yaflFloat[:nx]> sigma) #np.float64_t
-        _pivot = np.asarray(<yaflFloat[:nx]> pivot) #np.float64_t
+        _res   = np.asarray(<yaflFloat[:nx]> res)   #
+        _sigma = np.asarray(<yaflFloat[:nx]> sigma) #
+        _pivot = np.asarray(<yaflFloat[:nx]> pivot) #
 
         _res[:] = residual_x(_sigma, _pivot)
 
@@ -1353,8 +1352,8 @@ cdef yaflStatusEn yafl_py_ukf_zmf(yaflPyKalmanBaseSt * self, \
         if pnum <= 0:
             raise ValueError('pnum must be > 0!')
 
-        _sigmas = np.asarray(<yaflFloat[:pnum, :nz]> sigmas) #np.float64_t
-        _res    = np.asarray(<yaflFloat[:nz]> res)           #np.float64_t
+        _sigmas = np.asarray(<yaflFloat[:pnum, :nz]> sigmas) #
+        _res    = np.asarray(<yaflFloat[:nz]> res)           #
 
         _res[:] = mean_z(_sigmas, _points._wm)
 

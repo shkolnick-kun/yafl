@@ -37,7 +37,7 @@ typedef int32_t yaflInt;
 #   define YAFL_ABS  fabs
 #else/*YAFL_USE_64_BIT*/
     typedef float  yaflFloat;
-#   define YAFL_EPS  (1.0e-7)
+#   define YAFL_EPS  (1.0e-6)
 #   define YAFL_SQRT sqrtf
 #   define YAFL_ABS  fabsf
 #endif/*YAFL_USE_64_BIT*/

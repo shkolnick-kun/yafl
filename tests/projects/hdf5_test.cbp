@@ -24,6 +24,7 @@
 			<Add option="-Wextra" />
 			<Add option="-Wall" />
 			<Add option="-g" />
+			<Add option="-DYAFL_USE_64_BITS=1" />
 			<Add directory="../src" />
 			<Add directory="../../src" />
 			<Add directory="../../src/yaflpy" />
