@@ -285,6 +285,24 @@ where:
 This class is a wrapper around `yaflUKFBaseSt` type from [src/yafl.h](../src/yafl.h).
 This class is not supposed to be used directly.
 
+#### Van der Merwe sigma points generator
+The generator class is:
+```Python
+class MerweSigmaPoints(dim_x, alpha, beta, kappa=0.0, **kwargs)
+```
+This class is a wrapper around `yaflUKFMerweSt`. It extends `yaflSigmaBase` and adds the following attributes:
+ * `alpha` is a scaling parameter that determines the width of the sigma point spread.
+ * `beta`  is used to account for prior knowledge about the distribution of the mean.
+ * `kappa` is a secondary scaling parameter usually set to 0 or 3-dim_x.
+
+#### Julier sigma points generator
+The generator class is:
+```Python
+class JulierSigmaPoints(dim_x, kappa=0.0, **kwargs)
+```
+This class is a wrapper around `yaflUKFJulierSt`. It extends `yaflSigmaBase` and adds the following attributes:
+ * `kappa` is a secondary scaling parameter usually set to `0` or `3-dim_x`.
+
 #### Filter base class
 The base class for all **UKF** variants is
 ```Python

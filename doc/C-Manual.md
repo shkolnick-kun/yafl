@@ -901,9 +901,36 @@ typedef struct {
 } myUKFMemorySt;
 ```
 
-Vam der Merwe sigma point generator is in
+Vam der Merwe sigma point generator methods are in
 ```C
 const yaflUKFSigmaMethodsSt yafl_ukf_merwe_spm;
+```
+
+#### Julier sigma points generator
+Julier sigma points generator have `yaflUKFJulierSt` type.
+
+The `yaflUKFJulierSt` object can be defined as:
+```C
+yaflUKFJulierSt my_sp_object = YAFL_UKF_JULIER_INITIALIZER(nx, addf, kappa, memory);
+```
+
+Where:
+* `nx` - is state vector size
+* `kappa` - is Julier scaling parameter
+* `memory` - is a name of **UKF** memory pool object
+
+In case uf **UKF** memory pool structure declaration should look like this:
+```C
+typedef struct {
+    YAFL_UKF_BASE_MEMORY_MIXIN(NX, NZ);
+    YAFL_UKF_JULIER_MEMORY_MIXIN(NX, NZ);
+    /*Other fields*/
+} myUKFMemorySt;
+```
+
+Julier sigma points generator methods are in
+```C
+const yaflUKFSigmaMethodsSt yafl_ukf_julier_spm;
 ```
 
 #### Mean and residual functions
