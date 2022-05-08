@@ -38,9 +38,9 @@ pyximport.install(
 
 #from yaflpy import Bierman as KF
 #from yaflpy import Joseph as KF
-#from yaflpy import AdaptiveBierman as KF
+from yaflpy import AdaptiveBierman as KF
 #from yaflpy import AdaptiveJoseph as KF
-from yaflpy import DoNotUseThisFilter as KF
+#from yaflpy import DoNotUseThisFilter as KF
 
 def _fx(x, dt, **fx_args):
     x = x.copy()
@@ -81,9 +81,12 @@ kf.x[1] = 0.3
 kf.Dp *= .00001
 kf.Dq *= 1.0e-8
 #This is robust filter, so no square here
-kf.Dr *= STD*STD
+kf.Dr *= STD*STD*0.01
 kf.Dr[0] *= .75
 kf.Ur += 0.5
+
+kf.rff = 0.003
+#kf.qff = 0.00000000001
 
 N = 6000
 

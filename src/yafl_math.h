@@ -72,7 +72,8 @@ typedef enum {
     YAFL_ST_INV_ARG_8    = 0x170,
     YAFL_ST_INV_ARG_9    = 0x180,
     YAFL_ST_INV_ARG_10   = 0x190,
-    YAFL_ST_INV_ARG_11   = 0x1a0
+    YAFL_ST_INV_ARG_11   = 0x1a0,
+    YAFL_ST_INV_ARG_12   = 0x1b0
 } yaflStatusEn;
 
 #define _YAFL_TRY(status, exp, file, func, line)                              \

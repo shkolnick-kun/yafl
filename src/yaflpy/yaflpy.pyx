@@ -72,6 +72,7 @@ cdef extern from "yafl_math.c":
         YAFL_ST_INV_ARG_9    = 0x180
         YAFL_ST_INV_ARG_10   = 0x190
         YAFL_ST_INV_ARG_11   = 0x1a0
+        YAFL_ST_INV_ARG_12   = 0x1b0
 
     #--------------------------------------------------------------------------
     #cdef yaflStatusEn yafl_math_set_u(yaflInt sz, yaflFloat *res, yaflFloat *u)
@@ -108,6 +109,9 @@ cdef extern from "yafl.c":
 
         yaflFloat * Ur   #
         yaflFloat * Dr   #
+
+        yaflFloat qff    #
+        yaflFloat rff    #
 
         yaflInt   Nx     #
         yaflInt   Nz     #
@@ -359,6 +363,7 @@ ST_INV_ARG_8  = YAFL_ST_INV_ARG_8
 ST_INV_ARG_9  = YAFL_ST_INV_ARG_9
 ST_INV_ARG_10 = YAFL_ST_INV_ARG_10
 ST_INV_ARG_11 = YAFL_ST_INV_ARG_11
+ST_INV_ARG_12 = YAFL_ST_INV_ARG_12
 
 #==============================================================================
 #                          UD-factorized EKF API
@@ -445,6 +450,10 @@ cdef class yaflKalmanBase:
         #Store dimensions
         self.c_self.base.base.Nx = dim_x
         self.c_self.base.base.Nz = dim_z
+
+        #Set forgetting factors
+        self.c_self.base.base.qff = 0.0
+        self.c_self.base.base.rff = 0.0
 
         #Setup callbacks
         self.c_self.py_self = <void *>self
@@ -573,6 +582,30 @@ cdef class yaflKalmanBase:
     @Dr.setter
     def Dr(self, value):
         self._Dr[:] = value
+
+    #--------------------------------------------------------------------------
+    @property
+    def qff(self):
+        return self.c_self.base.base.qff
+
+    @qff.setter
+    def qff(self, yaflFloat value):
+        if value < 0.0 or value >= 1.0:
+            raise ValueError('qff value must be in [0.0, 1.0)')
+
+        self.c_self.base.base.qff = value
+
+    #--------------------------------------------------------------------------
+    @property
+    def rff(self):
+        return self.c_self.base.base.rff
+
+    @rff.setter
+    def rff(self, yaflFloat value):
+        if value < 0.0 or value >= 1.0:
+            raise ValueError('rff value must be in [0.0, 1.0)')
+
+        self.c_self.base.base.rff = value
 
     #==========================================================================
     def _predict(self):

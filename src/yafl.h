@@ -64,6 +64,9 @@ struct _yaflKalmanBaseSt {
     yaflFloat * Ur; /*Upper triangular part of R*/
     yaflFloat * Dr; /*Diagonal part of R*/
 
+    yaflFloat qff;  /*Q forgetting factor*/
+    yaflFloat rff;  /*R forgetting factor*/
+
     yaflInt   Nx;   /*State vector size*/
     yaflInt   Nz;   /*Measurement vector size*/
 };
@@ -83,6 +86,7 @@ struct _yaflKalmanBaseSt {
     yaflFloat Dr[nz]
 
 /*---------------------------------------------------------------------------*/
+/*TODO: make qff and rff parameters*/
 #define YAFL_KALMAN_BASE_INITIALIZER(_f, _h, _zrf, _nx, _nz, _mem) \
 {                                                                  \
     .f   = (yaflKalmanFuncP)_f,                                    \
@@ -100,6 +104,9 @@ struct _yaflKalmanBaseSt {
                                                                    \
     .Ur  = _mem.Ur,                                                \
     .Dr  = _mem.Dr,                                                \
+                                                                   \
+    .qff = 0.0,                                                    \
+    .rff = 0.0,                                                    \
                                                                    \
     .Nx  = _nx,                                                    \
     .Nz  = _nz                                                     \
@@ -141,8 +148,16 @@ struct _yaflEKFBaseSt {
     YAFL_KALMAN_BASE_MEMORY_MIXIN(nx, nz); \
                                            \
     yaflFloat H[nz * nx];                  \
-    yaflFloat W[2 * nx * nx];              \
-    yaflFloat D[2 * nx]
+    union {                                \
+        yaflFloat W[2 * nx * nx];          \
+        yaflFloat W_[(nx + nz) * nx];      \
+    };                                     \
+    union {                                \
+        yaflFloat D[2 * nx];               \
+        yaflFloat D_[nx + nz];             \
+    }
+
+
 
 /*---------------------------------------------------------------------------*/
 #define YAFL_EKF_BASE_INITIALIZER(_f, _jf, _h, _jh, _zrf, _nx, _nz, _mem) \
