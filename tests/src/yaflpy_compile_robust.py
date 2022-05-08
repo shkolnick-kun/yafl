@@ -22,6 +22,7 @@ import scipy.stats
 import sys
 import time
 
+"""
 sys.path.insert(0,'../../src/yaflpy')
 
 pyximport.install(
@@ -33,6 +34,7 @@ pyximport.install(
         'include_dirs': [np.get_include(), '../../src', '../../src/yaflpy'],
         }
     )
+"""
 
 import yaflpy
 #from yaflpy import RobustJoseph as KF

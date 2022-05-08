@@ -1159,7 +1159,6 @@ yaflStatusEn yafl_ukf_base_update(yaflUKFBaseSt * self, yaflFloat * z, \
     YAFL_TRY(status, yafl_math_ruv(nz,      _UY, _UUR));
     YAFL_TRY(status, yafl_math_rum(nz, nx, _PZX, _UUR));
 
-#   ifndef YAFL_USE_FAST_UKF
     for (i = 0; i < nz; i++)
     {
         yaflFloat * h;
@@ -1168,20 +1167,10 @@ yaflStatusEn yafl_ukf_base_update(yaflUKFBaseSt * self, yaflFloat * z, \
         YAFL_TRY(status, YAFL_MATH_SET_RDV(nx, h, _UDP, h));
         YAFL_TRY(status, yafl_math_rutv   (nx, h, _UUP));
     }
-#   endif/*YAFL_USE_FAST_UKF*/
 
     /*Now we can do scalar updates*/
     for (i = 0; i < nz; i++)
     {
-#       ifdef YAFL_USE_FAST_UKF
-        /*
-        Compute v[i] for Bierman/Joseph style scalar updates:
-        v[i] = linalg.inv(Up).dot(Pzx[i].T)
-
-        It's cheaper than computing _unscented_transform.
-        */
-        YAFL_TRY(status, yafl_math_ruv(nx, _PZX + nx * i, _UUP));
-#       endif/*YAFL_USE_FAST_UKF*/
         YAFL_TRY(status, scalar_update(_KALMAN_SELF, i));
     }
     return status;
@@ -1221,16 +1210,11 @@ yaflStatusEn yafl_ukf_bierman_update_scalar(yaflKalmanBaseSt * self, yaflInt i)
     v = _UPZX + nx * i;/*h is stored in v*/
 
 #   define f _USX
-#   ifdef YAFL_USE_FAST_UKF
-    /* f = linalg.inv(Dp).dot(v)*/
-    YAFL_TRY(status, YAFL_MATH_SET_RDV(nx, f, _DP, v));
-#   else /*YAFL_USE_FAST_UKF*/
     /* f = h.T.dot(Up) */
     YAFL_TRY(status, yafl_math_set_vtu(nx, f, v, _UP));
 
     /* v = f.dot(Dp).T = Dp.dot(f.T).T */
     YAFL_TRY(status, YAFL_MATH_SET_DV(nx, v, _DP, f));
-#   endif/*YAFL_USE_FAST_UKF*/
 
     YAFL_TRY(status, \
              _bierman_update_body(nx, _X, _UP, _DP, f, v, _DR[i], _Y[i], \
@@ -1258,16 +1242,11 @@ yaflStatusEn yafl_ukf_adaptive_bierman_update_scalar(yaflKalmanBaseSt * self, ya
     v = _UPZX + nx * i;/*h is stored in v*/
 
 #   define f _USX
-#   ifdef YAFL_USE_FAST_UKF
-    /* f = linalg.inv(Dp).dot(v)*/
-    YAFL_TRY(status, YAFL_MATH_SET_RDV(nx, f, _DP, v));
-#   else /*YAFL_USE_FAST_UKF*/
     /* f = h.T.dot(Up) */
     YAFL_TRY(status, yafl_math_set_vtu(nx, f, v, _UP));
 
     /* v = f.dot(Dp).T = Dp.dot(f.T).T */
     YAFL_TRY(status, YAFL_MATH_SET_DV(nx, v, _DP, f));
-#   endif/*YAFL_USE_FAST_UKF*/
 
     nu = self->y[i];
     r  = self->Dr[i];
@@ -1314,16 +1293,11 @@ yaflStatusEn yafl_ukf_robust_bierman_update_scalar(yaflKalmanBaseSt * self, \
     v = _UPZX + nx * i;/*h is stored in v*/
 
 #   define f _USX
-#   ifdef YAFL_USE_FAST_UKF
-    /* f = linalg.inv(Dp).dot(v)*/
-    YAFL_TRY(status, YAFL_MATH_SET_RDV(nx, f, _DP, v));
-#   else /*YAFL_USE_FAST_UKF*/
     /* f = h.T.dot(Up) */
     YAFL_TRY(status, yafl_math_set_vtu(nx, f, v, _UP));
 
     /* v = f.dot(Dp).T = Dp.dot(f.T).T */
     YAFL_TRY(status, YAFL_MATH_SET_DV(nx, v, _DP, f));
-#   endif/*YAFL_USE_FAST_UKF*/
 
     YAFL_TRY(status, \
              _bierman_update_body(nx, _X, _UP, _DP, f, v, r05 * r05, nu, \
@@ -1363,16 +1337,11 @@ yaflStatusEn \
     v = _UPZX + nx * i;/*h is stored in v*/
 
 #   define f _USX
-#   ifdef YAFL_USE_FAST_UKF
-    /* f = linalg.inv(Dp).dot(v)*/
-    YAFL_TRY(status, YAFL_MATH_SET_RDV(nx, f, _DP, v));
-#   else /*YAFL_USE_FAST_UKF*/
     /* f = h.T.dot(Up) */
     YAFL_TRY(status, yafl_math_set_vtu(nx, f, v, _UP));
 
     /* v = f.dot(Dp).T = Dp.dot(f.T).T */
     YAFL_TRY(status, YAFL_MATH_SET_DV(nx, v, _DP, f));
-#   endif/*YAFL_USE_FAST_UKF*/
 
 
     YAFL_TRY(status, \
