@@ -749,7 +749,7 @@ cdef class yaflExtendedBase(yaflKalmanBase):
 
     # Kalman filter memory views
     cdef yaflFloat [:, ::1] v_H
-    cdef yaflFloat [:, ::1] v_W
+    cdef yaflFloat [::1]    v_W
     cdef yaflFloat [::1]    v_D
 
     # Kalman filter numpy arrays
@@ -785,11 +785,14 @@ cdef class yaflExtendedBase(yaflKalmanBase):
         self.v_H = self._H
         self.c_self.base.ekf.H = &self.v_H[0, 0]
 
-        self._W  = np.zeros((dim_x, 2 * dim_x), dtype=NP_DTYPE)
+        # We may need some memory for P and R updates
+        n = max(2 * dim_x * dim_x, (dim_x + dim_z) * dim_z)
+        self._W  = np.zeros((n,), dtype=NP_DTYPE)
         self.v_W = self._W
-        self.c_self.base.ekf.W = &self.v_W[0,0]
+        self.c_self.base.ekf.W = &self.v_W[0]
 
-        self._D  = np.ones((2 * dim_x,), dtype=NP_DTYPE)
+        n = max(2 * dim_x, dim_x + dim_z)
+        self._D  = np.ones((n,), dtype=NP_DTYPE)
         self.v_D = self._D
         self.c_self.base.ekf.D = &self.v_D[0]
 
@@ -823,8 +826,15 @@ cdef yaflStatusEn yafl_py_ekf_jfx(yaflPyKalmanBaseSt * self, yaflFloat * w, \
         if not isinstance(fx_args, dict):
             raise ValueError('Invalid fx_args type (must be dict)!')
 
-        #How about handling exceptions here???
-        py_self._W[:, :self.base.base.Nx] = jfx(py_self._x, dt, **fx_args)
+        # Create a container with propper shape
+        dim_x = self.base.base.Nx
+        _w    = np.zeros((dim_x, 2 * dim_x), dtype=NP_DTYPE)
+
+        # Calculate jacobian
+        _w[:,:dim_x] = jfx(py_self._x, dt, **fx_args)
+
+        # Put it to py_self._W
+        py_self._W[:2 * dim_x * dim_x] = _w.reshape((2 * dim_x * dim_x,))
 
         return YAFL_ST_OK
 
@@ -1118,7 +1128,7 @@ cdef class yaflUnscentedBase(yaflKalmanBase):
     cdef yaflFloat [::1]    v_Sx
     cdef yaflFloat [:, ::1] v_Pzx
 
-    cdef yaflFloat [:, ::1] v_sigmas_x
+    cdef yaflFloat [::1]    v_sigmas_x
     cdef yaflFloat [:, ::1] v_sigmas_z
     cdef yaflFloat [::1]    v_wm
     cdef yaflFloat [::1]    v_wc
@@ -1200,9 +1210,11 @@ cdef class yaflUnscentedBase(yaflKalmanBase):
         self.v_wc = self._wc
         self.c_self.base.ukf.wc = &self.v_wc[0]
 
-        self._sigmas_x  = np.zeros((pnum, dim_x), dtype=NP_DTYPE)
+        #Memory pool for sigmas_z and R updates
+        n = max(pnum * dim_x, (dim_x + dim_z) * (dim_z + 1))
+        self._sigmas_x  = np.zeros((n, ), dtype=NP_DTYPE)
         self.v_sigmas_x = self._sigmas_x
-        self.c_self.base.ukf.sigmas_x = &self.v_sigmas_x[0, 0]
+        self.c_self.base.ukf.sigmas_x = &self.v_sigmas_x[0]
 
         self._sigmas_z  = np.zeros((pnum, dim_z), dtype=NP_DTYPE)
         self.v_sigmas_z = self._sigmas_z
@@ -1238,7 +1250,9 @@ cdef class yaflUnscentedBase(yaflKalmanBase):
     #--------------------------------------------------------------------------
     @property
     def sigmas_x(self):
-        return self._sigmas_x
+        dim_x = self.c_self.base.base.Nx
+        pnum  = self._points.pnum
+        return self._sigmas_x[:pnum * dim_x].copy().reshape((pnum, dim_x))
 
     @sigmas_x.setter
     def sigmas_x(self, value):

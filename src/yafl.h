@@ -150,7 +150,7 @@ struct _yaflEKFBaseSt {
     yaflFloat H[nz * nx];                  \
     union {                                \
         yaflFloat W[2 * nx * nx];          \
-        yaflFloat W_[(nx + nz) * nx];      \
+        yaflFloat W_[(nx + nz) * nz];      \
     };                                     \
     union {                                \
         yaflFloat D[2 * nx];               \
@@ -620,11 +620,16 @@ typedef struct _yaflUKFMerweSt {
 } yaflUKFMerweSt;
 
 /*---------------------------------------------------------------------------*/
-#define YAFL_UKF_MERWE_MEMORY_MIXIN(nx, nz) \
-    yaflFloat wm[2 * nx + 1];               \
-    yaflFloat wc[2 * nx + 1];               \
-    yaflFloat sigmas_x[(2 * nx + 1) * nx];  \
-    yaflFloat sigmas_z[(2 * nx + 1) * nz]
+#define YAFL_UKF_MERWE_MEMORY_MIXIN(nx, nz)             \
+    yaflFloat wm[2 * nx + 1];                           \
+    yaflFloat wc[2 * nx + 1];                           \
+    union{                                              \
+        struct {                                        \
+                yaflFloat sigmas_x[(2 * nx + 1) * nx];  \
+                yaflFloat sigmas_z[(2 * nx + 1) * nz];  \
+        };                                              \
+        yaflFloat _pool[(nx + nz) * (nz + 1)];          \
+    }
 
 /*---------------------------------------------------------------------------*/
 #define YAFL_UKF_MERWE_INITIALIZER(_nx, _addf, _alpha, _beta, _kappa, _mem) \
@@ -647,11 +652,16 @@ typedef struct _yaflUKFJulierSt {
 } yaflUKFJulierSt;
 
 /*---------------------------------------------------------------------------*/
-#define YAFL_UKF_JULIER_MEMORY_MIXIN(nx, nz) \
-    yaflFloat wm[2 * nx + 1];               \
-    yaflFloat wc[2 * nx + 1];               \
-    yaflFloat sigmas_x[(2 * nx + 1) * nx];  \
-    yaflFloat sigmas_z[(2 * nx + 1) * nz]
+#define YAFL_UKF_JULIER_MEMORY_MIXIN(nx, nz)            \
+    yaflFloat wm[2 * nx + 1];                           \
+    yaflFloat wc[2 * nx + 1];                           \
+    union {                                             \
+        struct {                                        \
+                yaflFloat sigmas_x[(2 * nx + 1) * nx];  \
+                yaflFloat sigmas_z[(2 * nx + 1) * nz];  \
+        };                                              \
+        yaflFloat _pool[(nx + nz) * (nz + 1)];          \
+    }
 
 /*---------------------------------------------------------------------------*/
 #define YAFL_UKF_JULIER_INITIALIZER(_nx, _addf, _kappa, _mem) \

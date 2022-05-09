@@ -39,7 +39,7 @@ pyximport.install(
 import yaflpy
 #from yaflpy import RobustJoseph as KF
 #from yaflpy import RobustBierman as KF
-#rom yaflpy import AdaptiveRobustJoseph as KF
+#from yaflpy import AdaptiveRobustJoseph as KF
 from yaflpy import AdaptiveRobustBierman as KF
 
 def _fx(x, dt, **fx_args):
@@ -107,12 +107,12 @@ kf.x[1] = -0.5
 kf.Dp *= .00001
 kf.Dq *= 1.0e-6
 #This is robust filter, so no square here
-kf.Dr *= STD*STD*100.0
+kf.Dr *= STD*STD*0.0001
 kf.Dr[0] *= .75
 kf.Ur += 0.5
 
 #kf.qff = 0.01
-#kf.rff = 0.001
+kf.rff = 0.0001
 
 #kf.chi2 = scipy.stats.chi2.ppf(0.996, 1)
 
@@ -140,10 +140,10 @@ for i, z in enumerate(noisy):
     kf.predict()
     st[i] = kf.update(z)
     dr[i] = np.linalg.norm(kf.Dr)
-    if st[i] & (yaflpy.ST_MSK_GLITCH_LARGE | yaflpy.ST_MSK_GLITCH_SMALL):
-        kf.rff = 0.0
-    else:
-        kf.rff = 0.001
+    # if st[i] & (yaflpy.ST_MSK_GLITCH_LARGE | yaflpy.ST_MSK_GLITCH_SMALL):
+    #     kf.rff = 0.0
+    # else:
+    #     kf.rff = 0.001
     kf_out[i] = kf.x[::2]
 end = time.time()
 print(end - start)

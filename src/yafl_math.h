@@ -224,6 +224,14 @@ v - vector
 ------------------------------------------------------------------------------------------------------------------------
                                    Function/Macro                                                   NumPy expr
 ----------------------------------------------------------------------------------------------------------------------*/
+yaflStatusEn yafl_math_bset_m(yaflInt nc, yaflFloat *res, yaflInt sr, yaflInt sc, yaflFloat *a); /* res[:sr, :sc]  = a       */
+yaflStatusEn yafl_math_badd_m(yaflInt nc, yaflFloat *res, yaflInt sr, yaflInt sc, yaflFloat *a); /* res[:sr, :sc] += a       */
+yaflStatusEn yafl_math_bsub_m(yaflInt nc, yaflFloat *res, yaflInt sr, yaflInt sc, yaflFloat *a); /* res[:sr, :sc] -= a       */
+
+#define YAFL_MATH_BSET_M(nc, r, c, m, sr, sc, a) yafl_math_bset_u(YAFL_BLK(m,nc,r,c), sr, sc, a) /* m[r:r+sz, c:c+sz]  = a   */
+#define YAFL_MATH_BADD_M(nc, r, c, m, sr, sc, a) yafl_math_badd_u(YAFL_BLK(m,nc,r,c), sr, sc, a) /* m[r:r+sz, c:c+sz] += a   */
+#define YAFL_MATH_BSUB_M(nc, r, c, m, sr, sc, a) yafl_math_bsub_u(YAFL_BLK(m,nc,r,c), sr, sc, a) /* m[r:r+sz, c:c+sz] -= a   */
+
 yaflStatusEn yafl_math_bset_u(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *u);      /* res[:sz, :sz]  = u       */
 yaflStatusEn yafl_math_badd_u(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *u);      /* res[:sz, :sz] += u       */
 yaflStatusEn yafl_math_bsub_u(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *u);      /* res[:sz, :sz] -= u       */

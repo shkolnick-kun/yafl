@@ -470,6 +470,35 @@ yaflStatusEn name(yaflInt sz, yaflFloat *res, yaflFloat *u) \
 _DO_U(yafl_math_add_u, +=)
 _DO_U(yafl_math_sub_u, -=)
 
+#define _DO_BM(name, op)                                                           \
+yaflStatusEn name(yaflInt nc, yaflFloat *res, yaflInt sr, yaflInt sc, yaflFloat *a) \
+{                                                                                  \
+    yaflInt j;                                                          \
+                                                                        \
+    YAFL_CHECK(res, YAFL_ST_INV_ARG_2);                                 \
+    YAFL_CHECK(a,   YAFL_ST_INV_ARG_4);                                 \
+                                                                        \
+    for (j = 0; j < sc; j++)                                            \
+    {                                                                   \
+        yaflInt k;                                                      \
+        yaflInt ncj;                                                    \
+        yaflInt scj;                                                    \
+                                                                        \
+        ncj = nc * j;                                                   \
+        scj = sc * j;                                                   \
+                                                                        \
+        for (k = 0; k < sr; k++)                                        \
+        {                                                               \
+            res[ncj + k] op a[scj + k];                                 \
+        }                                                               \
+    }                                                                   \
+    return YAFL_ST_OK;                                                  \
+}
+
+_DO_BM(yafl_math_bset_m,  =)
+_DO_BM(yafl_math_badd_m, +=)
+_DO_BM(yafl_math_bsub_m, -=)
+
 yaflStatusEn yafl_math_bset_u(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *u)
 {
     yaflInt i;
