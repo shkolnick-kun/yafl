@@ -220,14 +220,15 @@ yaflStatusEn yafl_ekf_base_update(yaflKalmanBaseSt * self, yaflFloat * z, yaflKa
     /*Update R if needed!*/
     if (self->rff > 0.0)
     {
+        yaflStatusEn status_r = status; /*For quiet regularization*/
         /*Check input data*/
         YAFL_CHECK(_UP, YAFL_ST_INV_ARG_1);
         YAFL_CHECK(_DP, YAFL_ST_INV_ARG_1);
         YAFL_CHECK(_DR, YAFL_ST_INV_ARG_1);
         /*Start R update*/
-        YAFL_TRY(status, yafl_math_bset_mu(_NX + _NZ, _W, _NZ, _NX, _HY, _UP));
+        YAFL_TRY(status_r, yafl_math_bset_mu(_NX + _NZ, _W, _NZ, _NX, _HY, _UP));
         /*Now W = (HUp|***) */
-        YAFL_TRY(status, \
+        YAFL_TRY(status_r, \
                  _yafl_r_update(_NX, _NZ, self->rff, _DP, _UR, _DR, _W, _D, _Y));
         /*Updated R*/
     }
@@ -243,8 +244,9 @@ yaflStatusEn yafl_ekf_base_update(yaflKalmanBaseSt * self, yaflFloat * z, yaflKa
     /*Start Q update if needed!*/
     if (self->qff > 0.0)
     {
+        yaflStatusEn status_q = status; /*For quiet regularization*/
         YAFL_CHECK(_DQ, YAFL_ST_INV_ARG_1);
-        YAFL_TRY(status, yafl_math_set_vxn(_NX, _DQ, _DQ, 1.0 - self->qff));
+        YAFL_TRY(status_q, yafl_math_set_vxn(_NX, _DQ, _DQ, 1.0 - self->qff));
     }
 
     /* Do scalar updates */
@@ -325,23 +327,25 @@ static inline yaflStatusEn \
     Finally we get:
     x += v * (nu / r)
     */
-    YAFL_TRY(status, yafl_math_set_vxn(nx, f, v, nu / r)); /* Will reuse K*nu */
+    nu /= r;
     for (j=0; j < nx; j++)
     {
-        x[j] += f[j];
+        v[j] *= nu;
+        x[j] += v[j];
     }
     return status;
 }
 
 /*---------------------------------------------------------------------------*/
-#define _EKF_Q_SCALAR_UPDATE(qff, knu)                               \
-do {                                                                 \
-    if (qff > 0.0)                                                   \
-    {                                                                \
-        YAFL_CHECK(_UQ, YAFL_ST_INV_ARG_1);                          \
-        YAFL_CHECK(_DQ, YAFL_ST_INV_ARG_1);                          \
-        YAFL_TRY(status, yafl_math_udu_up(_NX, _UQ, _DQ, qff, knu)); \
-    }                                                                \
+#define _EKF_Q_SCALAR_UPDATE(qff, knu)                                 \
+do {                                                                   \
+    if (qff > 0.0)                                                     \
+    {                                                                  \
+        yaflStatusEn status_q = status;                                \
+        YAFL_CHECK(_UQ, YAFL_ST_INV_ARG_1);                            \
+        YAFL_CHECK(_DQ, YAFL_ST_INV_ARG_1);                            \
+        YAFL_TRY(status_q, yafl_math_udu_up(_NX, _UQ, _DQ, qff, knu)); \
+    }                                                                  \
 } while (0)
 
 /*---------------------------------------------------------------------------*/
@@ -384,7 +388,7 @@ yaflStatusEn yafl_ekf_bierman_update_scalar(yaflKalmanBaseSt * self, yaflInt i)
              _bierman_update_body(_NX, _X, _UP, _DP, f, v, _DR[i], _Y[i], \
                                   1.0, 1.0));
     /*Update Q if needed!*/
-    _EKF_Q_SCALAR_UPDATE(self->qff, f);
+    _EKF_Q_SCALAR_UPDATE(self->qff, v);
 #   undef v /*Don't nee v any more*/
 #   undef f
 
@@ -441,10 +445,10 @@ static inline yaflStatusEn \
     YAFL_TRY(status, yafl_math_mwgsu(nx, nx1, u, d, w, D));
 
     /* x += k * nu */
-    YAFL_TRY(status, yafl_math_set_vxn(nx, k, k, nu)); /* Will reuse K*nu */
 #   define j nx1
     for (j=0; j < nx; j++)
     {
+        k[j] *= nu;
         x[j] += k[j];
     }
 #   undef j  /*Don't nee j any more*/
@@ -589,7 +593,7 @@ yaflStatusEn yafl_ekf_adaptive_bierman_update_scalar(yaflKalmanBaseSt * self, \
              _bierman_update_body(_NX, _X, _UP, _DP, f, v, r, nu, ac, 1.0));
 
     /*Update Q if needed!*/
-    _EKF_Q_SCALAR_UPDATE(self->qff, f);
+    _EKF_Q_SCALAR_UPDATE(self->qff, v);
 #   undef r
 #   undef v /*Don't nee v any more*/
 #   undef f
@@ -833,7 +837,7 @@ yaflStatusEn \
                                   1.0, gdot));
 
     /*Update Q if needed!*/
-    _EKF_Q_SCALAR_UPDATE(self->qff, f);
+    _EKF_Q_SCALAR_UPDATE(self->qff, v);
 #   undef v  /*Don't nee v any more*/
 #   undef f
 
@@ -929,7 +933,7 @@ yaflStatusEn \
                                           ac, gdot));
 
     /*Update Q if needed!*/
-    _EKF_Q_SCALAR_UPDATE(self->qff, f);
+    _EKF_Q_SCALAR_UPDATE(self->qff, v);
 #   undef v  /*Don't nee v any more*/
 #   undef f
 

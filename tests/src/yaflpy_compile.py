@@ -81,14 +81,14 @@ kf.x[1] = 0.3
 kf.Dp *= .00001
 kf.Dq *= 1.0e-8
 #This is robust filter, so no square here
-kf.Dr *= STD*STD*0.01
+kf.Dr *= STD*STD*0.0001
 kf.Dr[0] *= .75
 kf.Ur += 0.5
 
-kf.rff = 0.003
-#kf.qff = 0.00000000001
+kf.rff = 0.01
+#kf.qff = 0.01
 
-N = 6000
+N = 12000
 
 #kf.chi2 = 8.807468393511947
 
