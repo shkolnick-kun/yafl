@@ -36,7 +36,7 @@ pyximport.install(
     )
 """
 
-#from yaflpy import Bierman as KF
+from yaflpy import Bierman as KF
 #from yaflpy import Joseph as KF
 #from yaflpy import AdaptiveBierman as KF
 #from yaflpy import AdaptiveJoseph as KF
@@ -81,12 +81,12 @@ kf.x[1] = 0.3
 kf.Dp *= .00001
 kf.Dq *= 1.0e-6
 #This is robust filter, so no square here
-kf.Dr *= STD*STD*0.0001
+kf.Dr *= STD*STD*0.00001
 kf.Dr[0] *= .75
 kf.Ur += 0.5
 
-kf.rff = 0.001
-#kf.qff = 0.001
+#kf.rff = 0.001
+kf.qff = 0.0001
 
 N = 10000
 

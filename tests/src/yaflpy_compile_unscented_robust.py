@@ -38,7 +38,7 @@ pyximport.install(
 
 from yaflpy import MerweSigmaPoints as SP
 #from yaflpy import UnscentedRobustBierman as KF
-from yaflpy import UnscentedAdaptiveRobustBierman as KF
+#from yaflpy import UnscentedAdaptiveRobustBierman as KF
 
 
 def _fx(x, dt, **fx_args):
@@ -92,9 +92,9 @@ kf.x[1] = 0.3
 kf.Dp *= .00001
 kf.Dq *= 1.0e-8
 #This is robust filter, so no square here
-kf.Dr *= STD
+kf.Dr *= STD*STD*0.0005
 
-kf.Dr[0] *= .87
+kf.Dr[0] *= .75
 kf.Ur += .5
 
 # sp = MerweScaledSigmaPoints(4, alpha=.1, beta=2., kappa=0)
@@ -104,6 +104,8 @@ kf.Ur += .5
 # kf.Q *= 1e-8
 # kf.R *= STD*STD
 
+kf.qff = 0.0001
+#kf.rff = 0.0001
 
 print(kf.x)
 

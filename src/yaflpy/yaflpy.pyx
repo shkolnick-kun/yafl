@@ -1212,7 +1212,7 @@ cdef class yaflUnscentedBase(yaflKalmanBase):
 
         #Memory pool for sigmas_z and R updates
         n = max(pnum * dim_x, (dim_x + dim_z) * (dim_z + 1))
-        self._sigmas_x  = np.zeros((n, ), dtype=NP_DTYPE)
+        self._sigmas_x  = np.zeros((n,), dtype=NP_DTYPE)
         self.v_sigmas_x = self._sigmas_x
         self.c_self.base.ukf.sigmas_x = &self.v_sigmas_x[0]
 
