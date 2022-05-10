@@ -397,6 +397,7 @@ struct _yaflUKFBaseSt {
 
     /*Scratchpad memory*/
     yaflFloat * Sx;  /* State       */
+    yaflFloat * Sz;  /* Measurement */
     yaflFloat * Pzx; /* Pzx cross covariance matrix */
 
     yaflFloat * sigmas_x; /* State sigma points       */
@@ -410,13 +411,12 @@ struct _yaflUKFBaseSt {
 Warning: sigmas_x and _sigmas_z aren't defined in this mixin, see
          sigma points generators mixins!!!
 */
-#define YAFL_UKF_BASE_MEMORY_MIXIN(nx, nz) \
+#define YAFL_UKF_BASE_MEMORY_MIXIN(nx, nz)  \
     YAFL_KALMAN_BASE_MEMORY_MIXIN(nx, nz);  \
     yaflFloat zp[nz];                       \
-                                            \
-    yaflFloat Pzx[nz * nx];                 \
-                                            \
-    yaflFloat Sx[nx]
+    yaflFloat Sx[nx];                       \
+    yaflFloat Sz[nz];                       \
+    yaflFloat Pzx[nz * nx]
 
 /*---------------------------------------------------------------------------*/
 #define YAFL_UKF_BASE_INITIALIZER(_p, _pm, _f, _xmf, _xrf, _h, _zmf,          \
@@ -435,6 +435,7 @@ Warning: sigmas_x and _sigmas_z aren't defined in this mixin, see
     .zp  = _mem.zp,                                                           \
                                                                               \
     .Sx  = _mem.Sx,                                                           \
+    .Sz  = _mem.Sz,                                                           \
     .Pzx = _mem.Pzx,                                                          \
                                                                               \
     .sigmas_x  = _mem.sigmas_x,                                               \

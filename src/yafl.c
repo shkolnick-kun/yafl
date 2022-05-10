@@ -1037,6 +1037,7 @@ yaflStatusEn \
 #define _ZP        (self->zp)
 
 #define _SX        (self->Sx)
+#define _SZ        (self->Sz)
 
 #define _PZX       (self->Pzx)
 
@@ -1306,17 +1307,17 @@ yaflStatusEn yafl_ukf_base_update(yaflUKFBaseSt * self, yaflFloat * z, \
     YAFL_TRY(status, _yafl_ukf_compute_sigmas_z_and_zp(self));
 
     /* Compute Pzx = H.dot(Up.dot(Dp.dot(Up.T))*/
-    YAFL_TRY(status, _compute_res(_KALMAN_SELF, nz, _UZRF,  _UY, _SIGMAS_Z, _ZP));
+    YAFL_TRY(status, _compute_res(_KALMAN_SELF, nz, _UZRF,  _SZ, _SIGMAS_Z, _ZP));
     YAFL_TRY(status, _compute_res(_KALMAN_SELF, nx,  _XRF,  _SX, _SIGMAS_X, _UX));
-    YAFL_TRY(status, yafl_math_set_vvtxn(nz, nx, _PZX, _UY, _SX, _WC[0]));
+    YAFL_TRY(status, yafl_math_set_vvtxn(nz, nx, _PZX, _SZ, _SX, _WC[0]));
 
     for (i = 1; i < np; i++)
     {
-        YAFL_TRY(status, _compute_res(_KALMAN_SELF,   nz, _UZRF, _UY, \
+        YAFL_TRY(status, _compute_res(_KALMAN_SELF,   nz, _UZRF, _SZ, \
                                       _SIGMAS_Z + nz * i, _ZP));
         YAFL_TRY(status, _compute_res(_KALMAN_SELF, nx,  _XRF, _SX, \
                                       _SIGMAS_X + nx * i, _UX));
-        YAFL_TRY(status, yafl_math_add_vvtxn(nz, nx, _PZX, _UY, _SX, _WC[i]));
+        YAFL_TRY(status, yafl_math_add_vvtxn(nz, nx, _PZX, _SZ, _SX, _WC[i]));
     }
     /*Now _SIGMAS_Z and _SIGMAS_X may be spoiled*/
 

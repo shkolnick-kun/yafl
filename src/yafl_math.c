@@ -478,7 +478,7 @@ yaflStatusEn name(yaflInt nc, yaflFloat *res, yaflInt sr, yaflInt sc, yaflFloat 
     YAFL_CHECK(res, YAFL_ST_INV_ARG_2);                                 \
     YAFL_CHECK(a,   YAFL_ST_INV_ARG_4);                                 \
                                                                         \
-    for (j = 0; j < sc; j++)                                            \
+    for (j = 0; j < sr; j++)                                            \
     {                                                                   \
         yaflInt k;                                                      \
         yaflInt ncj;                                                    \
@@ -487,7 +487,7 @@ yaflStatusEn name(yaflInt nc, yaflFloat *res, yaflInt sr, yaflInt sc, yaflFloat 
         ncj = nc * j;                                                   \
         scj = sc * j;                                                   \
                                                                         \
-        for (k = 0; k < sr; k++)                                        \
+        for (k = 0; k < sc; k++)                                        \
         {                                                               \
             res[ncj + k] op a[scj + k];                                 \
         }                                                               \

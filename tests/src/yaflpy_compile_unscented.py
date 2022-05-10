@@ -36,8 +36,8 @@ pyximport.install(
         }
     )
 """
-from yaflpy import MerweSigmaPoints as SP
-#from yaflpy import JulierSigmaPoints as SP
+#from yaflpy import MerweSigmaPoints as SP
+from yaflpy import JulierSigmaPoints as SP
 
 #from yaflpy import Unscented as KF
 #from yaflpy import UnscentedAdaptive as KF
@@ -64,8 +64,8 @@ def _zrf(a,b):
 
 STD = 100.
 
-sp = SP(4, 0.1, 2., 0)
-#sp = SP(4, 0.0)
+#sp = SP(4, 0.1, 2., 0)
+sp = SP(4, 0.0)
 kf = KF(4, 2, 1., _hx, _fx, sp)
 #kf = KF(4, 2, 1., _hx, _fx, sp, residual_z=_zrf)
 
@@ -89,7 +89,7 @@ kf.Ur += .5
 # kf.R *= STD*STD
 
 #kf.qff = 0.0001
-#kf.rff = 0.0001
+kf.rff = 0.0001
 
 print(kf.x)
 
@@ -121,11 +121,11 @@ start = time.time()
 for i, z in enumerate(noisy):
     kf.predict()
     kf.update(z)
-    print('y:',kf.y)
-    print('Up:',kf.Up)
-    print('Dp:',kf.Dp)
-    print('Uq:',kf.Uq)
-    print('Dq:',kf.Dq)
+    # print('y:',kf.y)
+    # print('Up:',kf.Up)
+    # print('Dp:',kf.Dp)
+    # print('Uq:',kf.Uq)
+    # print('Dq:',kf.Dq)
     kf_out[i] = kf.zp
 end = time.time()
 print(end - start)

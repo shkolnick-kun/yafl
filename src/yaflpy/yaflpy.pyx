@@ -230,6 +230,7 @@ cdef extern from "yafl.c":
         yaflFloat * zp
 
         yaflFloat * Sx
+        yaflFloat * Sz
         yaflFloat * Pzx
 
         yaflFloat * sigmas_x
@@ -1126,6 +1127,7 @@ cdef class yaflUnscentedBase(yaflKalmanBase):
     cdef yaflFloat [::1]    v_zp
 
     cdef yaflFloat [::1]    v_Sx
+    cdef yaflFloat [::1]    v_Sz
     cdef yaflFloat [:, ::1] v_Pzx
 
     cdef yaflFloat [::1]    v_sigmas_x
@@ -1137,6 +1139,7 @@ cdef class yaflUnscentedBase(yaflKalmanBase):
     cdef np.ndarray  _zp
 
     cdef np.ndarray  _Sx
+    cdef np.ndarray  _Sz
     cdef np.ndarray  _Pzx
 
     cdef np.ndarray  _sigmas_x
@@ -1232,6 +1235,10 @@ cdef class yaflUnscentedBase(yaflKalmanBase):
         self._Sx  = np.zeros((dim_x,), dtype=NP_DTYPE)
         self.v_Sx = self._Sx
         self.c_self.base.ukf.Sx = &self.v_Sx[0]
+
+        self._Sz  = np.zeros((dim_z,), dtype=NP_DTYPE)
+        self.v_Sz = self._Sz
+        self.c_self.base.ukf.Sz = &self.v_Sz[0]
 
         #Call C-post init
         yafl_ukf_post_init(&self.c_self.base.ukf)
