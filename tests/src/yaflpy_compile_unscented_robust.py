@@ -37,7 +37,7 @@ pyximport.install(
 """
 
 from yaflpy import MerweSigmaPoints as SP
-#from yaflpy import UnscentedRobustBierman as KF
+from yaflpy import UnscentedRobustBierman as KF
 #from yaflpy import UnscentedAdaptiveRobustBierman as KF
 
 
@@ -105,7 +105,7 @@ kf.Ur += .5
 # kf.R *= STD*STD
 
 kf.qff = 0.0001
-#kf.rff = 0.0001
+kf.rff = 0.0001
 
 print(kf.x)
 

@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<results version="2">
+    <cppcheck version="1.90" />
+    <errors>
+        <error id="variableScope" severity="style" msg="The scope of the variable &apos;i&apos; can be reduced." verbose="The scope of the variable &apos;i&apos; can be reduced. Warning: Be careful when fixing this message, especially when there are inner loops. Here is an example where cppcheck will write that the scope for &apos;i&apos; can be reduced:\012void f(int x)\012{\012    int i = 0;\012    if (x) {\012        // it&apos;s safe to move &apos;int i = 0;&apos; here\012        for (int n = 0; n &lt; 10; ++n) {\012            // it is possible but not safe to move &apos;int i = 0;&apos; here\012            do_something(&amp;i);\012        }\012    }\012}\012When you see this message it is always safe to reduce the variable scope 1 level." cwe="398">
+            <location file="../../src/yafl.c" line="1045" column="13" />
+            <symbol>i</symbol>
+        </error>
+        <error id="redundantAssignment" severity="style" msg="Variable &apos;resj&apos; is reassigned a value before the old one has been used." verbose="Variable &apos;resj&apos; is reassigned a value before the old one has been used." cwe="563">
+            <location file="../../src/yafl_math.c" line="223" column="1" info="resj is overwritten" />
+            <location file="../../src/yafl_math.c" line="223" column="1" info="resj is assigned" />
+            <symbol>resj</symbol>
+        </error>
+        <error id="redundantAssignment" severity="style" msg="Variable &apos;status&apos; is reassigned a value before the old one has been used." verbose="Variable &apos;status&apos; is reassigned a value before the old one has been used." cwe="563">
+            <location file="../src/hdf5utils.c" line="74" column="12" info="status is overwritten" />
+            <location file="../src/hdf5utils.c" line="73" column="12" info="status is assigned" />
+            <symbol>status</symbol>
+        </error>
+        <error id="redundantAssignment" severity="style" msg="Variable &apos;status&apos; is reassigned a value before the old one has been used." verbose="Variable &apos;status&apos; is reassigned a value before the old one has been used." cwe="563">
+            <location file="../src/hdf5utils.c" line="75" column="12" info="status is overwritten" />
+            <location file="../src/hdf5utils.c" line="74" column="12" info="status is assigned" />
+            <symbol>status</symbol>
+        </error>
+        <error id="redundantAssignment" severity="style" msg="Variable &apos;status&apos; is reassigned a value before the old one has been used." verbose="Variable &apos;status&apos; is reassigned a value before the old one has been used." cwe="563">
+            <location file="../src/hdf5utils.c" line="76" column="12" info="status is overwritten" />
+            <location file="../src/hdf5utils.c" line="75" column="12" info="status is assigned" />
+            <symbol>status</symbol>
+        </error>
+        <error id="redundantAssignment" severity="style" msg="Variable &apos;status&apos; is reassigned a value before the old one has been used." verbose="Variable &apos;status&apos; is reassigned a value before the old one has been used." cwe="563">
+            <location file="../src/hdf5utils.c" line="127" column="12" info="status is overwritten" />
+            <location file="../src/hdf5utils.c" line="126" column="12" info="status is assigned" />
+            <symbol>status</symbol>
+        </error>
+        <error id="redundantAssignment" severity="style" msg="Variable &apos;status&apos; is reassigned a value before the old one has been used." verbose="Variable &apos;status&apos; is reassigned a value before the old one has been used." cwe="563">
+            <location file="../src/hdf5utils.c" line="128" column="12" info="status is overwritten" />
+            <location file="../src/hdf5utils.c" line="127" column="12" info="status is assigned" />
+            <symbol>status</symbol>
+        </error>
+        <error id="redundantAssignment" severity="style" msg="Variable &apos;status&apos; is reassigned a value before the old one has been used." verbose="Variable &apos;status&apos; is reassigned a value before the old one has been used." cwe="563">
+            <location file="../src/hdf5utils.c" line="129" column="12" info="status is overwritten" />
+            <location file="../src/hdf5utils.c" line="128" column="12" info="status is assigned" />
+            <symbol>status</symbol>
+        </error>
+        <error id="unreadVariable" severity="style" msg="Variable &apos;status&apos; is assigned a value that is never used." verbose="Variable &apos;status&apos; is assigned a value that is never used." cwe="563">
+            <location file="../src/hdf5utils.c" line="76" column="12" />
+            <symbol>status</symbol>
+        </error>
+        <error id="unreadVariable" severity="style" msg="Variable &apos;status&apos; is assigned a value that is never used." verbose="Variable &apos;status&apos; is assigned a value that is never used." cwe="563">
+            <location file="../src/hdf5utils.c" line="129" column="12" />
+            <symbol>status</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;_yafl_ada_ekf_predict_wrapper&apos; is never used." verbose="The function &apos;_yafl_ada_ekf_predict_wrapper&apos; is never used." cwe="561">
+            <location file="../../src/yafl.h" line="211" column="0" />
+            <symbol>_yafl_ada_ekf_predict_wrapper</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;_yafl_ada_rob_predict_wrapper&apos; is never used." verbose="The function &apos;_yafl_ada_rob_predict_wrapper&apos; is never used." cwe="561">
+            <location file="../../src/yafl.h" line="308" column="0" />
+            <symbol>_yafl_ada_rob_predict_wrapper</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;_yafl_rob_ekf_predict_wrapper&apos; is never used." verbose="The function &apos;_yafl_rob_ekf_predict_wrapper&apos; is never used." cwe="561">
+            <location file="../../src/yafl.h" line="272" column="0" />
+            <symbol>_yafl_rob_ekf_predict_wrapper</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_ekf_adaptive_bierman_update&apos; is never used." verbose="The function &apos;yafl_ekf_adaptive_bierman_update&apos; is never used." cwe="561">
+            <location file="../../src/yafl.h" line="217" column="0" />
+            <symbol>yafl_ekf_adaptive_bierman_update</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_ekf_adaptive_joseph_update&apos; is never used." verbose="The function &apos;yafl_ekf_adaptive_joseph_update&apos; is never used." cwe="561">
+            <location file="../../src/yafl.h" line="223" column="0" />
+            <symbol>yafl_ekf_adaptive_joseph_update</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_ekf_adaptive_robust_bierman_update&apos; is never used." verbose="The function &apos;yafl_ekf_adaptive_robust_bierman_update&apos; is never used." cwe="561">
+            <location file="../../src/yafl.h" line="314" column="0" />
+            <symbol>yafl_ekf_adaptive_robust_bierman_update</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_ekf_adaptive_robust_joseph_update&apos; is never used." verbose="The function &apos;yafl_ekf_adaptive_robust_joseph_update&apos; is never used." cwe="561">
+            <location file="../../src/yafl.h" line="322" column="0" />
+            <symbol>yafl_ekf_adaptive_robust_joseph_update</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_ekf_bierman_update&apos; is never used." verbose="The function &apos;yafl_ekf_bierman_update&apos; is never used." cwe="561">
+            <location file="../../src/yafl.h" line="183" column="0" />
+            <symbol>yafl_ekf_bierman_update</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_ekf_do_not_use_this_update&apos; is never used." verbose="The function &apos;yafl_ekf_do_not_use_this_update&apos; is never used." cwe="561">
+            <location file="../../src/yafl.h" line="236" column="0" />
+            <symbol>yafl_ekf_do_not_use_this_update</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_ekf_robust_bierman_update&apos; is never used." verbose="The function &apos;yafl_ekf_robust_bierman_update&apos; is never used." cwe="561">
+            <location file="../../src/yafl.h" line="278" column="0" />
+            <symbol>yafl_ekf_robust_bierman_update</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_ekf_robust_joseph_update&apos; is never used." verbose="The function &apos;yafl_ekf_robust_joseph_update&apos; is never used." cwe="561">
+            <location file="../../src/yafl.h" line="284" column="0" />
+            <symbol>yafl_ekf_robust_joseph_update</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_add_mm&apos; is never used." verbose="The function &apos;yafl_math_add_mm&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="305" column="0" />
+            <symbol>yafl_math_add_mm</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_add_mu&apos; is never used." verbose="The function &apos;yafl_math_add_mu&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="415" column="0" />
+            <symbol>yafl_math_add_mu</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_add_mv&apos; is never used." verbose="The function &apos;yafl_math_add_mv&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="224" column="0" />
+            <symbol>yafl_math_add_mv</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_add_u&apos; is never used." verbose="The function &apos;yafl_math_add_u&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="470" column="0" />
+            <symbol>yafl_math_add_u</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_add_uv&apos; is never used." verbose="The function &apos;yafl_math_add_uv&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="372" column="0" />
+            <symbol>yafl_math_add_uv</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_add_vrn&apos; is never used." verbose="The function &apos;yafl_math_add_vrn&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="74" column="0" />
+            <symbol>yafl_math_add_vrn</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_add_vrv&apos; is never used." verbose="The function &apos;yafl_math_add_vrv&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="114" column="0" />
+            <symbol>yafl_math_add_vrv</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_add_vtm&apos; is never used." verbose="The function &apos;yafl_math_add_vtm&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="259" column="0" />
+            <symbol>yafl_math_add_vtm</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_add_vtu&apos; is never used." verbose="The function &apos;yafl_math_add_vtu&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="339" column="0" />
+            <symbol>yafl_math_add_vtu</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_add_vvt&apos; is never used." verbose="The function &apos;yafl_math_add_vvt&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="162" column="0" />
+            <symbol>yafl_math_add_vvt</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_add_vxv&apos; is never used." verbose="The function &apos;yafl_math_add_vxv&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="94" column="0" />
+            <symbol>yafl_math_add_vxv</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_badd_bu&apos; is never used." verbose="The function &apos;yafl_math_badd_bu&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="722" column="0" />
+            <symbol>yafl_math_badd_bu</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_badd_mu&apos; is never used." verbose="The function &apos;yafl_math_badd_mu&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="676" column="0" />
+            <symbol>yafl_math_badd_mu</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_badd_u&apos; is never used." verbose="The function &apos;yafl_math_badd_u&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="525" column="0" />
+            <symbol>yafl_math_badd_u</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_badd_ut&apos; is never used." verbose="The function &apos;yafl_math_badd_ut&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="582" column="0" />
+            <symbol>yafl_math_badd_ut</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_badd_v&apos; is never used." verbose="The function &apos;yafl_math_badd_v&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="601" column="0" />
+            <symbol>yafl_math_badd_v</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_badd_vvt&apos; is never used." verbose="The function &apos;yafl_math_badd_vvt&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="631" column="0" />
+            <symbol>yafl_math_badd_vvt</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_bset_mu&apos; is never used." verbose="The function &apos;yafl_math_bset_mu&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="675" column="0" />
+            <symbol>yafl_math_bset_mu</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_bsub_bu&apos; is never used." verbose="The function &apos;yafl_math_bsub_bu&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="723" column="0" />
+            <symbol>yafl_math_bsub_bu</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_bsub_mu&apos; is never used." verbose="The function &apos;yafl_math_bsub_mu&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="677" column="0" />
+            <symbol>yafl_math_bsub_mu</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_bsub_ut&apos; is never used." verbose="The function &apos;yafl_math_bsub_ut&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="583" column="0" />
+            <symbol>yafl_math_bsub_ut</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_bsub_v&apos; is never used." verbose="The function &apos;yafl_math_bsub_v&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="602" column="0" />
+            <symbol>yafl_math_bsub_v</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_bsub_vvt&apos; is never used." verbose="The function &apos;yafl_math_bsub_vvt&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="632" column="0" />
+            <symbol>yafl_math_bsub_vvt</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_set_mm&apos; is never used." verbose="The function &apos;yafl_math_set_mm&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="304" column="0" />
+            <symbol>yafl_math_set_mm</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_set_mu&apos; is never used." verbose="The function &apos;yafl_math_set_mu&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="414" column="0" />
+            <symbol>yafl_math_set_mu</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_set_mv&apos; is never used." verbose="The function &apos;yafl_math_set_mv&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="223" column="0" />
+            <symbol>yafl_math_set_mv</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_set_u&apos; is never used." verbose="The function &apos;yafl_math_set_u&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="418" column="0" />
+            <symbol>yafl_math_set_u</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_set_vvt&apos; is never used." verbose="The function &apos;yafl_math_set_vvt&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="161" column="0" />
+            <symbol>yafl_math_set_vvt</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_sub_mm&apos; is never used." verbose="The function &apos;yafl_math_sub_mm&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="306" column="0" />
+            <symbol>yafl_math_sub_mm</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_sub_mu&apos; is never used." verbose="The function &apos;yafl_math_sub_mu&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="416" column="0" />
+            <symbol>yafl_math_sub_mu</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_sub_mv&apos; is never used." verbose="The function &apos;yafl_math_sub_mv&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="225" column="0" />
+            <symbol>yafl_math_sub_mv</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_sub_u&apos; is never used." verbose="The function &apos;yafl_math_sub_u&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="471" column="0" />
+            <symbol>yafl_math_sub_u</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_sub_uv&apos; is never used." verbose="The function &apos;yafl_math_sub_uv&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="373" column="0" />
+            <symbol>yafl_math_sub_uv</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_sub_vrn&apos; is never used." verbose="The function &apos;yafl_math_sub_vrn&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="75" column="0" />
+            <symbol>yafl_math_sub_vrn</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_sub_vrv&apos; is never used." verbose="The function &apos;yafl_math_sub_vrv&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="115" column="0" />
+            <symbol>yafl_math_sub_vrv</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_sub_vtm&apos; is never used." verbose="The function &apos;yafl_math_sub_vtm&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="260" column="0" />
+            <symbol>yafl_math_sub_vtm</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_sub_vtu&apos; is never used." verbose="The function &apos;yafl_math_sub_vtu&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="340" column="0" />
+            <symbol>yafl_math_sub_vtu</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_sub_vvt&apos; is never used." verbose="The function &apos;yafl_math_sub_vvt&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="163" column="0" />
+            <symbol>yafl_math_sub_vvt</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_sub_vvtxn&apos; is never used." verbose="The function &apos;yafl_math_sub_vvtxn&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="193" column="0" />
+            <symbol>yafl_math_sub_vvtxn</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_sub_vxn&apos; is never used." verbose="The function &apos;yafl_math_sub_vxn&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="37" column="0" />
+            <symbol>yafl_math_sub_vxn</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_math_sub_vxv&apos; is never used." verbose="The function &apos;yafl_math_sub_vxv&apos; is never used." cwe="561">
+            <location file="../../src/yafl_math.c" line="95" column="0" />
+            <symbol>yafl_math_sub_vxv</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_ukf_adaptive_bierman_predict&apos; is never used." verbose="The function &apos;yafl_ukf_adaptive_bierman_predict&apos; is never used." cwe="561">
+            <location file="../../src/yafl.h" line="488" column="0" />
+            <symbol>yafl_ukf_adaptive_bierman_predict</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_ukf_adaptive_bierman_update&apos; is never used." verbose="The function &apos;yafl_ukf_adaptive_bierman_update&apos; is never used." cwe="561">
+            <location file="../../src/yafl.h" line="489" column="0" />
+            <symbol>yafl_ukf_adaptive_bierman_update</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_ukf_adaptive_predict&apos; is never used." verbose="The function &apos;yafl_ukf_adaptive_predict&apos; is never used." cwe="561">
+            <location file="../../src/yafl.h" line="590" column="0" />
+            <symbol>yafl_ukf_adaptive_predict</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_ukf_adaptive_robust_bierman_predict&apos; is never used." verbose="The function &apos;yafl_ukf_adaptive_robust_bierman_predict&apos; is never used." cwe="561">
+            <location file="../../src/yafl.h" line="534" column="0" />
+            <symbol>yafl_ukf_adaptive_robust_bierman_predict</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_ukf_adaptive_robust_bierman_update&apos; is never used." verbose="The function &apos;yafl_ukf_adaptive_robust_bierman_update&apos; is never used." cwe="561">
+            <location file="../../src/yafl.h" line="536" column="0" />
+            <symbol>yafl_ukf_adaptive_robust_bierman_update</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_ukf_adaptive_update&apos; is never used." verbose="The function &apos;yafl_ukf_adaptive_update&apos; is never used." cwe="561">
+            <location file="../../src/yafl.c" line="1543" column="0" />
+            <symbol>yafl_ukf_adaptive_update</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_ukf_bierman_predict&apos; is never used." verbose="The function &apos;yafl_ukf_bierman_predict&apos; is never used." cwe="561">
+            <location file="../../src/yafl.h" line="468" column="0" />
+            <symbol>yafl_ukf_bierman_predict</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_ukf_bierman_update&apos; is never used." verbose="The function &apos;yafl_ukf_bierman_update&apos; is never used." cwe="561">
+            <location file="../../src/yafl.h" line="469" column="0" />
+            <symbol>yafl_ukf_bierman_update</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_ukf_post_init&apos; is never used." verbose="The function &apos;yafl_ukf_post_init&apos; is never used." cwe="561">
+            <location file="../../src/yafl.h" line="433" column="0" />
+            <symbol>yafl_ukf_post_init</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_ukf_robust_bierman_predict&apos; is never used." verbose="The function &apos;yafl_ukf_robust_bierman_predict&apos; is never used." cwe="561">
+            <location file="../../src/yafl.h" line="513" column="0" />
+            <symbol>yafl_ukf_robust_bierman_predict</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_ukf_robust_bierman_update&apos; is never used." verbose="The function &apos;yafl_ukf_robust_bierman_update&apos; is never used." cwe="561">
+            <location file="../../src/yafl.h" line="514" column="0" />
+            <symbol>yafl_ukf_robust_bierman_update</symbol>
+        </error>
+        <error id="unusedFunction" severity="style" msg="The function &apos;yafl_ukf_update&apos; is never used." verbose="The function &apos;yafl_ukf_update&apos; is never used." cwe="561">
+            <location file="../../src/yafl.c" line="1395" column="0" />
+            <symbol>yafl_ukf_update</symbol>
+        </error>
+        <error id="missingIncludeSystem" severity="information" msg="Cppcheck cannot find all the include files (use --check-config for details)" verbose="Cppcheck cannot find all the include files. Cppcheck can check the code without the include files found. But the results will probably be more accurate if all the include files are found. Please check your project&apos;s include directories and add all of them as include directories for Cppcheck. To see what files Cppcheck cannot find use --check-config." />
+    </errors>
+</results>
