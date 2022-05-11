@@ -22,24 +22,19 @@ import numpy as np
 from ab_tests import *
 from case1    import *
 
-from yaflpy import Joseph    as A
-from yaflpy import Unscented as B
+from yaflpy import Bierman as B
 
 #------------------------------------------------------------------------------
-N = 10000
 STD = 100.
 
 #------------------------------------------------------------------------------
-clear, noisy, t = case_data(N, STD)
-
-#------------------------------------------------------------------------------
-a = case_ekf(A, STD)
-b = case_ukf(B, STD)
+b = case_ekf(B, STD)
 
 #------------------------------------------------------------------------------
 start = time.time()
 
-rpa,rua,xa, rpb,rub,xb, nup,ndp, nuq,ndq, nur,ndr, nx, ny = yafl_ab_test(a, b, noisy)
+clear,noisy,t, rpa,rua,xa, rpb,rub,xb, nup,ndp, nuq,ndq, nur,ndr, nx, ny = \
+    yafl_file_test(b, '../data/j_ekf_case1_64bit.h5')
 
 end = time.time()
 print(end - start)
@@ -63,4 +58,9 @@ plt.show()
 plt.plot(nx)
 plt.show()
 plt.plot(ny)
+plt.show()
+
+plt.plot(noisy[:,0], noisy[:,1], xa[:,0], xa[:,2])
+plt.show()
+plt.plot(clear[:,0], clear[:,1], xa[:,0], xa[:,2])
 plt.show()

@@ -50,22 +50,26 @@ def _zrf(a,b):
 
 #------------------------------------------------------------------------------
 def case_data(n, std):
-    clean = np.zeros((n, 2))
+    clear = np.zeros((n, 2))
     noisy = np.zeros((n, 2))
     t     = np.zeros((n,), dtype=np.float)
 
-    for i in range(1, len(clean)):
-        clean[i] = clean[i-1] + np.array([1.,1.])
-        noisy[i] = clean[i]   + np.random.normal(scale=std, size=2)
+    for i in range(1, len(clear)):
+        clear[i] = clear[i-1] + np.array([1.,1.])
+        noisy[i] = clear[i]   + np.random.normal(scale=std, size=2)
         t[i] = i
 
-    return clean, noisy, t
+    return clear, noisy, t
 
 #------------------------------------------------------------------------------
 def _kf_init(kf, std):
     kf.x[0] = 0.
     kf.x[1] = 0.3
+
+    kf.Up = 1e-8
     kf.Dp *= .00001
+
+    kf.Uq = 1e-8
     kf.Dq *= 1.0e-6
 
     kf.Dr *= std * std
