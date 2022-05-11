@@ -109,7 +109,10 @@ def _kf_init(kf, std):
     kf.Uq = 1e-8
     kf.Dq *= 1.0e-6
 
-    kf.Dr *= std * std
+    if type(kf) in ROBUST:
+        kf.Dr *= std
+    else:
+        kf.Dr *= std * std
     kf.Dr[0] *= .75
     kf.Ur += 0.5
 
