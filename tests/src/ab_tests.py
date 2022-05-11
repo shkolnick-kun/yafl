@@ -18,7 +18,7 @@
 import h5py
 import numpy as np
 from numpy.linalg import norm
-
+import yaflpy
 #------------------------------------------------------------------------------
 def yafl_ab_test(a, b, measurements):
 
@@ -85,6 +85,16 @@ def yafl_ab_test(a, b, measurements):
     return rpa,rua,xa, rpb,rub,xb, nup,ndp, nuq,ndq, nur,ndr, nx, ny
 
 #------------------------------------------------------------------------------
+ROBUST_EKF = [yaflpy.RobustBierman,
+              yaflpy.RobustJoseph,
+              yaflpy.AdaptiveRobustBierman,
+              yaflpy.AdaptiveRobustJoseph]
+
+ROBUST_UKF = [yaflpy.UnscentedRobustBierman,
+              yaflpy.UnscentedAdaptiveRobustBierman]
+
+ROBUST = ROBUST_EKF + ROBUST_UKF
+
 def yafl_record_test_data(a, clear, noisy, t, fname):
     rp = []
     ru = []
@@ -110,7 +120,11 @@ def yafl_record_test_data(a, clear, noisy, t, fname):
         dq.append(a.Dq.copy())
 
         ur.append(a.Ur.copy())
-        dr.append(a.Dr.copy())
+
+        if type(a) in ROBUST:
+            dr.append(a.Dr * a.Dr)
+        else:
+            dr.append(a.Dr.copy())
 
     rp = np.array(rp)
     ru = np.array(ru)
@@ -215,7 +229,11 @@ def yafl_file_test(b, fname):
         ndq.append(2. * norm(adq[i] - b.Dq) / norm(adq[i] + b.Dq))
 
         nur.append(2. * norm(aur[i] - b.Ur) / norm(aur[i] + b.Ur))
-        ndr.append(2. * norm(adr[i] - b.Dr) / norm(adr[i] + b.Dr))
+
+        if type(b) in ROBUST:
+            ndr.append(2. * norm(np.sqrt(adr[i]) - b.Dr) / norm(np.sqrt(adr[i]) + b.Dr))
+        else:
+            ndr.append(2. * norm(adr[i] - b.Dr) / norm(adr[i] + b.Dr))
 
     rpb = np.array(rpb)
     rub = np.array(rub)
