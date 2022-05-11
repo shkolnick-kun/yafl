@@ -88,6 +88,16 @@ def case_data(n, std):
     return clear, noisy, t
 
 #------------------------------------------------------------------------------
+ROBUST_EKF = [yaflpy.RobustBierman,
+              yaflpy.RobustJoseph,
+              yaflpy.AdaptiveRobustBierman,
+              yaflpy.AdaptiveRobustJoseph]
+
+ROBUST_UKF = [yaflpy.UnscentedRobustBierman,
+              yaflpy.UnscentedAdaptiveRobustBierman]
+
+ROBUST = ROBUST_EKF + ROBUST_UKF
+
 def _kf_init(kf, std):
 
     kf.x[0] = 0.
@@ -104,11 +114,6 @@ def _kf_init(kf, std):
     kf.Ur += 0.5
 
 #------------------------------------------------------------------------------
-ROBUST_EKF = [yaflpy.RobustBierman,
-              yaflpy.RobustJoseph,
-              yaflpy.AdaptiveRobustBierman,
-              yaflpy.AdaptiveRobustJoseph]
-
 def case_ekf(clsEKF, std):
     if clsEKF in ROBUST_EKF:
         kf = clsEKF(4, 2, 1., _fx, _jfx, _hx, _jhx, gz=_gz, gdotz=_gdotz)
@@ -118,9 +123,6 @@ def case_ekf(clsEKF, std):
     return kf
 
 #------------------------------------------------------------------------------
-ROBUST_UKF = [yaflpy.UnscentedRobustBierman,
-              yaflpy.UnscentedAdaptiveRobustBierman]
-
 def case_ukf(clsUKF, std, sp=None):
 
     if not sp:
