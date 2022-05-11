@@ -16,6 +16,7 @@
     See the License for the specific language governing permissions
 """
 import numpy as np
+import yaflpy
 from yaflpy import JulierSigmaPoints as SP
 #------------------------------------------------------------------------------
 def _fx(x, dt, **fx_args):
@@ -48,6 +49,31 @@ def _jhx(x, **hx_args):
 def _zrf(a,b):
     return a - b
 
+#Default noice model is Normal with Poisson outliers
+def _gz(beta):
+    # +- 3*sigma
+    if 3.0 >= np.abs(beta):
+        return float(beta)
+
+    # +- 6*sigma - uncertain measurements
+    if 6.0 >= np.abs(beta):
+        return float(beta/3.0)
+
+    # outliers
+    return float(np.sign(beta))
+
+def _gdotz(beta):
+    # +- 3*sigma
+    if 3.0 >= np.abs(beta):
+        return 1.0
+
+    # +- 6*sigma - uncertain measurements
+    if 6.0 >= np.abs(beta):
+        return 1.0/3.0
+
+    # outliers
+    return 0.0
+
 #------------------------------------------------------------------------------
 def case_data(n, std):
     clear = np.zeros((n, 2))
@@ -63,6 +89,7 @@ def case_data(n, std):
 
 #------------------------------------------------------------------------------
 def _kf_init(kf, std):
+
     kf.x[0] = 0.
     kf.x[1] = 0.3
 
@@ -77,17 +104,32 @@ def _kf_init(kf, std):
     kf.Ur += 0.5
 
 #------------------------------------------------------------------------------
+ROBUST_EKF = [yaflpy.RobustBierman,
+              yaflpy.RobustJoseph,
+              yaflpy.AdaptiveRobustBierman,
+              yaflpy.AdaptiveRobustJoseph]
+
 def case_ekf(clsEKF, std):
-    kf = clsEKF(4, 2, 1., _fx, _jfx, _hx, _jhx)
+    if clsEKF in ROBUST_EKF:
+        kf = clsEKF(4, 2, 1., _fx, _jfx, _hx, _jhx, gz=_gz, gdotz=_gdotz)
+    else:
+        kf = clsEKF(4, 2, 1., _fx, _jfx, _hx, _jhx)
     _kf_init(kf, std)
     return kf
 
 #------------------------------------------------------------------------------
+ROBUST_UKF = [yaflpy.UnscentedRobustBierman,
+              yaflpy.UnscentedAdaptiveRobustBierman]
+
 def case_ukf(clsUKF, std, sp=None):
 
     if not sp:
         sp = SP(4, 0.0)
 
-    kf = clsUKF(4, 2, 1., _hx, _fx, sp)
+    if clsUKF in ROBUST_UKF:
+        kf = clsUKF(4, 2, 1., _hx, _fx, sp, gz=_gz, gdotz=_gdotz)
+    else:
+        kf = clsUKF(4, 2, 1., _hx, _fx, sp)
+
     _kf_init(kf, std)
     return kf
