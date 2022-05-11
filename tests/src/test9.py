@@ -22,7 +22,7 @@ import numpy as np
 from ab_tests import *
 from case1    import *
 
-from yaflpy import Joseph as B
+from yaflpy import RobustJoseph as B
 
 #------------------------------------------------------------------------------
 STD = 100.
@@ -34,7 +34,7 @@ b = case_ekf(B, STD)
 start = time.time()
 
 clear,noisy,t, rpa,rua,xa, rpb,rub,xb, nup,ndp, nuq,ndq, nur,ndr, nx, ny = \
-    yafl_file_test(b, '../data/j_ekf_case1_64bit.h5')
+    yafl_file_test(b, '../data/rj_ekf_case1_64bit.h5')
 
 end = time.time()
 print(end - start)
