@@ -111,10 +111,10 @@ def _kf_init(kf, std):
 
     if type(kf) in ROBUST:
         kf.Dr *= std
-        kf.Dr[0] *= .87
+        kf.Dr[0] *= np.sqrt(0.75)
     else:
         kf.Dr *= std * std
-        kf.Dr[0] *= .75
+        kf.Dr[0] *= 0.75
 
     kf.Ur += 0.5
 
