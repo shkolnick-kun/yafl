@@ -234,3 +234,46 @@ def yafl_file_test(b, fname):
     ny = np.array(ny)
 
     return clear,noisy,t, rpa,rua,xa, rpb,rub,xb, nup,ndp, nuq,ndq, nur,ndr, nx, ny
+
+#------------------------------------------------------------------------------
+def filterpy_ab_test(a, b, measurements):
+
+    xa  = []
+    xb  = []
+
+    nP = []
+    nQ = []
+    nR = []
+
+    nx  = []
+    ny  = []
+
+    for z in measurements:
+        # Run A
+        a.predict()
+        a.update(z)
+        xa.append(a.x.copy())
+
+        # Run B
+        b.predict()
+        b.update(z)
+        xb.append(b.x.copy())
+
+        nx.append(2. * norm(a.x - b.x) / norm(a.x + b.x))
+        ny.append(2. * norm(a.y - b.y) / norm(a.y + b.y))
+
+        nP.append(2. * norm(a.P - b.P) / norm(a.P + b.P))
+        nQ.append(2. * norm(a.Q - b.Q) / norm(a.Q + b.Q))
+        nR.append(2. * norm(a.R - b.R) / norm(a.R + b.R))
+
+    xa  = np.array(xa)
+    xb  = np.array(xb)
+
+    nP = np.array(nP)
+    nQ = np.array(nQ)
+    nR = np.array(nR)
+
+    nx = np.array(nx)
+    ny = np.array(ny)
+
+    return xa,xb, nP,nQ,nR, nx,ny

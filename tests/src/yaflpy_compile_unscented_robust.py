@@ -36,9 +36,11 @@ pyximport.install(
     )
 """
 
-from yaflpy import MerweSigmaPoints as SP
-from yaflpy import UnscentedRobustBierman as KF
-#from yaflpy import UnscentedAdaptiveRobustBierman as KF
+#from yaflpy import MerweSigmaPoints as SP
+from yaflpy import JulierSigmaPoints as SP
+
+#from yaflpy import UnscentedRobustBierman as KF
+from yaflpy import UnscentedAdaptiveRobustBierman as KF
 
 
 def _fx(x, dt, **fx_args):
@@ -83,7 +85,8 @@ def _zrf(a,b):
 
 STD = 100.
 
-sp = SP(4, 0.1, 2., 0)
+#sp = SP(4, 0.1, 2., 0)
+sp = SP(4, 0.0)
 kf = KF(4, 2, 1., _hx, _fx, sp, gz=_gz, gdotz=_gdotz)
 #kf = KF(4, 2, 1., _hx, _fx, sp, residual_z=_zrf)
 
@@ -92,7 +95,7 @@ kf.x[1] = 0.3
 kf.Dp *= .00001
 kf.Dq *= 1.0e-8
 #This is robust filter, so no square here
-kf.Dr *= STD*STD*0.0005
+kf.Dr *= STD*STD*0.001
 
 kf.Dr[0] *= .75
 kf.Ur += .5
@@ -104,12 +107,12 @@ kf.Ur += .5
 # kf.Q *= 1e-8
 # kf.R *= STD*STD
 
-kf.qff = 0.0001
+#kf.qff = 0.0001
 kf.rff = 0.0001
 
 print(kf.x)
 
-N = 6000
+N = 10000
 
 clean = np.zeros((N, 2))
 noisy = np.zeros((N, 2))
