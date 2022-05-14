@@ -47,6 +47,8 @@
 #define _W   (((yaflEKFBaseSt *)self)->W)
 #define _D   (((yaflEKFBaseSt *)self)->D)
 
+#define _QFF (((yaflEKFBaseSt *)self)->qff)
+
 yaflStatusEn yafl_ekf_base_predict(yaflKalmanBaseSt * self)
 {
     yaflStatusEn status = YAFL_ST_OK;
@@ -242,11 +244,11 @@ yaflStatusEn yafl_ekf_base_update(yaflKalmanBaseSt * self, yaflFloat * z, yaflKa
     YAFL_TRY(status, yafl_math_rum(_NZ, _NX, _HY, _UR));
 
     /*Start Q update if needed!*/
-    if (self->qff > 0.0)
+    if (_QFF > 0.0)
     {
         yaflStatusEn status_q = status; /*For quiet regularization*/
         YAFL_CHECK(_DQ, YAFL_ST_INV_ARG_1);
-        YAFL_TRY(status_q, yafl_math_set_vxn(_NX, _DQ, _DQ, 1.0 - self->qff));
+        YAFL_TRY(status_q, yafl_math_set_vxn(_NX, _DQ, _DQ, 1.0 - _QFF));
     }
 
     /* Do scalar updates */
@@ -388,7 +390,7 @@ yaflStatusEn yafl_ekf_bierman_update_scalar(yaflKalmanBaseSt * self, yaflInt i)
              _bierman_update_body(_NX, _X, _UP, _DP, f, v, _DR[i], _Y[i], \
                                   1.0, 1.0));
     /*Update Q if needed!*/
-    _Q_SCALAR_UPDATE(self->qff, v);
+    _Q_SCALAR_UPDATE(_QFF, v);
 #   undef v /*Don't nee v any more*/
 #   undef f
 
@@ -502,7 +504,7 @@ yaflStatusEn yafl_ekf_joseph_update_scalar(yaflKalmanBaseSt * self, yaflInt i)
                                  s, 1.0, 1.0));
 
     /*Update Q if needed!*/
-    _Q_SCALAR_UPDATE(self->qff, K);
+    _Q_SCALAR_UPDATE(_QFF, K);
 #   undef K /*Don't nee K any more*/
 #   undef r
 #   undef v
@@ -593,7 +595,7 @@ yaflStatusEn yafl_ekf_adaptive_bierman_update_scalar(yaflKalmanBaseSt * self, \
              _bierman_update_body(_NX, _X, _UP, _DP, f, v, r, nu, ac, 1.0));
 
     /*Update Q if needed!*/
-    _Q_SCALAR_UPDATE(self->qff, v);
+    _Q_SCALAR_UPDATE(_QFF, v);
 #   undef r
 #   undef v /*Don't nee v any more*/
 #   undef f
@@ -642,7 +644,7 @@ yaflStatusEn \
                                  ac, 1.0));
 
     /*Update Q if needed!*/
-    _Q_SCALAR_UPDATE(self->qff, K);
+    _Q_SCALAR_UPDATE(_QFF, K);
 #   undef K /*Don't nee K any more*/
 #   undef r
 #   undef v
@@ -837,7 +839,7 @@ yaflStatusEn \
                                   1.0, gdot));
 
     /*Update Q if needed!*/
-    _Q_SCALAR_UPDATE(self->qff, v);
+    _Q_SCALAR_UPDATE(_QFF, v);
 #   undef v  /*Don't nee v any more*/
 #   undef f
 
@@ -887,7 +889,7 @@ yaflStatusEn \
                                  1.0, gdot));
 
     /*Update Q if needed!*/
-    _Q_SCALAR_UPDATE(self->qff, K);
+    _Q_SCALAR_UPDATE(_QFF, K);
 #   undef K  /*Don't nee K any more*/
 #   undef v  /*Don't nee v any more*/
     return status;
@@ -933,7 +935,7 @@ yaflStatusEn \
                                           ac, gdot));
 
     /*Update Q if needed!*/
-    _Q_SCALAR_UPDATE(self->qff, v);
+    _Q_SCALAR_UPDATE(_QFF, v);
 #   undef v  /*Don't nee v any more*/
 #   undef f
 
@@ -985,7 +987,7 @@ yaflStatusEn \
                                  ac, gdot));
 
     /*Update Q if needed!*/
-    _Q_SCALAR_UPDATE(self->qff, K);
+    _Q_SCALAR_UPDATE(_QFF, K);
 #   undef K  /*Don't nee K any more*/
 #   undef v
 
@@ -1003,6 +1005,7 @@ yaflStatusEn \
 #undef _HY
 #undef _W
 #undef _D
+#undef _QFF
 
 /*=============================================================================
                     Basic UD-factorized UKF functions
@@ -1341,6 +1344,7 @@ yaflStatusEn yafl_ukf_base_update(yaflUKFBaseSt * self, yaflFloat * z, \
 
         1. _SIGMAS_X and _SIGMAS_Z must be parts of the larger
             memory pool which has minimum size of (nx + nz) * (nz + 1)
+            or np * (nx + nz) where np is number of sigma points
 
         2. _SIGMAS_X must be at start of this pool
         */
@@ -1372,18 +1376,10 @@ yaflStatusEn yafl_ukf_base_update(yaflUKFBaseSt * self, yaflFloat * z, \
     YAFL_TRY(status, yafl_math_ruv(nz,      _UY, _UUR));
     YAFL_TRY(status, yafl_math_rum(nz, nx, _PZX, _UUR));
 
-    /*Start Q update if needed!*/
-    if (_KALMAN_SELF->qff > 0.0)
-    {
-        yaflStatusEn status_q = status; /*For quiet regularization*/
-        YAFL_CHECK(_UDQ, YAFL_ST_INV_ARG_1);
-        YAFL_TRY(status_q, yafl_math_set_vxn(nx, _UDQ, _UDQ, 1.0 - _KALMAN_SELF->qff));
-    }
-
     /*Now we can do scalar updates*/
     for (i = 0; i < nz; i++)
     {
-        YAFL_TRY(status, scalar_update(_KALMAN_SELF, i)); /*Q is updated here if needed!*/
+        YAFL_TRY(status, scalar_update(_KALMAN_SELF, i));
     }
 
     if (_KALMAN_SELF->rff > 0.0)
@@ -1439,8 +1435,6 @@ yaflStatusEn yafl_ukf_bierman_update_scalar(yaflKalmanBaseSt * self, yaflInt i)
     YAFL_TRY(status, \
              _bierman_update_body(nx, _X, _UP, _DP, f, v, _DR[i], _Y[i], \
                                   1.0, 1.0));
-
-    _Q_SCALAR_UPDATE(self->qff, v);
 #   undef f
     return status;
 }
@@ -1479,8 +1473,6 @@ yaflStatusEn yafl_ukf_adaptive_bierman_update_scalar(yaflKalmanBaseSt * self, ya
 
     YAFL_TRY(status, \
              _bierman_update_body(nx, _X, _UP, _DP, f, v, r, _Y[i], ac, 1.0));
-
-    _Q_SCALAR_UPDATE(self->qff, v);
 #   undef f
     return status;
 }
@@ -1526,8 +1518,6 @@ yaflStatusEn yafl_ukf_robust_bierman_update_scalar(yaflKalmanBaseSt * self, \
     YAFL_TRY(status, \
              _bierman_update_body(nx, _X, _UP, _DP, f, v, r, nu, \
                                   1.0, gdot));
-
-    _Q_SCALAR_UPDATE(self->qff, v);
 #   undef f
     return status;
 }
@@ -1573,8 +1563,6 @@ yaflStatusEn \
 
     YAFL_TRY(status, \
              _bierman_update_body(nx, _X, _UP, _DP, f, v, r, nu, ac, gdot));
-
-    _Q_SCALAR_UPDATE(self->qff, v);
 #   undef f
     return status;
 }

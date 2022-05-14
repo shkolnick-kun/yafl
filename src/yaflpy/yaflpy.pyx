@@ -110,7 +110,6 @@ cdef extern from "yafl.c":
         yaflFloat * Ur   #
         yaflFloat * Dr   #
 
-        yaflFloat qff    #
         yaflFloat rff    #
 
         yaflInt   Nx     #
@@ -128,6 +127,8 @@ cdef extern from "yafl.c":
         yaflFloat * H      #
         yaflFloat * W      #
         yaflFloat * D      #
+
+        yaflFloat qff      #
 
     cdef yaflStatusEn yafl_ekf_base_predict(yaflKalmanBaseSt * self)
 
@@ -453,7 +454,6 @@ cdef class yaflKalmanBase:
         self.c_self.base.base.Nz = dim_z
 
         #Set forgetting factors
-        self.c_self.base.base.qff = 0.0
         self.c_self.base.base.rff = 0.0
 
         #Setup callbacks
@@ -583,18 +583,6 @@ cdef class yaflKalmanBase:
     @Dr.setter
     def Dr(self, value):
         self._Dr[:] = value
-
-    #--------------------------------------------------------------------------
-    @property
-    def qff(self):
-        return self.c_self.base.base.qff
-
-    @qff.setter
-    def qff(self, yaflFloat value):
-        if value < 0.0 or value >= 1.0:
-            raise ValueError('qff value must be in [0.0, 1.0)')
-
-        self.c_self.base.base.qff = value
 
     #--------------------------------------------------------------------------
     @property
@@ -770,6 +758,8 @@ cdef class yaflExtendedBase(yaflKalmanBase):
 
         super().__init__(dim_x, dim_z, dt, fx, hx, residual_z)
 
+        self.c_self.base.ekf.qff = 0.0
+
         if not callable(jfx):
             raise ValueError('jfx must be callable!')
         self.c_self.base.ekf.jf = <yaflKalmanFuncP>yafl_py_ekf_jfx
@@ -796,6 +786,18 @@ cdef class yaflExtendedBase(yaflKalmanBase):
         self._D  = np.ones((n,), dtype=NP_DTYPE)
         self.v_D = self._D
         self.c_self.base.ekf.D = &self.v_D[0]
+
+    #--------------------------------------------------------------------------
+    @property
+    def qff(self):
+        return self.c_self.base.ekf.qff
+
+    @qff.setter
+    def qff(self, yaflFloat value):
+        if value < 0.0 or value >= 1.0:
+            raise ValueError('qff value must be in [0.0, 1.0)')
+
+        self.c_self.base.ekf.qff = value
 
     #==========================================================================
     def _predict(self):
