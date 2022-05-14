@@ -827,15 +827,17 @@ cdef yaflStatusEn yafl_py_ekf_jfx(yaflPyKalmanBaseSt * self, yaflFloat * w, \
         if not isinstance(fx_args, dict):
             raise ValueError('Invalid fx_args type (must be dict)!')
 
-        # Create a container with propper shape
+        # Read x size
         dim_x = self.base.base.Nx
-        _w    = np.zeros((dim_x, 2 * dim_x), dtype=NP_DTYPE)
 
-        # Calculate jacobian
-        _w[:,:dim_x] = jfx(py_self._x, dt, **fx_args)
+        # Interpret x
+        _x = np.asarray(<yaflFloat[:dim_x]> x)
 
-        # Put it to py_self._W
-        py_self._W[:2 * dim_x * dim_x] = _w.reshape((2 * dim_x * dim_x,))
+        # Interpret w.shape as (dim_x, 2 * dim_x)
+        _w = np.asarray(<yaflFloat[:dim_x, :2 * dim_x]> w)
+
+        # Calculate Jacobian
+        _w[:, :dim_x] = jfx(py_self._x, dt, **fx_args)
 
         return YAFL_ST_OK
 
@@ -861,8 +863,18 @@ cdef yaflStatusEn yafl_py_ekf_jhx(yaflPyKalmanBaseSt * self, yaflFloat * h, \
         if not isinstance(hx_args, dict):
             raise ValueError('Invalid hx_args type (must be dict)!')
 
-        #How about handling exceptions here???
-        py_self._H[:,:] = jhx(py_self._x, **hx_args)
+        # Read x and z size
+        dim_x = self.base.base.Nx
+        dim_z = self.base.base.Nz
+
+        # Interpret x
+        _x = np.asarray(<yaflFloat[:dim_x]> x)
+
+        # Interpret h.shape as (dim_x, 2 * dim_x)
+        _h = np.asarray(<yaflFloat[:dim_z, :dim_x]> h)
+
+        # Calculate Jacobian
+        _h[:,:] = jhx(_x, **hx_args)
 
         return YAFL_ST_OK
 

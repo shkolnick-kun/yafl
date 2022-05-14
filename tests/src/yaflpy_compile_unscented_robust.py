@@ -107,8 +107,8 @@ kf.Ur += .5
 # kf.Q *= 1e-8
 # kf.R *= STD*STD
 
-#kf.qff = 0.0001
-kf.rff = 0.0001
+kf.rff = 0.001
+kf.qff = 0.0001
 
 print(kf.x)
 

@@ -111,8 +111,8 @@ kf.Dr *= STD*STD*0.000001
 kf.Dr[0] *= .75
 kf.Ur += 0.5
 
+kf.rff = 0.001
 kf.qff = 0.0001
-kf.rff = 0.0001
 
 #kf.chi2 = scipy.stats.chi2.ppf(0.996, 1)
 
