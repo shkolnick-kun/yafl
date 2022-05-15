@@ -839,7 +839,7 @@ cdef yaflStatusEn yafl_py_ekf_jfx(yaflPyKalmanBaseSt * self, yaflFloat * w, \
         _w = np.asarray(<yaflFloat[:dim_x, :2 * dim_x]> w)
 
         # Calculate Jacobian
-        _w[:, :dim_x] = jfx(py_self._x, dt, **fx_args)
+        _w[:, :dim_x] = jfx(_x, dt, **fx_args)
 
         return YAFL_ST_OK
 
