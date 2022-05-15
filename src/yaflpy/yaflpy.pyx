@@ -75,7 +75,12 @@ cdef extern from "yafl_math.c":
         YAFL_ST_INV_ARG_12   = 0x1b0
 
     #--------------------------------------------------------------------------
-    #cdef yaflStatusEn yafl_math_set_u(yaflInt sz, yaflFloat *res, yaflFloat *u)
+    cdef yaflStatusEn yafl_math_mwgsu(yaflInt nr, yaflInt nc, \
+                                      yaflFloat *res_u, yaflFloat *res_d, \
+                                          yaflFloat *w, yaflFloat *d)
+
+    #--------------------------------------------------------------------------
+    cdef yaflStatusEn yafl_math_ruv(yaflInt sz, yaflFloat *res, yaflFloat *u)
 
 #------------------------------------------------------------------------------
 cdef extern from "yafl.c":
@@ -368,6 +373,56 @@ ST_INV_ARG_11 = YAFL_ST_INV_ARG_11
 ST_INV_ARG_12 = YAFL_ST_INV_ARG_12
 
 #==============================================================================
+#                            Helper functions
+#==============================================================================
+cdef int _U_sz(int dim_u):
+    return max(1, (dim_u * (dim_u - 1))//2)
+
+#------------------------------------------------------------------------------
+def MWGS(W, D):
+    assert isinstance(W, np.ndarray)
+    assert NP_DTYPE == W.dtype
+    assert 2 == len(W.shape)
+    nr = W.shape[0]
+    nc = W.shape[1]
+
+    assert isinstance(D, np.ndarray)
+    assert NP_DTYPE == D.dtype
+    assert 1 == len(D.shape)
+    assert D.shape[0] == nc
+
+    u = np.zeros((_U_sz(nr),), dtype=NP_DTYPE)
+    d = np.ones((nr,), dtype=NP_DTYPE)
+
+    cdef yaflFloat [:, ::1] v_W = W
+    cdef yaflFloat [::1]    v_D = D
+    cdef yaflFloat [::1]    v_u = u
+    cdef yaflFloat [::1]    v_d = d
+
+    res = yafl_math_mwgsu(nr, nc, &v_u[0], &v_d[0], &v_W[0,0], &v_D[0])
+    return res, u, d
+
+#------------------------------------------------------------------------------
+def RUV(u, v):
+    assert isinstance(u, np.ndarray)
+    assert NP_DTYPE == u.dtype
+    assert 1 == len(u.shape)
+    usz = u.shape[0]
+
+    assert isinstance(v, np.ndarray)
+    assert NP_DTYPE == v.dtype
+    assert 1 == len(v.shape)
+    sz = v.shape[0]
+
+    assert usz == _U_sz(sz)
+
+    v = v.copy()
+    cdef yaflFloat [::1]    v_v = v
+    cdef yaflFloat [::1]    v_u = u
+    res = yafl_math_ruv(sz, &v_v[0], &v_u[0])
+    return res, v
+
+#==============================================================================
 #                          UD-factorized EKF API
 #==============================================================================
 #------------------------------------------------------------------------------
@@ -396,10 +451,6 @@ ctypedef struct yaflPyKalmanBaseSt:
 
     # Python/Cython self
     void * py_self
-
-#------------------------------------------------------------------------------
-cdef int _U_sz(int dim_u):
-    return max(1, (dim_u * (dim_u - 1))//2)
 
 #------------------------------------------------------------------------------
 #                             Basic Filter class
