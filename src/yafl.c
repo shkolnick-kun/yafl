@@ -1698,7 +1698,7 @@ static inline yaflStatusEn _yafl_ukf_compute_pzx(yaflUKFBaseSt * self)
 }
 
 /*---------------------------------------------------------------------------*/
-yaflStatusEn yafl_ukf_update(yaflUKFBaseSt * self, yaflFloat * z)
+static inline yaflStatusEn yafl_ukf_update_epilogue(yaflUKFBaseSt * self, yaflFloat * z)
 {
     yaflStatusEn status = YAFL_ST_OK;
     yaflInt nz;
@@ -1721,15 +1721,6 @@ yaflStatusEn yafl_ukf_update(yaflUKFBaseSt * self, yaflFloat * z)
 
     ds = _UDS;
     YAFL_CHECK(ds, YAFL_ST_INV_ARG_1);
-
-    /* Compute measurement sigmas, zp, Us, Ds*/
-    YAFL_TRY(status, _yafl_ukf_compute_ms_zp_s(self));
-
-    /*Compute innovation*/
-    YAFL_TRY(status, _compute_res(_KALMAN_SELF, nz, _UZRF, y, z, _ZP));
-
-    /* Decorrelate measurements part 1*/
-    YAFL_TRY(status, yafl_math_ruv(nz,        y, _UUS));
 
     /* Compute Pzx */
     YAFL_TRY(status, _yafl_ukf_compute_pzx(self));
@@ -1760,7 +1751,31 @@ yaflStatusEn yafl_ukf_update(yaflUKFBaseSt * self, yaflFloat * z)
         */
         YAFL_TRY(status, yafl_math_udu_down(nx, _UUP, _UDP, 1.0 / ds[i], pzxi));
     }
+
     YAFL_TRY(status, _yafl_ukf_compute_residual(self, z));
+    return status;
+}
+
+/*---------------------------------------------------------------------------*/
+yaflStatusEn yafl_ukf_update(yaflUKFBaseSt * self, yaflFloat * z)
+{
+    yaflStatusEn status = YAFL_ST_OK;
+
+    /* Compute measurement sigmas, zp, Us, Ds*/
+    YAFL_TRY(status, _yafl_ukf_compute_ms_zp_s(self));
+
+    /*Compute innovation*/
+    YAFL_TRY(status, _compute_res(_KALMAN_SELF, _UNZ, _UZRF, _UY, z, _ZP));
+
+    /* Decorrelate measurements part 1*/
+    YAFL_TRY(status, yafl_math_ruv(_UNZ, _UY, _UUS));
+
+    /*
+    Decorrelate measurements part 2, compute Pzx,
+    update P and x, compute residual if needed
+    */
+    YAFL_TRY(status, yafl_ukf_update_epilogue(self, z));
+
     return status;
 }
 
@@ -1809,27 +1824,9 @@ static inline yaflStatusEn _ukf_compute_md(yaflUKFBaseSt * self, yaflFloat * z, 
 yaflStatusEn yafl_ukf_adaptive_update(yaflUKFBaseSt * self, yaflFloat * z)
 {
     yaflStatusEn status = YAFL_ST_OK;
-    yaflInt nz;
-    yaflInt nx;
-    yaflInt i;
-
     yaflFloat delta;
-    yaflFloat * y;
-    yaflFloat * ds;
 
     YAFL_CHECK(self, YAFL_ST_INV_ARG_1);
-
-    y = _UY;
-    YAFL_CHECK(y,  YAFL_ST_INV_ARG_1);
-
-    nx = _UNX;
-    YAFL_CHECK(nx, YAFL_ST_INV_ARG_1);
-
-    nz = _UNZ;
-    YAFL_CHECK(nz, YAFL_ST_INV_ARG_1);
-
-    ds = _UDS;
-    YAFL_CHECK(ds, YAFL_ST_INV_ARG_1);
 
     /* Compute measurement sigmas, zp, Us, Ds*/
     YAFL_TRY(status, _yafl_ukf_compute_ms_zp_s(self));
@@ -1840,19 +1837,24 @@ yaflStatusEn yafl_ukf_adaptive_update(yaflUKFBaseSt * self, yaflFloat * z)
 #   define _CHI2 (((yaflUKFFullAdapiveSt *)self)->chi2)
     if (delta > _CHI2)
     {
+        yaflInt nz;
+
         /* Adaptive correction */
         yaflFloat ac;
 
+        nz = _UNZ;
+        YAFL_CHECK(nz, YAFL_ST_INV_ARG_1);
+
         /* Compute correction factor, we don't need old _ZP and _SIGMAS_Z now*/
         YAFL_TRY(status, \
-                 _unscented_transform(self, nz, _ZP, _UUS, ds, _SZ, _SIGMAS_Z, \
+                 _unscented_transform(self, nz, _ZP, _UUS, _UDS, _SZ, _SIGMAS_Z, \
                                       0, 0, _ZMF, _UZRF));
 
         YAFL_TRY(status, _ukf_compute_md(self, z, &ac));
         ac *= 1.0 / _CHI2 - 1.0 / delta;
 
         /* Correct _UDP*/
-        YAFL_TRY(status, yafl_math_set_vxn(nx, _UDP, _UDP, 1.0 + ac));
+        YAFL_TRY(status, yafl_math_set_vxn(_UNX, _UDP, _UDP, 1.0 + ac));
 
         /* Generate new sigmas */
         YAFL_TRY(status, yafl_ukf_gen_sigmas(self));
@@ -1861,44 +1863,19 @@ yaflStatusEn yafl_ukf_adaptive_update(yaflUKFBaseSt * self, yaflFloat * z)
         YAFL_TRY(status, _yafl_ukf_compute_ms_zp_s(self));
 
         /*  Recompute innovation*/
-        YAFL_TRY(status, _compute_res(_KALMAN_SELF, nz, _UZRF, y, z, _ZP));
+        YAFL_TRY(status, _compute_res(_KALMAN_SELF, nz, _UZRF, _UY, z, _ZP));
 
         /*  Decorrelate measurements part 1*/
-        YAFL_TRY(status, yafl_math_ruv(nz, y, _UUS));
+        YAFL_TRY(status, yafl_math_ruv(nz, _UY, _UUS));
     }
 #   undef _CHI2
 
-    /* Compute Pzx */
-    YAFL_TRY(status, _yafl_ukf_compute_pzx(self));
+    /*
+    Decorrelate measurements part 2, compute Pzx,
+    update P and x, compute residual if needed
+    */
+    YAFL_TRY(status, yafl_ukf_update_epilogue(self, z));
 
-    /* Decorrelate measurements part 2*/
-    YAFL_TRY(status, yafl_math_rum(nz, nx, _PZX, _UUS));
-
-    /*Now we can do scalar updates*/
-    for (i = 0; i < nz; i++)
-    {
-        yaflFloat * pzxi;
-        pzxi = _PZX + nx * i;
-        /*
-        self.x += K * y[i]
-
-        K * y[i] = Pzx[i].T / ds[i] * y[i] = Pzx[i].T * (y[i] / ds[i])
-
-        self.x += Pzx[i].T * (y[i] / ds[i])
-        */
-        YAFL_TRY(status, yafl_math_add_vxn(nx, _UX, pzxi, y[i] / ds[i]));
-
-        /*
-        P -= K.dot(S.dot(K.T))
-        K.dot(S.dot(K.T)) = (Pzx[i].T / ds[i] * ds[i]).outer(Pzx[i] / ds[i]))
-        K.dot(S.dot(K.T)) = (Pzx[i].T).outer(Pzx[i]) / ds[i]
-        P -= (Pzx[i].T).outer(Pzx[i]) / ds[i]
-        Up, Dp = udu(P)
-        */
-        YAFL_TRY(status, yafl_math_udu_down(nx, _UUP, _UDP, 1.0 / ds[i], pzxi));
-    }
-
-    YAFL_TRY(status, _yafl_ukf_compute_residual(self, z));
     return status;
 }
 
