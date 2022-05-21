@@ -1305,7 +1305,7 @@ static inline yaflStatusEn _yafl_ukf_compute_residual(yaflUKFBaseSt * self, \
     yaflStatusEn status = YAFL_ST_OK;
     yaflFloat rff;
 
-    YAFL_CHECK(self,     YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self, YAFL_ST_INV_ARG_1);
 
     rff = _KALMAN_SELF->rff;
     if (rff  > 0.0)
@@ -1659,7 +1659,10 @@ static inline yaflStatusEn _yafl_ukf_compute_ms_zp_s(yaflUKFBaseSt * self)
     YAFL_CHECK(_UHX, YAFL_ST_INV_ARG_1);
 
     sigmas_x = _SIGMAS_X;
+    YAFL_CHECK(sigmas_x, YAFL_ST_INV_ARG_1);
+
     sigmas_z = _SIGMAS_Z;
+    YAFL_CHECK(sigmas_z, YAFL_ST_INV_ARG_1);
 
 
     /* Compute measurement sigmas */

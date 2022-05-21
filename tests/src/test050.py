@@ -73,3 +73,9 @@ plt.show()
 
 plt.plot(clear[:,0], clear[:,1], xa[:,0], xa[:,2])
 plt.show()
+
+plt.plot(noisy[:,0], noisy[:,1], xb[:,0], xb[:,2])
+plt.show()
+
+plt.plot(clear[:,0], clear[:,1], xb[:,0], xb[:,2])
+plt.show()
