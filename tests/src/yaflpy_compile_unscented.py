@@ -39,9 +39,9 @@ pyximport.install(
 #from yaflpy import MerweSigmaPoints as SP
 from yaflpy import JulierSigmaPoints as SP
 
-#from yaflpy import Unscented as KF
+from yaflpy import Unscented as KF
 #from yaflpy import UnscentedAdaptive as KF
-from yaflpy import UnscentedBierman as KF
+#from yaflpy import UnscentedBierman as KF
 #from yaflpy import UnscentedAdaptiveBierman as KF
 
 

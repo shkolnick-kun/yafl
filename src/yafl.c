@@ -1658,13 +1658,9 @@ static inline yaflStatusEn _yafl_ukf_compute_ms_zp_s(yaflUKFBaseSt * self)
 
     YAFL_CHECK(_UHX, YAFL_ST_INV_ARG_1);
 
-    ur = _UUR;
-    dr = _UDR;
-
     sigmas_x = _SIGMAS_X;
     sigmas_z = _SIGMAS_Z;
 
-    rff = _KALMAN_SELF->rff;
 
     /* Compute measurement sigmas */
     for (i = 0; i < np; i++)
@@ -1672,16 +1668,22 @@ static inline yaflStatusEn _yafl_ukf_compute_ms_zp_s(yaflUKFBaseSt * self)
         YAFL_TRY(status, _UHX(_KALMAN_SELF, sigmas_z + nz * i, sigmas_x + nx * i));
     }
 
+    ur  = _UUR;
+    dr  = _UDR;
+
+    rff = _KALMAN_SELF->rff;
     if (rff > 0.0)
     {
         /* Compute zp, update Ur, Dr, compute Us, Ds */
         yaflFloat tmp;
+        yaflStatusEn r_status = YAFL_ST_OK; /*For silent R regularization*/
 
         YAFL_CHECK(rff < 1.0,  YAFL_ST_INV_ARG_1);
         YAFL_CHECK(dr,         YAFL_ST_INV_ARG_1);
 
         YAFL_TRY(status, _unscented_mean(self, nz, _ZP, np, sigmas_z, _ZMF));
 
+        /*Update Ur, Dr*/
         /* R *= 1.0- rff */
         tmp = 1.0 - rff;
         for (i=0; i < nz; i++)
@@ -1690,13 +1692,13 @@ static inline yaflStatusEn _yafl_ukf_compute_ms_zp_s(yaflUKFBaseSt * self)
         }
 
         /* R += rff * y.dot(y.T) */
-        YAFL_TRY(status, yafl_math_udu_up(nz, ur, dr, rff, _UY));
+        YAFL_TRY(r_status, yafl_math_udu_up(nz, ur, dr, rff, _UY));
 
         /* R += rff * Pzz*/
-        YAFL_TRY(status, _unscented_update(self, nz, ur, dr, _ZP, \
-                                           np, sigmas_z, _SZ, _UZRF, rff));
+        YAFL_TRY(r_status, _unscented_update(self, nz, ur, dr, _ZP, \
+                                             np, sigmas_z, _SZ, _UZRF, rff));
 
-        /*Update S*/
+        /*Compute Us, Ds*/
         memcpy((void *)_UUS, (void *)ur, (nz * (nz - 1)) / 2 * sizeof(yaflFloat));
         memcpy((void *)_UDS, (void *)dr, nz * sizeof(yaflFloat));
 
