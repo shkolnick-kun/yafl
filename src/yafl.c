@@ -1320,6 +1320,72 @@ static inline yaflStatusEn _yafl_ukf_compute_residual(yaflUKFBaseSt * self, \
 }
 
 /*---------------------------------------------------------------------------*/
+static inline yaflStatusEn _yafl_ukf_compute_pzx(yaflUKFBaseSt * self)
+{
+    yaflStatusEn status = YAFL_ST_OK;
+
+    yaflUKFSigmaSt * sp_info;
+    yaflKalmanResFuncP zrf;
+    yaflKalmanResFuncP xrf;
+
+    yaflFloat * sigmas_x;
+    yaflFloat * sigmas_z;
+    yaflFloat * pzx;
+    yaflFloat * sx;
+    yaflFloat * sz;
+    yaflFloat * x;
+    yaflFloat * zp;
+    yaflFloat * wc;
+
+    yaflInt np;
+    yaflInt nz;
+    yaflInt nx;
+    yaflInt i;
+
+    YAFL_CHECK(self, YAFL_ST_INV_ARG_1);
+
+    nx = _UNX;
+    YAFL_CHECK(nx, YAFL_ST_INV_ARG_1);
+
+    nz = _UNZ;
+    YAFL_CHECK(nz, YAFL_ST_INV_ARG_1);
+
+    sp_info = self->sp_info;
+    YAFL_CHECK(sp_info, YAFL_ST_INV_ARG_1);
+
+    np = sp_info->np;
+    YAFL_CHECK(np > 1, YAFL_ST_INV_ARG_1);
+
+    wc = _WC;
+    YAFL_CHECK(wc, YAFL_ST_INV_ARG_1);
+
+    /*Will be checked by _compute_res*/
+    zrf      = _UZRF;
+    xrf      = _XRF;
+    pzx      = _PZX;
+    sx       = _SX;
+    sz       = _SZ;
+    x        = _UX;
+    zp       = _ZP;
+
+    sigmas_x = _SIGMAS_X;
+    sigmas_z = _SIGMAS_Z;
+
+    /* Compute Pzx */
+    YAFL_TRY(status, _compute_res(_KALMAN_SELF, nz, zrf, sz, sigmas_z, zp));
+    YAFL_TRY(status, _compute_res(_KALMAN_SELF, nx, xrf, sx, sigmas_x, x));
+    YAFL_TRY(status, yafl_math_set_vvtxn(nz, nx, pzx, sz, sx, wc[0]));
+
+    for (i = 1; i < np; i++)
+    {
+        YAFL_TRY(status, _compute_res(_KALMAN_SELF, nz, zrf, sz, sigmas_z + nz * i, zp));
+        YAFL_TRY(status, _compute_res(_KALMAN_SELF, nx, xrf, sx, sigmas_x + nx * i, x));
+        YAFL_TRY(status, yafl_math_add_vvtxn(nz, nx, pzx, sz, sx, wc[i]));
+    }
+    return status;
+}
+
+/*---------------------------------------------------------------------------*/
 yaflStatusEn yafl_ukf_base_update(yaflUKFBaseSt * self, yaflFloat * z, \
                                   yaflKalmanScalarUpdateP scalar_update)
 {
@@ -1334,51 +1400,27 @@ yaflStatusEn yafl_ukf_base_update(yaflUKFBaseSt * self, yaflFloat * z, \
 
     YAFL_CHECK(self,     YAFL_ST_INV_ARG_1);
 
-    YAFL_CHECK(_UHX, YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(_UX,  YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(_UY,  YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(_UUP, YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(_UDP, YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(_UUR, YAFL_ST_INV_ARG_1);
-
     nx = _UNX;
     YAFL_CHECK(nx, YAFL_ST_INV_ARG_1);
+
     nz = _UNZ;
     YAFL_CHECK(nz, YAFL_ST_INV_ARG_1);
 
-    YAFL_CHECK(_ZP,  YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(_SX,  YAFL_ST_INV_ARG_1);
     YAFL_CHECK(_PZX, YAFL_ST_INV_ARG_1);
 
     YAFL_CHECK(_SIGMAS_X, YAFL_ST_INV_ARG_1);
-
-    YAFL_CHECK(_SIGMAS_Z, YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(_WC, YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(_WM, YAFL_ST_INV_ARG_1);
 
     sp_info = self->sp_info;
     YAFL_CHECK(sp_info, YAFL_ST_INV_ARG_1);
 
     np = sp_info->np;
     YAFL_CHECK(np > 1, YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(z, YAFL_ST_INV_ARG_2);
 
     /* Compute measurement sigmas and zp*/
     YAFL_TRY(status, _yafl_ukf_compute_sigmas_z_and_zp(self));
 
     /* Compute Pzx = H.dot(Up.dot(Dp.dot(Up.T))*/
-    YAFL_TRY(status, _compute_res(_KALMAN_SELF, nz, _UZRF,  _SZ, _SIGMAS_Z, _ZP));
-    YAFL_TRY(status, _compute_res(_KALMAN_SELF, nx,  _XRF,  _SX, _SIGMAS_X, _UX));
-    YAFL_TRY(status, yafl_math_set_vvtxn(nz, nx, _PZX, _SZ, _SX, _WC[0]));
-
-    for (i = 1; i < np; i++)
-    {
-        YAFL_TRY(status, _compute_res(_KALMAN_SELF,   nz, _UZRF, _SZ, \
-                                      _SIGMAS_Z + nz * i, _ZP));
-        YAFL_TRY(status, _compute_res(_KALMAN_SELF, nx,  _XRF, _SX, \
-                                      _SIGMAS_X + nx * i, _UX));
-        YAFL_TRY(status, yafl_math_add_vvtxn(nz, nx, _PZX, _SZ, _SX, _WC[i]));
-    }
+    YAFL_TRY(status, _yafl_ukf_compute_pzx(self));
     /*Now _SIGMAS_Z and _SIGMAS_X may be spoiled*/
 
     /*Compute H.dot(Up)*/
@@ -1422,7 +1464,7 @@ yaflStatusEn yafl_ukf_base_update(yaflUKFBaseSt * self, yaflFloat * z, \
     /*Compute H*/
     for (i = 0; i < nz; i++)
     {
-        YAFL_TRY(status, yafl_math_rutv   (nx, _PZX + nx * i, _UUP));
+        YAFL_TRY(status, yafl_math_rutv(nx, _PZX + nx * i, _UUP));
     }
     /*Now _PZX = H*/
 
@@ -1714,72 +1756,6 @@ static inline yaflStatusEn _yafl_ukf_compute_ms_zp_s(yaflUKFBaseSt * self)
         YAFL_TRY(status, \
                  _unscented_transform(self, nz, _ZP, _UUS, _UDS, \
                                       _SZ, sigmas_z, ur, dr, _ZMF, _UZRF));
-    }
-    return status;
-}
-
-/*---------------------------------------------------------------------------*/
-static inline yaflStatusEn _yafl_ukf_compute_pzx(yaflUKFBaseSt * self)
-{
-    yaflStatusEn status = YAFL_ST_OK;
-
-    yaflUKFSigmaSt * sp_info;
-    yaflKalmanResFuncP zrf;
-    yaflKalmanResFuncP xrf;
-
-    yaflFloat * sigmas_x;
-    yaflFloat * sigmas_z;
-    yaflFloat * pzx;
-    yaflFloat * sx;
-    yaflFloat * sz;
-    yaflFloat * x;
-    yaflFloat * zp;
-    yaflFloat * wc;
-
-    yaflInt np;
-    yaflInt nz;
-    yaflInt nx;
-    yaflInt i;
-
-    YAFL_CHECK(self, YAFL_ST_INV_ARG_1);
-
-    nx = _UNX;
-    YAFL_CHECK(nx, YAFL_ST_INV_ARG_1);
-
-    nz = _UNZ;
-    YAFL_CHECK(nz, YAFL_ST_INV_ARG_1);
-
-    sp_info = self->sp_info;
-    YAFL_CHECK(sp_info, YAFL_ST_INV_ARG_1);
-
-    np = sp_info->np;
-    YAFL_CHECK(np > 1, YAFL_ST_INV_ARG_1);
-
-    wc = _WC;
-    YAFL_CHECK(wc, YAFL_ST_INV_ARG_1);
-
-    /*Will be checked by _compute_res*/
-    zrf      = _UZRF;
-    xrf      = _XRF;
-    pzx      = _PZX;
-    sx       = _SX;
-    sz       = _SZ;
-    x        = _UX;
-    zp       = _ZP;
-
-    sigmas_x = _SIGMAS_X;
-    sigmas_z = _SIGMAS_Z;
-
-    /* Compute Pzx */
-    YAFL_TRY(status, _compute_res(_KALMAN_SELF, nz, zrf, sz, sigmas_z, zp));
-    YAFL_TRY(status, _compute_res(_KALMAN_SELF, nx, xrf, sx, sigmas_x, x));
-    YAFL_TRY(status, yafl_math_set_vvtxn(nz, nx, pzx, sz, sx, wc[0]));
-
-    for (i = 1; i < np; i++)
-    {
-        YAFL_TRY(status, _compute_res(_KALMAN_SELF, nz, zrf, sz, sigmas_z + nz * i, zp));
-        YAFL_TRY(status, _compute_res(_KALMAN_SELF, nx, xrf, sx, sigmas_x + nx * i, x));
-        YAFL_TRY(status, yafl_math_add_vvtxn(nz, nx, pzx, sz, sx, wc[i]));
     }
     return status;
 }
