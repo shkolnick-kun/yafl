@@ -1131,7 +1131,7 @@ static inline yaflStatusEn _unscented_update(yaflUKFBaseSt * self,  \
     {
         yaflFloat wci;
 
-        YAFL_TRY(status, _compute_res(_KALMAN_SELF, sz, rf , sp, sigmas + sz * i, pivot));
+        YAFL_TRY(status, _compute_res(_KALMAN_SELF, sz, rf, sp, sigmas + sz * i, pivot));
         /*Update res_u and res_d*/
         /*wc should be sorted in descending order*/
         wci = wc[i] * n;

@@ -81,7 +81,7 @@ def case_data(n, std):
     t     = np.zeros((n,), dtype=np.float)
 
     for i in range(1, len(clear)):
-        clear[i] = clear[i-1] + np.array([1.,1.])
+        clear[i] = clear[i-1] + np.array([2.,1.])
         noisy[i] = clear[i]   + np.random.normal(scale=std, size=2)
         t[i] = i
 

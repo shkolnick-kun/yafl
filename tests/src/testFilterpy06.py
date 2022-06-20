@@ -42,7 +42,6 @@ class A(UnscentedKalmanFilter):
 
         if (self.rff > 0):
             self.R *= 1.0 - self.rff
-
             self.R += self.rff * np.outer(self.y, self.y)
 
             sigmas = []
@@ -52,18 +51,16 @@ class A(UnscentedKalmanFilter):
 
             zp = np.dot(self.Wm, sigmas)
             y = sigmas - zp[np.newaxis, :]
-            self.R += self.rff * np.dot(y.T, np.dot(np.diag(self.Wc), y))
+            self.R += np.dot(y.T, np.dot(np.diag(self.Wc * self.rff), y))
+            self.R = (self.R + self.R.T) / 2.
 
         super().update(z)
         _, self.Up, self.Dp = MWGS(np.linalg.cholesky(self.P), np.ones(self._dim_x))
         _, self.Uq, self.Dq = MWGS(np.linalg.cholesky(self.Q), np.ones(self._dim_x))
         _, self.Ur, self.Dr = MWGS(np.linalg.cholesky(self.R), np.ones(self._dim_z))
-        _, us, ds = MWGS(np.linalg.cholesky(self.S), np.ones(self._dim_z))
 
-        if (self.rff <= 0):
-            _, self.y = RUV(us, self.y)
-        else:
-            self.compute_process_sigmas(1, self.fx)
+        if self.rff > 0:
+            self.compute_process_sigmas(self._dt, self.fx)
 
             sigmas = []
             for s in self.sigmas_f:
@@ -71,11 +68,15 @@ class A(UnscentedKalmanFilter):
             sigmas = np.array(sigmas)
 
             self.y = self.residual_z(z, np.dot(self.Wm, sigmas))
+        else:
+            _, us, ds = MWGS(np.linalg.cholesky(self.S), np.ones(self._dim_z))
+            _, self.y = RUV(us, self.y)
 
 
 
 sp = JulierSigmaPoints(4, 0.0)
 a = A(4, 2, 1.0, _hx, _fx, sp)
+a._res = a.y
 #a.dim_x = 4
 #a.dim_z = 2
 
@@ -102,11 +103,11 @@ aur = np.array([[1, 0.5],
 adr = STD * STD * np.eye(2)
 adr[0,0] *= 0.75
 a.R = aur.dot(adr.dot(aur.T))
-a.rff = 0.0005
+a.rff = 1e-3
 
 #------------------------------------------------------------------------------
 b = case_ukf(B, STD)
-b.rff = 0.0005
+b.rff = 1e-3
 
 #------------------------------------------------------------------------------
 start = time.time()

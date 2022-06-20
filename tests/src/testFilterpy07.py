@@ -26,7 +26,7 @@ from case1    import _fx, _jfx, _hx, _jhx
 from yaflpy import MWGS, RUV
 
 from filterpy.kalman import ExtendedKalmanFilter
-from yaflpy          import Bierman as B
+from yaflpy          import Joseph as B
 #------------------------------------------------------------------------------
 N = 10000
 STD = 100.
@@ -37,11 +37,21 @@ clean, noisy, t = case_data(N, STD)
 #------------------------------------------------------------------------------
 class A(ExtendedKalmanFilter):
     def update(self, z):
+        #R update
+        if self.rff > 0:
+            self.R *= 1.0 - self.rff
+            self.R += self.rff * np.outer(self.y, self.y)
+            h = self.jhx(self.x)
+            self.R += self.rff * h.dot(self.P.dot(h.T))
+
         super().update(z, self.jhx, self.hx)
         _, self.Up, self.Dp = MWGS(np.linalg.cholesky(self.P), np.ones(self.dim_x))
         _, self.Uq, self.Dq = MWGS(np.linalg.cholesky(self.Q), np.ones(self.dim_x))
         _, self.Ur, self.Dr = MWGS(np.linalg.cholesky(self.R), np.ones(self.dim_z))
-        _, self.y = RUV(self.Ur, self.y)
+        if self.rff > 0:
+            self.y = z - self.hx(self.x)
+        else:
+            _, self.y = RUV(self.Ur, self.y)
 
 a = A(4,2)
 a.x = np.array([0, 0.3, 0, 0])
@@ -72,8 +82,11 @@ a.R = aur.dot(adr.dot(aur.T))
 a.hx  = _hx
 a.jhx = _jhx
 
+a.rff = 0.#001
+
 #------------------------------------------------------------------------------
 b = case_ekf(B, STD)
+b.rff = 0.#001
 
 #------------------------------------------------------------------------------
 start = time.time()
@@ -107,4 +120,7 @@ plt.show()
 plt.plot(noisy[:,0], noisy[:,1], xa[:,0], xa[:,2])
 plt.show()
 plt.plot(clean[:,0], clean[:,1], xa[:,0], xa[:,2])
+plt.show()
+
+plt.plot(xa[:,[0,2]]-xb[:,[0,2]])
 plt.show()

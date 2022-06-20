@@ -23,10 +23,8 @@ from ab_tests import *
 from case1    import *
 from case1    import _fx, _jfx, _hx, _jhx
 
-from yaflpy import MWGS, RUV
-
 from filterpy.kalman import ExtendedKalmanFilter
-from yaflpy          import Bierman as B
+from UDEKF import UDExtendedKalmanFilter
 #------------------------------------------------------------------------------
 N = 10000
 STD = 100.
@@ -38,69 +36,52 @@ clean, noisy, t = case_data(N, STD)
 class A(ExtendedKalmanFilter):
     def update(self, z):
         super().update(z, self.jhx, self.hx)
-        _, self.Up, self.Dp = MWGS(np.linalg.cholesky(self.P), np.ones(self.dim_x))
-        _, self.Uq, self.Dq = MWGS(np.linalg.cholesky(self.Q), np.ones(self.dim_x))
-        _, self.Ur, self.Dr = MWGS(np.linalg.cholesky(self.R), np.ones(self.dim_z))
-        _, self.y = RUV(self.Ur, self.y)
 
 a = A(4,2)
 a.x = np.array([0, 0.3, 0, 0])
 a.F = _jfx(a.x, 1.0)
-
-aup = np.array([[1, 1e-8, 1e-8, 1e-8],
-                [0, 1,    1e-8, 1e-8],
-                [0, 0,    1,    1e-8],
-                [0, 0,    0,    1]])
-adp = 0.00001 * np.eye(4)
-a.P = aup.dot(adp.dot(aup.T))
-
-auq = np.array([[1, 1e-8, 1e-8, 1e-8],
-                [0, 1,    1e-8, 1e-8],
-                [0, 0,    1,    1e-8],
-                [0, 0,    0,    1]])
-adq = 1e-6 * np.eye(4)
-a.Q = auq.dot(adq.dot(auq.T))
-
-
-aur = np.array([[1, 0.5],
-                [0, 1   ]])
-
-adr = STD * STD * np.eye(2)
-adr[0,0] *= 0.75
-a.R = aur.dot(adr.dot(aur.T))
-
+a.P *= 0.0001
+a.Q *= 1e-6
+a.R *= STD * STD
 a.hx  = _hx
 a.jhx = _jhx
 
 #------------------------------------------------------------------------------
-b = case_ekf(B, STD)
+class B(UDExtendedKalmanFilter):
+    def update(self, z):
+        super().update(z, self.jhx, self.hx)
+
+
+b = B(4,2)
+b.x = np.array([0, 0.3, 0, 0])
+b.F = _jfx(a.x, 1.0)
+b.P *= 0.0001
+b.Q *= 1e-6
+b.R *= STD * STD
+b.hx  = _hx
+b.jhx = _jhx
 
 #------------------------------------------------------------------------------
 start = time.time()
 
-rpa,rua,xa, rpb,rub,xb, nup,ndp, nuq,ndq, nur,ndr, nx, ny = yafl_ab_test(a, b, noisy)
+xa,xb, nP,nQ,nR, nx,ny = filterpy_ab_test(a, b, noisy)
 
 end = time.time()
 print(end - start)
 
 #------------------------------------------------------------------------------
-plt.plot(nup)
-plt.show()
-plt.plot(ndp)
+plt.plot(nP)
 plt.show()
 
-plt.plot(nuq)
-plt.show()
-plt.plot(ndq)
+plt.plot(nQ)
 plt.show()
 
-plt.plot(nur)
-plt.show()
-plt.plot(ndr)
+plt.plot(nR)
 plt.show()
 
 plt.plot(nx)
 plt.show()
+
 plt.plot(ny)
 plt.show()
 
