@@ -214,7 +214,15 @@ yaflStatusEn yafl_math_add_u(yaflInt sz, yaflFloat *res, yaflFloat *u);         
 yaflStatusEn yafl_math_sub_u(yaflInt sz, yaflFloat *res, yaflFloat *u);                            /* res -= u          */
 
 /*Matrix row size and block start address*/
-#define YAFL_BLK(m,nc,r,c) nc, ((yaflFloat *)m + nc * r + c)
+#define YAFL_BLK_PTR(m,nc,r,c) ((yaflFloat *)m + nc * r + c)
+#define YAFL_BLK(m,nc,r,c) nc, YAFL_BLK_PTR(m,nc,r,c)
+
+/*For test purposes...*/
+static inline yaflFloat * _yafl_blk(yaflFloat * m, yaflInt nc, yaflInt r, yaflInt c)
+{
+    return YAFL_BLK_PTR(m,nc,r,c);
+}
+
 /*
 Block operations:
 
