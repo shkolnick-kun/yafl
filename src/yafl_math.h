@@ -218,7 +218,7 @@ yaflStatusEn yafl_math_sub_u(yaflInt sz, yaflFloat *res, yaflFloat *u);         
 #define YAFL_BLK(m,nc,r,c) nc, YAFL_BLK_PTR(m,nc,r,c)
 
 /*For test purposes...*/
-static inline yaflFloat * _yafl_blk(yaflFloat * m, yaflInt nc, yaflInt r, yaflInt c)
+static inline yaflFloat * _yafl_blk_ptr(yaflFloat * m, yaflInt nc, yaflInt r, yaflInt c)
 {
     return YAFL_BLK_PTR(m,nc,r,c);
 }

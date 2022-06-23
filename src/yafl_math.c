@@ -592,7 +592,7 @@ yaflStatusEn name(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *u) \
     YAFL_CHECK(res, YAFL_ST_INV_ARG_2);                                 \
     YAFL_CHECK(u,   YAFL_ST_INV_ARG_4);                                 \
                                                                         \
-    for (szi = 0, i = 1; i < sz; szi += i++)                            \
+    for (szi = 0, i = 0; i < sz; szi += i++)                            \
     {                                                                   \
         yaflInt nci;                                                    \
         yaflInt j;                                                      \
