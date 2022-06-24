@@ -668,7 +668,7 @@ yaflStatusEn name(yaflInt rnc, yaflFloat *res, yaflInt nr, yaflInt nc, yaflFloat
     YAFL_CHECK(res,      YAFL_ST_INV_ARG_2);                                                       \
     YAFL_CHECK(a,        YAFL_ST_INV_ARG_5);                                                       \
     YAFL_CHECK(b,        YAFL_ST_INV_ARG_6);                                                       \
-    YAFL_CHECK(rnc > nc, YAFL_ST_INV_ARG_1);                                                       \
+    YAFL_CHECK(rnc >= nc, YAFL_ST_INV_ARG_1);                                                      \
                                                                                                    \
     for (i = 0; i < nr; i++)                                                                       \
     {                                                                                              \
@@ -713,8 +713,8 @@ yaflStatusEn name(yaflInt rnc, yaflFloat *res, yaflInt nr, yaflInt nc, yaflInt a
     YAFL_CHECK(res,      YAFL_ST_INV_ARG_2);                                                                    \
     YAFL_CHECK(a,        YAFL_ST_INV_ARG_6);                                                                    \
     YAFL_CHECK(b,        YAFL_ST_INV_ARG_7);                                                                    \
-    YAFL_CHECK(rnc > nc, YAFL_ST_INV_ARG_1);                                                                    \
-    YAFL_CHECK(anc > nc, YAFL_ST_INV_ARG_5);                                                                    \
+    YAFL_CHECK(rnc >= nc, YAFL_ST_INV_ARG_1);                                                                   \
+    YAFL_CHECK(anc >= nc, YAFL_ST_INV_ARG_5);                                                                   \
                                                                                                                 \
     for (i = 0; i < nr; i++)                                                                                    \
     {                                                                                                           \
