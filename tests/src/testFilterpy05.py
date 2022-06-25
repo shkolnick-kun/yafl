@@ -23,7 +23,7 @@ from ab_tests import *
 from case1    import *
 from case1    import _fx, _jfx, _hx, _jhx
 
-from yaflpy import MWGS, RUV
+from yaflpy import _mwgs, _ruv
 
 from filterpy.kalman import UnscentedKalmanFilter
 from filterpy.kalman import JulierSigmaPoints
@@ -40,10 +40,10 @@ clean, noisy, t = case_data(N, STD)
 class A(UnscentedKalmanFilter):
     def update(self, z):
         super().update(z)
-        _, self.Up, self.Dp = MWGS(np.linalg.cholesky(self.P), np.ones(self._dim_x))
-        _, self.Uq, self.Dq = MWGS(np.linalg.cholesky(self.Q), np.ones(self._dim_x))
-        _, self.Ur, self.Dr = MWGS(np.linalg.cholesky(self.R), np.ones(self._dim_z))
-        _, self.y = RUV(self.Ur, self.y)
+        _, self.Up, self.Dp = _mwgs(np.linalg.cholesky(self.P), np.ones(self._dim_x))
+        _, self.Uq, self.Dq = _mwgs(np.linalg.cholesky(self.Q), np.ones(self._dim_x))
+        _, self.Ur, self.Dr = _mwgs(np.linalg.cholesky(self.R), np.ones(self._dim_z))
+        _, self.y = _ruv(self.Ur, self.y)
 
 sp = JulierSigmaPoints(4, 0.0)
 a = A(4, 2, 1.0, _hx, _fx, sp)

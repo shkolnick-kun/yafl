@@ -23,7 +23,7 @@ from ab_tests import *
 from case1    import *
 from case1    import _fx, _jfx, _hx, _jhx
 
-from yaflpy import MWGS, RUV
+from yaflpy import _mwgs, _ruv
 
 from filterpy.kalman import UnscentedKalmanFilter
 from filterpy.kalman import JulierSigmaPoints
@@ -55,9 +55,9 @@ class A(UnscentedKalmanFilter):
             self.R = (self.R + self.R.T) / 2.
 
         super().update(z)
-        _, self.Up, self.Dp = MWGS(np.linalg.cholesky(self.P), np.ones(self._dim_x))
-        _, self.Uq, self.Dq = MWGS(np.linalg.cholesky(self.Q), np.ones(self._dim_x))
-        _, self.Ur, self.Dr = MWGS(np.linalg.cholesky(self.R), np.ones(self._dim_z))
+        _, self.Up, self.Dp = _mwgs(np.linalg.cholesky(self.P), np.ones(self._dim_x))
+        _, self.Uq, self.Dq = _mwgs(np.linalg.cholesky(self.Q), np.ones(self._dim_x))
+        _, self.Ur, self.Dr = _mwgs(np.linalg.cholesky(self.R), np.ones(self._dim_z))
 
         if self.rff > 0:
             self.compute_process_sigmas(self._dt, self.fx)
@@ -69,8 +69,8 @@ class A(UnscentedKalmanFilter):
 
             self.y = self.residual_z(z, np.dot(self.Wm, sigmas))
         else:
-            _, us, ds = MWGS(np.linalg.cholesky(self.S), np.ones(self._dim_z))
-            _, self.y = RUV(us, self.y)
+            _, us, ds = _mwgs(np.linalg.cholesky(self.S), np.ones(self._dim_z))
+            _, self.y = _ruv(us, self.y)
 
 
 
