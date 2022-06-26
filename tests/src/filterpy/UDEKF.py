@@ -320,7 +320,7 @@ class UDExtendedKalmanFilter(object):
         self.U_prior = np.copy(self.U)
         self.D_prior = np.copy(self.D)
 
-    def _scalar_update(self, axis_residual, axis_hjacobian, r):
+    def _scalar_update(self, nu, h, r):
         """Joseph scalar update
 
         Parameters
@@ -335,8 +335,6 @@ class UDExtendedKalmanFilter(object):
         r : scalar, float, current axis state disp
         """
         u, d, n = self.U, self.D, self.dim_x
-        nu = axis_residual(self.x)
-        h  = axis_hjacobian(self.x)
 
         f = h.dot(u)
         v = d * f
@@ -429,17 +427,10 @@ class UDExtendedKalmanFilter(object):
         self.SI = linalg.inv(self.S)
 
         #Scalar updates
+        dy = dot(Dm, self.y)
+        dh = dot(Dm, H)
         for j in range(self.dim_z):
-            def _axis_residual(x):
-                #hx = Hx(x, *hx_args)
-                #return dot(Dm, residual(z, hx))[j]
-                return dot(Dm, self.y)[j]
-
-            def _axis_hjacobian(x):
-                #return dot(Dm, HJacobian(x, *args))[j]
-                return dot(Dm, H)[j]
-
-            self._scalar_update(_axis_residual, _axis_hjacobian, Dr[j])
+            self._scalar_update(dy[j], dh[j], Dr[j])
 
         # set to None to force recompute
         self._log_likelihood = None

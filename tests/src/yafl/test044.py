@@ -22,7 +22,7 @@ import numpy as np
 from ab_tests import *
 from case1    import *
 
-from yaflpy import UnscentedRobustBierman as B
+from yaflpy import Unscented as B
 
 #------------------------------------------------------------------------------
 STD = 100.
@@ -34,7 +34,7 @@ b = case_ukf(B, STD)
 start = time.time()
 
 clear,noisy,t, rpa,rua,xa, rpb,rub,xb, nup,ndp, nuq,ndq, nur,ndr, nx, ny = \
-    yafl_file_test(b, '../data/rb_ukf_case1_64bit.h5')
+    yafl_file_test(b, '../../data/ukf_case1_64bit.h5')
 
 end = time.time()
 print(end - start)

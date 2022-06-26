@@ -19,6 +19,8 @@ import time
 import matplotlib.pyplot as plt
 import numpy as np
 
+import init_tests
+
 from ab_tests import *
 from case1    import *
 from case1    import _fx, _jfx, _hx, _jhx
@@ -28,7 +30,7 @@ from yaflpy import _mwgs, _ruv
 from filterpy.kalman import UnscentedKalmanFilter
 from filterpy.kalman import JulierSigmaPoints
 
-from yaflpy          import UnscentedBierman as B
+from yaflpy          import Joseph as B
 #------------------------------------------------------------------------------
 N = 10000
 STD = 100.
@@ -73,7 +75,7 @@ adr[0,0] *= 0.75
 a.R = aur.dot(adr.dot(aur.T))
 
 #------------------------------------------------------------------------------
-b = case_ukf(B, STD)
+b = case_ekf(B, STD)
 
 #------------------------------------------------------------------------------
 start = time.time()

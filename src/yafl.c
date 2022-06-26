@@ -169,7 +169,7 @@ yaflStatusEn _yafl_ekf_compute_error(yaflKalmanBaseSt * self, yaflFloat * z)
     YAFL_CHECK(_NX > 1, YAFL_ST_INV_ARG_1);
     YAFL_CHECK(_NZ > 0, YAFL_ST_INV_ARG_1);
 
-    YAFL_TRY(status, _HX(self, _Y,  _X)); /* self.y =  h(x,...) */
+    YAFL_TRY(status, _HX(self, _Y,  _X)); /* self.y = h(x,...) */
 
     /*Compute measurement error*/
     if (0 == _ZRF)

@@ -21,65 +21,46 @@ import numpy as np
 
 from ab_tests import *
 from case1    import *
-from case1    import _fx, _jfx, _hx, _jhx
 
-from filterpy.kalman import ExtendedKalmanFilter
-from filterpy.kalman import UnscentedKalmanFilter
-from filterpy.kalman import JulierSigmaPoints
+from yaflpy import Joseph as B
+
 #------------------------------------------------------------------------------
-N = 10000
 STD = 100.
 
 #------------------------------------------------------------------------------
-clean, noisy, t = case_data(N, STD)
-
-#------------------------------------------------------------------------------
-class A(ExtendedKalmanFilter):
-    def update(self, z):
-        super().update(z, self.jhx, self.hx)
-
-a = A(4,2)
-a.x = np.array([0, 0.3, 0, 0])
-a.F = _jfx(a.x, 1.0)
-a.P *= 0.0001
-a.Q *= 1e-6
-a.R *= STD * STD
-a.hx  = _hx
-a.jhx = _jhx
-
-#------------------------------------------------------------------------------
-sp = JulierSigmaPoints(4, 0.0)
-b  = UnscentedKalmanFilter(4, 2, 1.0, _hx, _fx, sp)
-b.x = np.array([0, 0.3, 0, 0])
-b.P *= 0.0001
-b.Q *= 1e-6
-b.R *= STD * STD
+b = case_ekf(B, STD)
 
 #------------------------------------------------------------------------------
 start = time.time()
 
-xa,xb, nP,nQ,nR, nx,ny = filterpy_ab_test(a, b, noisy)
+clear,noisy,t, rpa,rua,xa, rpb,rub,xb, nup,ndp, nuq,ndq, nur,ndr, nx, ny = \
+    yafl_file_test(b, '../../data/j_ekf_case1_64bit.h5')
 
 end = time.time()
 print(end - start)
 
 #------------------------------------------------------------------------------
-plt.plot(nP)
+plt.plot(nup)
+plt.show()
+plt.plot(ndp)
 plt.show()
 
-plt.plot(nQ)
+plt.plot(nuq)
+plt.show()
+plt.plot(ndq)
 plt.show()
 
-plt.plot(nR)
+plt.plot(nur)
+plt.show()
+plt.plot(ndr)
 plt.show()
 
 plt.plot(nx)
 plt.show()
-
 plt.plot(ny)
 plt.show()
 
 plt.plot(noisy[:,0], noisy[:,1], xa[:,0], xa[:,2])
 plt.show()
-plt.plot(clean[:,0], clean[:,1], xa[:,0], xa[:,2])
+plt.plot(clear[:,0], clear[:,1], xa[:,0], xa[:,2])
 plt.show()

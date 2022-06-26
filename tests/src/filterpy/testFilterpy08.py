@@ -19,48 +19,75 @@ import time
 import matplotlib.pyplot as plt
 import numpy as np
 
+import init_tests
+
 from ab_tests import *
 from case1    import *
+from case1    import _fx, _jfx, _hx, _jhx
 
-from yaflpy import UnscentedAdaptive as B
-
+from filterpy.kalman import ExtendedKalmanFilter
+from UDEKF import UDExtendedKalmanFilter
 #------------------------------------------------------------------------------
+N = 10000
 STD = 100.
 
 #------------------------------------------------------------------------------
-b = case_ukf(B, STD)
+clean, noisy, t = case_data(N, STD)
+
+#------------------------------------------------------------------------------
+class A(ExtendedKalmanFilter):
+    def update(self, z):
+        super().update(z, self.jhx, self.hx)
+
+a = A(4,2)
+a.x = np.array([0, 0.3, 0, 0])
+a.F = _jfx(a.x, 1.0)
+a.P *= 0.0001
+a.Q *= 1e-6
+a.R *= STD * STD
+a.hx  = _hx
+a.jhx = _jhx
+
+#------------------------------------------------------------------------------
+class B(UDExtendedKalmanFilter):
+    def update(self, z):
+        super().update(z, self.jhx, self.hx)
+
+
+b = B(4,2)
+b.x = np.array([0, 0.3, 0, 0])
+b.F = _jfx(a.x, 1.0)
+b.P *= 0.0001
+b.Q *= 1e-6
+b.R *= STD * STD
+b.hx  = _hx
+b.jhx = _jhx
 
 #------------------------------------------------------------------------------
 start = time.time()
 
-clear,noisy,t, rpa,rua,xa, rpb,rub,xb, nup,ndp, nuq,ndq, nur,ndr, nx, ny = \
-    yafl_file_test(b, '../data/aukf_case1_64bit.h5')
+xa,xb, nP,nQ,nR, nx,ny = filterpy_ab_test(a, b, noisy)
 
 end = time.time()
 print(end - start)
 
 #------------------------------------------------------------------------------
-plt.plot(nup)
-plt.show()
-plt.plot(ndp)
+plt.plot(nP)
 plt.show()
 
-plt.plot(nuq)
-plt.show()
-plt.plot(ndq)
+plt.plot(nQ)
 plt.show()
 
-plt.plot(nur)
-plt.show()
-plt.plot(ndr)
+plt.plot(nR)
 plt.show()
 
 plt.plot(nx)
 plt.show()
+
 plt.plot(ny)
 plt.show()
 
 plt.plot(noisy[:,0], noisy[:,1], xa[:,0], xa[:,2])
 plt.show()
-plt.plot(clear[:,0], clear[:,1], xa[:,0], xa[:,2])
+plt.plot(clean[:,0], clean[:,1], xa[:,0], xa[:,2])
 plt.show()

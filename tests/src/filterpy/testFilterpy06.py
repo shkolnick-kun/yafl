@@ -19,6 +19,8 @@ import time
 import matplotlib.pyplot as plt
 import numpy as np
 
+import init_tests
+
 from ab_tests import *
 from case1    import *
 from case1    import _fx, _jfx, _hx, _jhx
@@ -28,7 +30,7 @@ from yaflpy import _mwgs, _ruv
 from filterpy.kalman import UnscentedKalmanFilter
 from filterpy.kalman import JulierSigmaPoints
 
-from yaflpy          import Joseph as B
+from yaflpy          import Unscented as B
 #------------------------------------------------------------------------------
 N = 10000
 STD = 100.
@@ -39,14 +41,46 @@ clean, noisy, t = case_data(N, STD)
 #------------------------------------------------------------------------------
 class A(UnscentedKalmanFilter):
     def update(self, z):
+
+        if (self.rff > 0):
+            self.R *= 1.0 - self.rff
+            self.R += self.rff * np.outer(self.y, self.y)
+
+            sigmas = []
+            for s in self.sigmas_f:
+                sigmas.append(self.hx(s))
+            sigmas = np.array(sigmas)
+
+            zp = np.dot(self.Wm, sigmas)
+            y = sigmas - zp[np.newaxis, :]
+            self.R += np.dot(y.T, np.dot(np.diag(self.Wc * self.rff), y))
+            self.R = (self.R + self.R.T) / 2.
+
         super().update(z)
         _, self.Up, self.Dp = _mwgs(np.linalg.cholesky(self.P), np.ones(self._dim_x))
         _, self.Uq, self.Dq = _mwgs(np.linalg.cholesky(self.Q), np.ones(self._dim_x))
         _, self.Ur, self.Dr = _mwgs(np.linalg.cholesky(self.R), np.ones(self._dim_z))
-        _, self.y = _ruv(self.Ur, self.y)
+
+        if self.rff > 0:
+            self.compute_process_sigmas(self._dt, self.fx)
+
+            sigmas = []
+            for s in self.sigmas_f:
+                sigmas.append(self.hx(s))
+            sigmas = np.array(sigmas)
+
+            self.y = self.residual_z(z, np.dot(self.Wm, sigmas))
+        else:
+            _, us, ds = _mwgs(np.linalg.cholesky(self.S), np.ones(self._dim_z))
+            _, self.y = _ruv(us, self.y)
+
+
 
 sp = JulierSigmaPoints(4, 0.0)
 a = A(4, 2, 1.0, _hx, _fx, sp)
+a._res = a.y
+#a.dim_x = 4
+#a.dim_z = 2
 
 a.x = np.array([0, 0.3, 0, 0])
 
@@ -71,9 +105,11 @@ aur = np.array([[1, 0.5],
 adr = STD * STD * np.eye(2)
 adr[0,0] *= 0.75
 a.R = aur.dot(adr.dot(aur.T))
+a.rff = 1e-3
 
 #------------------------------------------------------------------------------
-b = case_ekf(B, STD)
+b = case_ukf(B, STD)
+b.rff = 1e-3
 
 #------------------------------------------------------------------------------
 start = time.time()
@@ -107,4 +143,12 @@ plt.show()
 plt.plot(noisy[:,0], noisy[:,1], xa[:,0], xa[:,2])
 plt.show()
 plt.plot(clean[:,0], clean[:,1], xa[:,0], xa[:,2])
+plt.show()
+
+plt.plot(noisy[:,0], noisy[:,1], xb[:,0], xb[:,2])
+plt.show()
+plt.plot(clean[:,0], clean[:,1], xb[:,0], xb[:,2])
+plt.show()
+
+plt.plot(xa[:,[0,2]]-xb[:,[0,2]])
 plt.show()

@@ -19,14 +19,16 @@ import time
 import matplotlib.pyplot as plt
 import numpy as np
 
+import init_tests
+
 from ab_tests import *
 from case1    import *
 from case1    import _fx, _jfx, _hx, _jhx
 
-from yaflpy import _mwgs, _ruv
+from yaflpy import _mwgs, _ruv, _rum, _set_u
 
 from filterpy.kalman import ExtendedKalmanFilter
-from yaflpy          import Bierman as B
+from yaflpy          import Joseph as B
 #------------------------------------------------------------------------------
 N = 10000
 STD = 100.
@@ -69,42 +71,51 @@ adr = STD * STD * np.eye(2)
 adr[0,0] *= 0.75
 a.R = aur.dot(adr.dot(aur.T))
 
+#a.R = STD * STD * np.eye(2)
+
 a.hx  = _hx
 a.jhx = _jhx
 
 #------------------------------------------------------------------------------
 b = case_ekf(B, STD)
 
+#b.Ur *= 0.
+#b.Dr[0] *= 4./3.
 #------------------------------------------------------------------------------
 start = time.time()
 
-rpa,rua,xa, rpb,rub,xb, nup,ndp, nuq,ndq, nur,ndr, nx, ny = yafl_ab_test(a, b, noisy)
+dxp = []
+dxu = []
+dy = []
+
+for z in noisy:
+    b.x = a.x
+
+    #Не влияет на расхождение
+    #_, b.Up, b.Dp = _mwgs(np.linalg.cholesky(a.P), np.ones(a.dim_x))
+
+    #Тут всё 1 в 1
+    a.predict()
+    b.predict()
+    dxp.append(2. * norm(a.x - b.x) / norm(a.x + b.x))
+
+    #Расхождение тут!
+    a.update(z)
+    b.update(z)
+    dxu.append(2. * norm(a.x - b.x) / norm(a.x + b.x))
+    dy.append(2. * norm(a.y - b.y) / norm(a.y + b.y))
 
 end = time.time()
 print(end - start)
 
+plt.plot(dxp)
+plt.show()
+
+plt.plot(dxu)
+plt.show()
+
+plt.plot(dy)
+plt.show()
+
 #------------------------------------------------------------------------------
-plt.plot(nup)
-plt.show()
-plt.plot(ndp)
-plt.show()
 
-plt.plot(nuq)
-plt.show()
-plt.plot(ndq)
-plt.show()
-
-plt.plot(nur)
-plt.show()
-plt.plot(ndr)
-plt.show()
-
-plt.plot(nx)
-plt.show()
-plt.plot(ny)
-plt.show()
-
-plt.plot(noisy[:,0], noisy[:,1], xa[:,0], xa[:,2])
-plt.show()
-plt.plot(clean[:,0], clean[:,1], xa[:,0], xa[:,2])
-plt.show()

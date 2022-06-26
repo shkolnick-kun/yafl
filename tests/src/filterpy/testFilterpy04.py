@@ -19,12 +19,18 @@ import time
 import matplotlib.pyplot as plt
 import numpy as np
 
+import init_tests
+
 from ab_tests import *
 from case1    import *
 from case1    import _fx, _jfx, _hx, _jhx
 
-from filterpy.kalman import ExtendedKalmanFilter
-from UDEKF import UDExtendedKalmanFilter
+from yaflpy import _mwgs, _ruv
+
+from filterpy.kalman import UnscentedKalmanFilter
+from filterpy.kalman import JulierSigmaPoints
+
+from yaflpy          import Unscented as B
 #------------------------------------------------------------------------------
 N = 10000
 STD = 100.
@@ -33,55 +39,71 @@ STD = 100.
 clean, noisy, t = case_data(N, STD)
 
 #------------------------------------------------------------------------------
-class A(ExtendedKalmanFilter):
+class A(UnscentedKalmanFilter):
     def update(self, z):
-        super().update(z, self.jhx, self.hx)
+        super().update(z)
+        _, self.Up, self.Dp = _mwgs(np.linalg.cholesky(self.P), np.ones(self._dim_x))
+        _, self.Uq, self.Dq = _mwgs(np.linalg.cholesky(self.Q), np.ones(self._dim_x))
+        _, self.Ur, self.Dr = _mwgs(np.linalg.cholesky(self.R), np.ones(self._dim_z))
+        _, us, ds = _mwgs(np.linalg.cholesky(self.S), np.ones(self._dim_z))
+        _, self.y = _ruv(us, self.y)
 
-a = A(4,2)
+sp = JulierSigmaPoints(4, 0.0)
+a = A(4, 2, 1.0, _hx, _fx, sp)
+
 a.x = np.array([0, 0.3, 0, 0])
-a.F = _jfx(a.x, 1.0)
-a.P *= 0.0001
-a.Q *= 1e-6
-a.R *= STD * STD
-a.hx  = _hx
-a.jhx = _jhx
+
+aup = np.array([[1, 1e-8, 1e-8, 1e-8],
+                [0, 1,    1e-8, 1e-8],
+                [0, 0,    1,    1e-8],
+                [0, 0,    0,    1]])
+adp = 0.00001 * np.eye(4)
+a.P = aup.dot(adp.dot(aup.T))
+
+auq = np.array([[1, 1e-8, 1e-8, 1e-8],
+                [0, 1,    1e-8, 1e-8],
+                [0, 0,    1,    1e-8],
+                [0, 0,    0,    1]])
+adq = 1e-6 * np.eye(4)
+a.Q = auq.dot(adq.dot(auq.T))
+
+
+aur = np.array([[1, 0.5],
+                [0, 1   ]])
+
+adr = STD * STD * np.eye(2)
+adr[0,0] *= 0.75
+a.R = aur.dot(adr.dot(aur.T))
 
 #------------------------------------------------------------------------------
-class B(UDExtendedKalmanFilter):
-    def update(self, z):
-        super().update(z, self.jhx, self.hx)
-
-
-b = B(4,2)
-b.x = np.array([0, 0.3, 0, 0])
-b.F = _jfx(a.x, 1.0)
-b.P *= 0.0001
-b.Q *= 1e-6
-b.R *= STD * STD
-b.hx  = _hx
-b.jhx = _jhx
+b = case_ukf(B, STD)
 
 #------------------------------------------------------------------------------
 start = time.time()
 
-xa,xb, nP,nQ,nR, nx,ny = filterpy_ab_test(a, b, noisy)
+rpa,rua,xa, rpb,rub,xb, nup,ndp, nuq,ndq, nur,ndr, nx, ny = yafl_ab_test(a, b, noisy)
 
 end = time.time()
 print(end - start)
 
 #------------------------------------------------------------------------------
-plt.plot(nP)
+plt.plot(nup)
+plt.show()
+plt.plot(ndp)
 plt.show()
 
-plt.plot(nQ)
+plt.plot(nuq)
+plt.show()
+plt.plot(ndq)
 plt.show()
 
-plt.plot(nR)
+plt.plot(nur)
+plt.show()
+plt.plot(ndr)
 plt.show()
 
 plt.plot(nx)
 plt.show()
-
 plt.plot(ny)
 plt.show()
 
