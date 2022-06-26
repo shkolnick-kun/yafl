@@ -25,10 +25,8 @@ from ab_tests import *
 from case1    import *
 from case1    import _fx, _jfx, _hx, _jhx
 
-from yaflpy import _mwgs, _ruv, _rum, _set_u
-
 from filterpy.kalman import ExtendedKalmanFilter
-from yaflpy          import Joseph as B
+from UDEKF import UDExtendedKalmanFilter
 #------------------------------------------------------------------------------
 N = 10000
 STD = 100.
@@ -40,21 +38,11 @@ clean, noisy, t = case_data(N, STD)
 class A(ExtendedKalmanFilter):
     def update(self, z):
         super().update(z, self.jhx, self.hx)
-        _, self.Up, self.Dp = _mwgs(np.linalg.cholesky(self.P), np.ones(self.dim_x))
-        _, self.Uq, self.Dq = _mwgs(np.linalg.cholesky(self.Q), np.ones(self.dim_x))
-        _, self.Ur, self.Dr = _mwgs(np.linalg.cholesky(self.R), np.ones(self.dim_z))
-        _, self.y = _ruv(self.Ur, self.y)
 
 a = A(4,2)
 a.x = np.array([0, 0.3, 0, 0])
 a.F = _jfx(a.x, 1.0)
-
-aup = np.array([[1, 1e-8, 1e-8, 1e-8],
-                [0, 1,    1e-8, 1e-8],
-                [0, 0,    1,    1e-8],
-                [0, 0,    0,    1]])
-adp = 0.00001 * np.eye(4)
-a.P = aup.dot(adp.dot(aup.T))
+a.P *= 0.0001
 
 auq = np.array([[1, 1e-8, 1e-8, 1e-8],
                 [0, 1,    1e-8, 1e-8],
@@ -71,76 +59,51 @@ adr = STD * STD * np.eye(2)
 adr[0,0] *= 0.75
 a.R = aur.dot(adr.dot(aur.T))
 
-#a.R = STD * STD * np.eye(2)
-
 a.hx  = _hx
 a.jhx = _jhx
 
 #------------------------------------------------------------------------------
-b = case_ekf(B, STD)
+class B(UDExtendedKalmanFilter):
+    def update(self, z):
+        super().update(z, self.jhx, self.hx)
 
-#b.Ur *= 0.
-#b.Dr[0] *= 4./3.
+
+b = B(4,2)
+b.x = np.array([0, 0.3, 0, 0])
+b.F = _jfx(a.x, 1.0)
+b.P *= 0.0001
+
+b.Q = auq.dot(adq.dot(auq.T))
+b.R = aur.dot(adr.dot(aur.T))
+
+b.hx  = _hx
+b.jhx = _jhx
+
 #------------------------------------------------------------------------------
 start = time.time()
 
-dxp = []
-dxu = []
-dy = []
-duu = []
-ddu = []
-dup = []
-ddp = []
-
-for z in noisy:
-    b.x = a.x
-
-    #Не влияет на расхождение
-    #_, b.Up, b.Dp = _mwgs(np.linalg.cholesky(a.P), np.ones(a.dim_x))
-
-    #Тут всё 1 в 1
-    a.predict()
-    b.predict()
-    dxp.append(2. * norm(a.x - b.x) / norm(a.x + b.x))
-
-    _, a.Up, a.Dp = _mwgs(np.linalg.cholesky(a.P), np.ones(a.dim_x))
-    dup.append(2. * norm(a.Up - b.Up) / norm(a.Up + b.Up))
-    ddp.append(2. * norm(a.Dp - b.Dp) / norm(a.Dp + b.Dp))
-
-    #Расхождение тут!
-    a.update(z)
-    b.update(z)
-    dxu.append(2. * norm(a.x - b.x) / norm(a.x + b.x))
-    dy.append(2. * norm(a.y - b.y) / norm(a.y + b.y))
-
-    duu.append(2. * norm(a.Up - b.Up) / norm(a.Up + b.Up))
-    ddu.append(2. * norm(a.Dp - b.Dp) / norm(a.Dp + b.Dp))
-
-
+xa,xb, nP,nQ,nR, nx,ny = filterpy_ab_test(a, b, noisy)
 
 end = time.time()
 print(end - start)
 
-plt.plot(dxp)
-plt.show()
-
-plt.plot(dxu)
-plt.show()
-
-plt.plot(dy)
-plt.show()
-
-plt.plot(duu)
-plt.show()
-
-plt.plot(ddu)
-plt.show()
-
-plt.plot(dup)
-plt.show()
-
-plt.plot(ddp)
-plt.show()
-
 #------------------------------------------------------------------------------
+plt.plot(nP)
+plt.show()
 
+plt.plot(nQ)
+plt.show()
+
+plt.plot(nR)
+plt.show()
+
+plt.plot(nx)
+plt.show()
+
+plt.plot(ny)
+plt.show()
+
+plt.plot(noisy[:,0], noisy[:,1], xa[:,0], xa[:,2])
+plt.show()
+plt.plot(clean[:,0], clean[:,1], xa[:,0], xa[:,2])
+plt.show()
