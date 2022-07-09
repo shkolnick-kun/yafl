@@ -20,8 +20,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from init_tests import *
-from init_tests import _fx, _jfx, _hx, _jhx
 
+from yaflpy          import Bierman as B
 #------------------------------------------------------------------------------
 N = 10000
 STD = 100.
@@ -30,48 +30,37 @@ STD = 100.
 clean, noisy, t = case_data(N, STD)
 
 #------------------------------------------------------------------------------
-class A(ExtendedKalmanFilter):
-    def update(self, z):
-        super().update(z, self.jhx, self.hx)
-
-a = A(4,2)
-a.x = np.array([0, 0.3, 0, 0])
-a.F = _jfx(a.x, 1.0)
-a.P *= 0.0001
-a.Q *= 1e-6
-a.R *= STD * STD
-a.hx  = _hx
-a.jhx = _jhx
+a = new_seq_ekf(STD)
 
 #------------------------------------------------------------------------------
-sp = JulierSigmaPoints(4, 0.0)
-b  = UnscentedKalmanFilter(4, 2, 1.0, _hx, _fx, sp)
-b.x = np.array([0, 0.3, 0, 0])
-b.P *= 0.0001
-b.Q *= 1e-6
-b.R *= STD * STD
+b = case_ekf(B, STD)
 
 #------------------------------------------------------------------------------
 start = time.time()
 
-xa,xb, nP,nQ,nR, nx,ny = filterpy_ab_test(a, b, noisy)
+rpa,rua,xa, rpb,rub,xb, nup,ndp, nuq,ndq, nur,ndr, nx, ny = yafl_ab_test(a, b, noisy)
 
 end = time.time()
 print(end - start)
 
 #------------------------------------------------------------------------------
-plt.plot(nP)
+plt.plot(nup)
+plt.show()
+plt.plot(ndp)
 plt.show()
 
-plt.plot(nQ)
+plt.plot(nuq)
+plt.show()
+plt.plot(ndq)
 plt.show()
 
-plt.plot(nR)
+plt.plot(nur)
+plt.show()
+plt.plot(ndr)
 plt.show()
 
 plt.plot(nx)
 plt.show()
-
 plt.plot(ny)
 plt.show()
 

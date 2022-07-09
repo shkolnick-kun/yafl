@@ -2133,7 +2133,7 @@ def _rum(res, u):
 
     nr = res.shape[0]
     nc = res.shape[1]
-    assert _U_sz(nc) == u.shape[0]
+    assert _U_sz(nr) == u.shape[0]
 
     cdef yaflFloat [:, ::1] v_r = res
     cdef yaflFloat [::1]    v_u = u
@@ -2429,6 +2429,36 @@ cdef class yaflKalmanBase:
     @Dr.setter
     def Dr(self, value):
         self._Dr[:] = value
+
+    #--------------------------------------------------------------------------
+    @property
+    def P(self):
+        _,u = _set_u(self._Up)
+        return u.dot(np.diag(self._Dp).dot(u.T))
+
+    @P.setter
+    def P(self, value):
+        raise AttributeError('yaflKalmanBase does not support this!')
+
+    #--------------------------------------------------------------------------
+    @property
+    def Q(self):
+        _,u = _set_u(self._Uq)
+        return u.dot(np.diag(self._Dq).dot(u.T))
+
+    @Q.setter
+    def Q(self, value):
+        raise AttributeError('yaflKalmanBase does not support this!')
+
+    #--------------------------------------------------------------------------
+    @property
+    def R(self):
+        _,u = _set_u(self._Ur)
+        return u.dot(np.diag(self._Dr).dot(u.T))
+
+    @R.setter
+    def R(self, value):
+        raise AttributeError('yaflKalmanBase does not support this!')
 
     #--------------------------------------------------------------------------
     @property

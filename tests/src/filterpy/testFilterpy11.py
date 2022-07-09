@@ -42,7 +42,7 @@ class A(ExtendedKalmanFilter):
 a = A(4,2)
 a.x = np.array([0, 0.3, 0, 0])
 a.F = _jfx(a.x, 1.0)
-a.P *= 0.0001
+a.P *= 0.00001
 
 auq = np.array([[1, 1e-8, 1e-8, 1e-8],
                 [0, 1,    1e-8, 1e-8],
@@ -71,7 +71,7 @@ class B(UDExtendedKalmanFilter):
 b = B(4,2)
 b.x = np.array([0, 0.3, 0, 0])
 b.F = _jfx(a.x, 1.0)
-b.P *= 0.0001
+b.P *= 0.00001
 
 b.Q = auq.dot(adq.dot(auq.T))
 b.R = aur.dot(adr.dot(aur.T))
