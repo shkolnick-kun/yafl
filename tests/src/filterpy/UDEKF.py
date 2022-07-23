@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=invalid-name,too-many-instance-attributes, too-many-arguments
 """
+Copyright 2022 Paul A Beltyukov
 Copyright 2019 Paul A Beltyukov
 Copyright 2015 Roger R Labbe Jr.
 

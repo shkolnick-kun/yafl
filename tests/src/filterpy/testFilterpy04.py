@@ -25,12 +25,9 @@ from ab_tests import *
 from case1    import *
 from case1    import _fx, _jfx, _hx, _jhx
 
-from yaflpy import _mwgs, _ruv
+from UDEKHFPrior2 import UDExtendedKalmanHinfFilterPrior2
 
-from filterpy.kalman import UnscentedKalmanFilter
-from filterpy.kalman import JulierSigmaPoints
-
-from yaflpy          import Unscented as B
+from yaflpy import AdaptiveBierman as B
 #------------------------------------------------------------------------------
 N = 10000
 STD = 100.
@@ -39,19 +36,14 @@ STD = 100.
 clean, noisy, t = case_data(N, STD)
 
 #------------------------------------------------------------------------------
-class A(UnscentedKalmanFilter):
+class A(UDExtendedKalmanHinfFilterPrior2):
     def update(self, z):
-        super().update(z)
-        _, self.Up, self.Dp = _mwgs(np.linalg.cholesky(self.P), np.ones(self._dim_x))
-        _, self.Uq, self.Dq = _mwgs(np.linalg.cholesky(self.Q), np.ones(self._dim_x))
-        _, self.Ur, self.Dr = _mwgs(np.linalg.cholesky(self.R), np.ones(self._dim_z))
-        _, us, ds = _mwgs(np.linalg.cholesky(self.S), np.ones(self._dim_z))
-        _, self.y = _ruv(us, self.y)
+        super().update(z, self.jhx, self.hx)
+        self.y = np.dot(self.Dm, self.y)
 
-sp = JulierSigmaPoints(4, 0.0)
-a = A(4, 2, 1.0, _hx, _fx, sp)
-
+a = A(4,2)
 a.x = np.array([0, 0.3, 0, 0])
+a.F = _jfx(a.x, 1.0)
 
 aup = np.array([[1, 1e-8, 1e-8, 1e-8],
                 [0, 1,    1e-8, 1e-8],
@@ -75,35 +67,36 @@ adr = STD * STD * np.eye(2)
 adr[0,0] *= 0.75
 a.R = aur.dot(adr.dot(aur.T))
 
+a.hx  = _hx
+a.jhx = _jhx
+
+a.beta_1 = 10.827566170662733
+
 #------------------------------------------------------------------------------
-b = case_ukf(B, STD)
+b = case_ekf(B, STD)
+b.chi2 = 10.827566170662733
 
 #------------------------------------------------------------------------------
 start = time.time()
 
-rpa,rua,xa, rpb,rub,xb, nup,ndp, nuq,ndq, nur,ndr, nx, ny = yafl_ab_test(a, b, noisy)
+xa,xb, nP,nQ,nR, nx,ny = filterpy_ab_test(a, b, noisy)
 
 end = time.time()
 print(end - start)
 
 #------------------------------------------------------------------------------
-plt.plot(nup)
-plt.show()
-plt.plot(ndp)
+plt.plot(nP)
 plt.show()
 
-plt.plot(nuq)
-plt.show()
-plt.plot(ndq)
+plt.plot(nQ)
 plt.show()
 
-plt.plot(nur)
-plt.show()
-plt.plot(ndr)
+plt.plot(nR)
 plt.show()
 
 plt.plot(nx)
 plt.show()
+
 plt.plot(ny)
 plt.show()
 

@@ -25,10 +25,9 @@ from ab_tests import *
 from case1    import *
 from case1    import _fx, _jfx, _hx, _jhx
 
-from yaflpy import _mwgs, _ruv
+from UDEKF import UDExtendedKalmanFilter
 
-from filterpy.kalman import ExtendedKalmanFilter
-from yaflpy          import Bierman as B
+from yaflpy import Bierman as B
 #------------------------------------------------------------------------------
 N = 10000
 STD = 100.
@@ -37,13 +36,21 @@ STD = 100.
 clean, noisy, t = case_data(N, STD)
 
 #------------------------------------------------------------------------------
-class A(ExtendedKalmanFilter):
+class A(UDExtendedKalmanFilter):
     def update(self, z):
+
+        if self.rff > 0:
+            self.R *= 1.0 - self.rff
+            self.R += self.rff * np.outer(self.y, self.y)
+            h = self.jhx(self.x)
+            self.R += self.rff * h.dot(self.P.dot(h.T))
+
         super().update(z, self.jhx, self.hx)
-        _, self.Up, self.Dp = _mwgs(np.linalg.cholesky(self.P), np.ones(self.dim_x))
-        _, self.Uq, self.Dq = _mwgs(np.linalg.cholesky(self.Q), np.ones(self.dim_x))
-        _, self.Ur, self.Dr = _mwgs(np.linalg.cholesky(self.R), np.ones(self.dim_z))
-        _, self.y = _ruv(self.Ur, self.y)
+
+        if self.rff > 0:
+            self.y = z - self.hx(self.x)
+        else:
+            self.y = np.dot(self.Dm, self.y)
 
 a = A(4,2)
 a.x = np.array([0, 0.3, 0, 0])
@@ -74,35 +81,32 @@ a.R = aur.dot(adr.dot(aur.T))
 a.hx  = _hx
 a.jhx = _jhx
 
+a.rff = 0.001
+
 #------------------------------------------------------------------------------
 b = case_ekf(B, STD)
-
+b.rff = 0.001
 #------------------------------------------------------------------------------
 start = time.time()
 
-rpa,rua,xa, rpb,rub,xb, nup,ndp, nuq,ndq, nur,ndr, nx, ny = yafl_ab_test(a, b, noisy)
+xa,xb, nP,nQ,nR, nx,ny = filterpy_ab_test(a, b, noisy)
 
 end = time.time()
 print(end - start)
 
 #------------------------------------------------------------------------------
-plt.plot(nup)
-plt.show()
-plt.plot(ndp)
+plt.plot(nP)
 plt.show()
 
-plt.plot(nuq)
-plt.show()
-plt.plot(ndq)
+plt.plot(nQ)
 plt.show()
 
-plt.plot(nur)
-plt.show()
-plt.plot(ndr)
+plt.plot(nR)
 plt.show()
 
 plt.plot(nx)
 plt.show()
+
 plt.plot(ny)
 plt.show()
 

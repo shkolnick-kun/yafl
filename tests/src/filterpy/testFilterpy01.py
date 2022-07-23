@@ -19,9 +19,15 @@ import time
 import matplotlib.pyplot as plt
 import numpy as np
 
-from init_tests import *
-from init_tests import _fx, _jfx, _hx, _jhx
+import init_tests
 
+from ab_tests import *
+from case1    import *
+from case1    import _fx, _jfx, _hx, _jhx
+
+from UDEKF import UDExtendedKalmanFilter
+
+from yaflpy import Bierman as B
 #------------------------------------------------------------------------------
 N = 10000
 STD = 100.
@@ -30,26 +36,42 @@ STD = 100.
 clean, noisy, t = case_data(N, STD)
 
 #------------------------------------------------------------------------------
-class A(ExtendedKalmanFilter):
+class A(UDExtendedKalmanFilter):
     def update(self, z):
         super().update(z, self.jhx, self.hx)
+        self.y = np.dot(self.Dm, self.y)
 
 a = A(4,2)
 a.x = np.array([0, 0.3, 0, 0])
 a.F = _jfx(a.x, 1.0)
-a.P *= 0.0001
-a.Q *= 1e-6
-a.R *= STD * STD
+
+aup = np.array([[1, 1e-8, 1e-8, 1e-8],
+                [0, 1,    1e-8, 1e-8],
+                [0, 0,    1,    1e-8],
+                [0, 0,    0,    1]])
+adp = 0.00001 * np.eye(4)
+a.P = aup.dot(adp.dot(aup.T))
+
+auq = np.array([[1, 1e-8, 1e-8, 1e-8],
+                [0, 1,    1e-8, 1e-8],
+                [0, 0,    1,    1e-8],
+                [0, 0,    0,    1]])
+adq = 1e-6 * np.eye(4)
+a.Q = auq.dot(adq.dot(auq.T))
+
+
+aur = np.array([[1, 0.5],
+                [0, 1   ]])
+
+adr = STD * STD * np.eye(2)
+adr[0,0] *= 0.75
+a.R = aur.dot(adr.dot(aur.T))
+
 a.hx  = _hx
 a.jhx = _jhx
 
 #------------------------------------------------------------------------------
-sp = JulierSigmaPoints(4, 0.0)
-b  = UnscentedKalmanFilter(4, 2, 1.0, _hx, _fx, sp)
-b.x = np.array([0, 0.3, 0, 0])
-b.P *= 0.0001
-b.Q *= 1e-6
-b.R *= STD * STD
+b = case_ekf(B, STD)
 
 #------------------------------------------------------------------------------
 start = time.time()
