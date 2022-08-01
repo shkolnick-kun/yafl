@@ -470,6 +470,35 @@ yaflStatusEn name(yaflInt sz, yaflFloat *res, yaflFloat *u) \
 _DO_U(yafl_math_add_u, +=)
 _DO_U(yafl_math_sub_u, -=)
 
+#define _DO_BM(name, op)                                                           \
+yaflStatusEn name(yaflInt nc, yaflFloat *res, yaflInt sr, yaflInt sc, yaflFloat *a) \
+{                                                                                  \
+    yaflInt j;                                                          \
+                                                                        \
+    YAFL_CHECK(res, YAFL_ST_INV_ARG_2);                                 \
+    YAFL_CHECK(a,   YAFL_ST_INV_ARG_4);                                 \
+                                                                        \
+    for (j = 0; j < sr; j++)                                            \
+    {                                                                   \
+        yaflInt k;                                                      \
+        yaflInt ncj;                                                    \
+        yaflInt scj;                                                    \
+                                                                        \
+        ncj = nc * j;                                                   \
+        scj = sc * j;                                                   \
+                                                                        \
+        for (k = 0; k < sc; k++)                                        \
+        {                                                               \
+            res[ncj + k] op a[scj + k];                                 \
+        }                                                               \
+    }                                                                   \
+    return YAFL_ST_OK;                                                  \
+}
+
+_DO_BM(yafl_math_bset_m,  =)
+_DO_BM(yafl_math_badd_m, +=)
+_DO_BM(yafl_math_bsub_m, -=)
+
 yaflStatusEn yafl_math_bset_u(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *u)
 {
     yaflInt i;
@@ -563,7 +592,7 @@ yaflStatusEn name(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *u) \
     YAFL_CHECK(res, YAFL_ST_INV_ARG_2);                                 \
     YAFL_CHECK(u,   YAFL_ST_INV_ARG_4);                                 \
                                                                         \
-    for (szi = 0, i = 1; i < sz; szi += i++)                            \
+    for (szi = 0, i = 0; i < sz; szi += i++)                            \
     {                                                                   \
         yaflInt nci;                                                    \
         yaflInt j;                                                      \
@@ -639,7 +668,7 @@ yaflStatusEn name(yaflInt rnc, yaflFloat *res, yaflInt nr, yaflInt nc, yaflFloat
     YAFL_CHECK(res,      YAFL_ST_INV_ARG_2);                                                       \
     YAFL_CHECK(a,        YAFL_ST_INV_ARG_5);                                                       \
     YAFL_CHECK(b,        YAFL_ST_INV_ARG_6);                                                       \
-    YAFL_CHECK(rnc > nc, YAFL_ST_INV_ARG_1);                                                       \
+    YAFL_CHECK(rnc >= nc, YAFL_ST_INV_ARG_1);                                                      \
                                                                                                    \
     for (i = 0; i < nr; i++)                                                                       \
     {                                                                                              \
@@ -684,8 +713,8 @@ yaflStatusEn name(yaflInt rnc, yaflFloat *res, yaflInt nr, yaflInt nc, yaflInt a
     YAFL_CHECK(res,      YAFL_ST_INV_ARG_2);                                                                    \
     YAFL_CHECK(a,        YAFL_ST_INV_ARG_6);                                                                    \
     YAFL_CHECK(b,        YAFL_ST_INV_ARG_7);                                                                    \
-    YAFL_CHECK(rnc > nc, YAFL_ST_INV_ARG_1);                                                                    \
-    YAFL_CHECK(anc > nc, YAFL_ST_INV_ARG_5);                                                                    \
+    YAFL_CHECK(rnc >= nc, YAFL_ST_INV_ARG_1);                                                                   \
+    YAFL_CHECK(anc >= nc, YAFL_ST_INV_ARG_5);                                                                   \
                                                                                                                 \
     for (i = 0; i < nr; i++)                                                                                    \
     {                                                                                                           \

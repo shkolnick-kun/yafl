@@ -64,6 +64,8 @@ struct _yaflKalmanBaseSt {
     yaflFloat * Ur; /*Upper triangular part of R*/
     yaflFloat * Dr; /*Diagonal part of R*/
 
+    yaflFloat rff;  /*R forgetting factor*/
+
     yaflInt   Nx;   /*State vector size*/
     yaflInt   Nz;   /*Measurement vector size*/
 };
@@ -83,6 +85,7 @@ struct _yaflKalmanBaseSt {
     yaflFloat Dr[nz]
 
 /*---------------------------------------------------------------------------*/
+/*TODO: make qff and rff parameters*/
 #define YAFL_KALMAN_BASE_INITIALIZER(_f, _h, _zrf, _nx, _nz, _mem) \
 {                                                                  \
     .f   = (yaflKalmanFuncP)_f,                                    \
@@ -100,6 +103,8 @@ struct _yaflKalmanBaseSt {
                                                                    \
     .Ur  = _mem.Ur,                                                \
     .Dr  = _mem.Dr,                                                \
+                                                                   \
+    .rff = 0.0,                                                    \
                                                                    \
     .Nx  = _nx,                                                    \
     .Nz  = _nz                                                     \
@@ -134,6 +139,8 @@ struct _yaflEKFBaseSt {
     yaflFloat * H;   /*Measurement Jacobian values*/
     yaflFloat * W;   /*Scratchpad memory block matrix*/
     yaflFloat * D;   /*Scratchpad memory diagonal matrix*/
+
+    yaflFloat qff;  /*Q forgetting factor*/
 };
 
 /*---------------------------------------------------------------------------*/
@@ -141,8 +148,16 @@ struct _yaflEKFBaseSt {
     YAFL_KALMAN_BASE_MEMORY_MIXIN(nx, nz); \
                                            \
     yaflFloat H[nz * nx];                  \
-    yaflFloat W[2 * nx * nx];              \
-    yaflFloat D[2 * nx]
+    union {                                \
+        yaflFloat x[2 * nx * nx];          \
+        yaflFloat z[(nx + nz) * nz];       \
+    } W;                                   \
+    union {                                \
+        yaflFloat x[2 * nx];               \
+        yaflFloat z[nx + nz];              \
+    } D
+
+
 
 /*---------------------------------------------------------------------------*/
 #define YAFL_EKF_BASE_INITIALIZER(_f, _jf, _h, _jh, _zrf, _nx, _nz, _mem) \
@@ -153,8 +168,10 @@ struct _yaflEKFBaseSt {
     .jh  = (yaflKalmanFuncP)_jh,                                          \
                                                                           \
     .H   = _mem.H,                                                        \
-    .W   = _mem.W,                                                        \
-    .D   = _mem.D                                                         \
+    .W   = _mem.W.x,                                                      \
+    .D   = _mem.D.x,                                                      \
+                                                                          \
+    .qff = 0.0                                                            \
 }
 
 /*---------------------------------------------------------------------------*/
@@ -382,6 +399,7 @@ struct _yaflUKFBaseSt {
 
     /*Scratchpad memory*/
     yaflFloat * Sx;  /* State       */
+    yaflFloat * Sz;  /* Measurement */
     yaflFloat * Pzx; /* Pzx cross covariance matrix */
 
     yaflFloat * sigmas_x; /* State sigma points       */
@@ -395,13 +413,36 @@ struct _yaflUKFBaseSt {
 Warning: sigmas_x and _sigmas_z aren't defined in this mixin, see
          sigma points generators mixins!!!
 */
-#define YAFL_UKF_BASE_MEMORY_MIXIN(nx, nz) \
+#define YAFL_UKF_BASE_MEMORY_MIXIN(nx, nz)  \
     YAFL_KALMAN_BASE_MEMORY_MIXIN(nx, nz);  \
     yaflFloat zp[nz];                       \
-                                            \
-    yaflFloat Pzx[nz * nx];                 \
-                                            \
-    yaflFloat Sx[nx]
+    yaflFloat Sx[nx];                       \
+    yaflFloat Sz[nz];                       \
+    yaflFloat Pzx[nz * nx]
+
+
+/*---------------------------------------------------------------------------*/
+/*
+Sigma point memory mixin.
+
+WARNING:
+
+1. _SIGMAS_X and _SIGMAS_Z must be the parts of some larger
+    memory pool which has minimum size of (nx + nz) * (nz + 1)
+    or np * (nx + nz) where np is number of sigma points
+
+2. _SIGMAS_X must be at start of this pool
+*/
+#define YAFL_UKF_SP_MEMORY_MIXIN(np, nx, nz)          \
+    yaflFloat wm[np];                                 \
+    yaflFloat wc[np];                                 \
+    union{                                            \
+        struct {                                      \
+                yaflFloat x[(np) * nx];               \
+                yaflFloat z[(np) * nz];               \
+        } sigmas;                                     \
+        yaflFloat r_update_buf[(nx + nz) * (nz + 1)]; \
+    } pool
 
 /*---------------------------------------------------------------------------*/
 #define YAFL_UKF_BASE_INITIALIZER(_p, _pm, _f, _xmf, _xrf, _h, _zmf,          \
@@ -420,10 +461,11 @@ Warning: sigmas_x and _sigmas_z aren't defined in this mixin, see
     .zp  = _mem.zp,                                                           \
                                                                               \
     .Sx  = _mem.Sx,                                                           \
+    .Sz  = _mem.Sz,                                                           \
     .Pzx = _mem.Pzx,                                                          \
                                                                               \
-    .sigmas_x  = _mem.sigmas_x,                                               \
-    .sigmas_z  = _mem.sigmas_z,                                               \
+    .sigmas_x  = _mem.pool.sigmas.x,                                          \
+    .sigmas_z  = _mem.pool.sigmas.z,                                          \
                                                                               \
     .wm   = _mem.wm,                                                          \
     .wc   = _mem.wc                                                           \
@@ -606,10 +648,7 @@ typedef struct _yaflUKFMerweSt {
 
 /*---------------------------------------------------------------------------*/
 #define YAFL_UKF_MERWE_MEMORY_MIXIN(nx, nz) \
-    yaflFloat wm[2 * nx + 1];               \
-    yaflFloat wc[2 * nx + 1];               \
-    yaflFloat sigmas_x[(2 * nx + 1) * nx];  \
-    yaflFloat sigmas_z[(2 * nx + 1) * nz]
+    YAFL_UKF_SP_MEMORY_MIXIN(2 * nx + 1, nx, nz)
 
 /*---------------------------------------------------------------------------*/
 #define YAFL_UKF_MERWE_INITIALIZER(_nx, _addf, _alpha, _beta, _kappa, _mem) \
@@ -633,10 +672,7 @@ typedef struct _yaflUKFJulierSt {
 
 /*---------------------------------------------------------------------------*/
 #define YAFL_UKF_JULIER_MEMORY_MIXIN(nx, nz) \
-    yaflFloat wm[2 * nx + 1];               \
-    yaflFloat wc[2 * nx + 1];               \
-    yaflFloat sigmas_x[(2 * nx + 1) * nx];  \
-    yaflFloat sigmas_z[(2 * nx + 1) * nz]
+    YAFL_UKF_SP_MEMORY_MIXIN(2 * nx + 1, nx, nz)
 
 /*---------------------------------------------------------------------------*/
 #define YAFL_UKF_JULIER_INITIALIZER(_nx, _addf, _kappa, _mem) \

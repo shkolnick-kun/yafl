@@ -47,6 +47,8 @@
 #define _W   (((yaflEKFBaseSt *)self)->W)
 #define _D   (((yaflEKFBaseSt *)self)->D)
 
+#define _QFF (((yaflEKFBaseSt *)self)->qff)
+
 yaflStatusEn yafl_ekf_base_predict(yaflKalmanBaseSt * self)
 {
     yaflStatusEn status = YAFL_ST_OK;
@@ -103,11 +105,86 @@ yaflStatusEn yafl_ekf_base_predict(yaflKalmanBaseSt * self)
 
     /* D = concatenate([Dq, Dp]) */
     i = _NX*sizeof(yaflFloat);
-    memcpy((void *)       _D, (void *)_DQ, i);
+    memcpy((void *)       _D,  (void *)_DQ, i);
     memcpy((void *)(_D + _NX), (void *)_DP, i);
 
     /* Up, Dp = MWGSU(w, d)*/
     YAFL_TRY(status, yafl_math_mwgsu(_NX, nx2, _UP, _DP, _W, _D));
+
+    return status;
+}
+
+/*---------------------------------------------------------------------------*/
+static inline yaflStatusEn \
+    _yafl_r_update(yaflInt nx, yaflInt nz, yaflFloat rff, yaflFloat * dp, \
+                   yaflFloat * ur, yaflFloat * dr, yaflFloat * w, yaflFloat * d, \
+                   yaflFloat * res_z)
+{
+    yaflStatusEn status = YAFL_ST_OK;
+    yaflInt      nxz = nx + nz;
+
+    YAFL_CHECK(nx > 1,     YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(nz > 0,     YAFL_ST_INV_ARG_2);
+
+    YAFL_CHECK(rff >  0.0, YAFL_ST_INV_ARG_3);
+    YAFL_CHECK(rff <  1.0, YAFL_ST_INV_ARG_3);
+
+    YAFL_CHECK(dp,         YAFL_ST_INV_ARG_4);
+    YAFL_CHECK(ur,         YAFL_ST_INV_ARG_5);
+    YAFL_CHECK(dr,         YAFL_ST_INV_ARG_6);
+    YAFL_CHECK(w,          YAFL_ST_INV_ARG_7);
+    YAFL_CHECK(d,          YAFL_ST_INV_ARG_8);
+    YAFL_CHECK(res_z,      YAFL_ST_INV_ARG_9);
+
+    /*Will end R update, now W = (HUp|***) */
+    YAFL_TRY(status, YAFL_MATH_BSET_U(nxz, 0, nx, w, nz, ur));
+    /*Now W = (HUp|Ur) */
+
+    /*Now D=(***)*/
+    YAFL_TRY(status, yafl_math_set_vxn(nx,      d, dp, rff      ));
+    /*Now D=(rff*Dp|***)*/
+    YAFL_TRY(status, yafl_math_set_vxn(nz, d + nx, dr, 1.0 - rff));
+    /* Now D=(rff * Dp|(1-rff) * dr) */
+
+    /* Ur, Dr = MWGSU(w, d)*/
+    YAFL_TRY(status, yafl_math_mwgsu(nz, nxz, ur, dr, w, d));
+    /*Now R+ = (1.0 - rff) * R- + rff * H.dot(P.dot(H.T))*/
+    YAFL_TRY(status, yafl_math_udu_up(nz, ur, dr, rff, res_z));
+    /*Now R+ = (1.0 - rff) * R- + rff * (res_z.dot(res_z.T) + H.dot(P.dot(H.T)))*/
+
+    return status;
+}
+
+/*---------------------------------------------------------------------------*/
+yaflStatusEn _yafl_ekf_compute_error(yaflKalmanBaseSt * self, yaflFloat * z)
+{
+    yaflStatusEn status = YAFL_ST_OK;
+    yaflInt j;
+
+    YAFL_CHECK(self,    YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(_HX,     YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(_X,      YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(_Y,      YAFL_ST_INV_ARG_1);
+
+    YAFL_CHECK(_NX > 1, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(_NZ > 0, YAFL_ST_INV_ARG_1);
+
+    YAFL_TRY(status, _HX(self, _Y,  _X)); /* self.y = h(x,...) */
+
+    /*Compute measurement error*/
+    if (0 == _ZRF)
+    {
+        /*Default residual*/
+        for (j = 0; j < _NZ; j++)
+        {
+            _Y[j] = z[j] - _Y[j];
+        }
+    }
+    else
+    {
+        /*zrf must be aware of self internal structure*/
+        YAFL_TRY(status, _ZRF(self, _Y, z, _Y)); /* self.y = zrf(z, h(x,...)) */
+    }
 
     return status;
 }
@@ -123,43 +200,68 @@ yaflStatusEn yafl_ekf_base_update(yaflKalmanBaseSt * self, yaflFloat * z, yaflKa
     YAFL_CHECK(_X,      YAFL_ST_INV_ARG_1);
     YAFL_CHECK(_Y,      YAFL_ST_INV_ARG_1);
     YAFL_CHECK(_UR,     YAFL_ST_INV_ARG_1);
+
     YAFL_CHECK(_NX > 1, YAFL_ST_INV_ARG_1);
     YAFL_CHECK(_NZ > 0, YAFL_ST_INV_ARG_1);
 
     YAFL_CHECK(_JHX,    YAFL_ST_INV_ARG_1);
     YAFL_CHECK(_HY,     YAFL_ST_INV_ARG_1);
 
+    YAFL_CHECK(_W,      YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(_D,      YAFL_ST_INV_ARG_1);
+
     YAFL_CHECK(z,      YAFL_ST_INV_ARG_2);
     YAFL_CHECK(scalar_update, YAFL_ST_INV_ARG_3);
 
-
-    YAFL_TRY(status,  _HX(self, _Y,  _X)); /* self.y =  h(x,...) */
+    /*
+    _Y contains residual which we will need for possible R update.
+    Will compute innovation later.
+    */
     YAFL_TRY(status, _JHX(self, _HY, _X)); /* self.H = jh(x,...) */
 
-    if (0 == _ZRF)
+    /*Update R if needed!*/
+    if (self->rff > 0.0)
     {
-        /*Default residual*/
-        for (j = 0; j < _NZ; j++)
-        {
-            _Y[j] = z[j] - _Y[j];
-        }
+        yaflStatusEn status_r = status; /*For quiet regularization*/
+        /*Check input data*/
+        YAFL_CHECK(_UP, YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(_DP, YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(_DR, YAFL_ST_INV_ARG_1);
+        /*Start R update*/
+        YAFL_TRY(status_r, yafl_math_bset_mu(_NX + _NZ, _W, _NZ, _NX, _HY, _UP));
+        /*Now W = (HUp|***) */
+        YAFL_TRY(status_r, \
+                 _yafl_r_update(_NX, _NZ, self->rff, _DP, _UR, _DR, _W, _D, _Y));
+        /*Updated R*/
     }
-    else
-    {
-        /*zrf must be aware of self internal structure*/
-        YAFL_TRY(status, _ZRF(self, _Y, z, _Y)); /* self.y = zrf(z, h(x,...)) */
-    }
+    /*Now _Y can be used for innovation!*/
+
+    /*Compute innovation*/
+    YAFL_TRY(status, _yafl_ekf_compute_error(self, z));
 
     /* Decorrelate measurement noise */
     YAFL_TRY(status, yafl_math_ruv(_NZ,      _Y,  _UR));
     YAFL_TRY(status, yafl_math_rum(_NZ, _NX, _HY, _UR));
 
+    /*Start Q update if needed!*/
+    if (_QFF > 0.0)
+    {
+        yaflStatusEn status_q = status; /*For quiet regularization*/
+        YAFL_CHECK(_DQ, YAFL_ST_INV_ARG_1);
+        YAFL_TRY(status_q, yafl_math_set_vxn(_NX, _DQ, _DQ, 1.0 - _QFF));
+    }
+
     /* Do scalar updates */
     for (j = 0; j < _NZ; j++)
     {
-        YAFL_TRY(status, scalar_update(self, j));
+        YAFL_TRY(status, scalar_update(self, j)); /*Q is updated here if needed!*/
     }
 
+    if (self->rff > 0.0)
+    {
+        /*Compute residual if needed*/
+        YAFL_TRY(status, _yafl_ekf_compute_error(self, z));
+    }
     return status;
 }
 /*=============================================================================
@@ -227,26 +329,44 @@ static inline yaflStatusEn \
     Finally we get:
     x += v * (nu / r)
     */
-    YAFL_TRY(status, yafl_math_add_vxn(nx, x, v, nu / r));
+    nu /= r;
+    for (j=0; j < nx; j++)
+    {
+        v[j] *= nu;
+        x[j] += v[j];
+    }
     return status;
 }
 
 /*---------------------------------------------------------------------------*/
+#define _Q_SCALAR_UPDATE(qff, knu)                                     \
+do {                                                                   \
+    if (qff > 0.0)                                                     \
+    {                                                                  \
+        yaflStatusEn status_q = status;                                \
+        YAFL_CHECK(_UQ, YAFL_ST_INV_ARG_1);                            \
+        YAFL_CHECK(_DQ, YAFL_ST_INV_ARG_1);                            \
+        YAFL_TRY(status_q, yafl_math_udu_up(_NX, _UQ, _DQ, qff, knu)); \
+    }                                                                  \
+} while (0)
+
+/*---------------------------------------------------------------------------*/
 #define _SCALAR_UPDATE_ARGS_CHECKS()              \
 do {                                              \
+    YAFL_CHECK(self,         YAFL_ST_INV_ARG_1);  \
     YAFL_CHECK(self->Nz > i, YAFL_ST_INV_ARG_2);  \
-    YAFL_CHECK(self,          YAFL_ST_INV_ARG_1); \
 } while (0)
+
 /*---------------------------------------------------------------------------*/
-#define _EKF_BIERMAN_SELF_INTERNALS_CHECKS()     \
-do {                                         \
+#define _EKF_BIERMAN_SELF_INTERNALS_CHECKS()  \
+do {                                          \
     YAFL_CHECK(_NX > 1,   YAFL_ST_INV_ARG_1); \
-    YAFL_CHECK(_UP, YAFL_ST_INV_ARG_1); \
-    YAFL_CHECK(_DP, YAFL_ST_INV_ARG_1); \
-    YAFL_CHECK(_HY, YAFL_ST_INV_ARG_1); \
-    YAFL_CHECK(_Y,  YAFL_ST_INV_ARG_1); \
-    YAFL_CHECK(_DR, YAFL_ST_INV_ARG_1); \
-    YAFL_CHECK(_D,  YAFL_ST_INV_ARG_1); \
+    YAFL_CHECK(_UP, YAFL_ST_INV_ARG_1);       \
+    YAFL_CHECK(_DP, YAFL_ST_INV_ARG_1);       \
+    YAFL_CHECK(_HY, YAFL_ST_INV_ARG_1);       \
+    YAFL_CHECK(_Y,  YAFL_ST_INV_ARG_1);       \
+    YAFL_CHECK(_DR, YAFL_ST_INV_ARG_1);       \
+    YAFL_CHECK(_D,  YAFL_ST_INV_ARG_1);       \
 } while (0)
 
 /*---------------------------------------------------------------------------*/
@@ -269,7 +389,8 @@ yaflStatusEn yafl_ekf_bierman_update_scalar(yaflKalmanBaseSt * self, yaflInt i)
     YAFL_TRY(status, \
              _bierman_update_body(_NX, _X, _UP, _DP, f, v, _DR[i], _Y[i], \
                                   1.0, 1.0));
-
+    /*Update Q if needed!*/
+    _Q_SCALAR_UPDATE(_QFF, v);
 #   undef v /*Don't nee v any more*/
 #   undef f
 
@@ -283,7 +404,7 @@ static inline yaflStatusEn \
     _joseph_update_body(yaflInt nx,    yaflFloat * x, yaflFloat * u, \
                         yaflFloat * d, yaflFloat * f, yaflFloat * v, \
                         yaflFloat * k, yaflFloat * w, yaflFloat  nu, \
-                        yaflFloat  a2, yaflFloat   s, yaflFloat  ac, \
+                        yaflFloat  r, yaflFloat   s, yaflFloat  ac, \
                         yaflFloat  gdot)
 {
     yaflStatusEn status = YAFL_ST_OK;
@@ -318,15 +439,21 @@ static inline yaflStatusEn \
     YAFL_TRY(status, YAFL_MATH_BSET_V(nx1, 0, nx, w, nx, k));
     /* Now w is (gdot*kf - Up|k) */
 
-    /* D = concatenate([ac * Dp, np.array([gdot * alpha**2])]) */
+    /* D = concatenate([ac * Dp, np.array([gdot * r])]) */
     YAFL_TRY(status, yafl_math_set_vxn(nx, D, d, ac));
-    D[nx] = gdot * a2;
+    D[nx] = gdot * r;
 
     /* Up, Dp = MWGSU(W, D)*/
     YAFL_TRY(status, yafl_math_mwgsu(nx, nx1, u, d, w, D));
 
     /* x += k * nu */
-    YAFL_TRY(status, yafl_math_add_vxn(nx, x, k, nu));
+#   define j nx1
+    for (j=0; j < nx; j++)
+    {
+        k[j] *= nu;
+        x[j] += k[j];
+    }
+#   undef j  /*Don't nee j any more*/
 #   undef D  /*Don't nee D any more*/
     return status;
 }
@@ -375,6 +502,9 @@ yaflStatusEn yafl_ekf_joseph_update_scalar(yaflKalmanBaseSt * self, yaflInt i)
     YAFL_TRY(status, \
              _joseph_update_body(_NX, _X, _UP, _DP, f, v, K, _W, _Y[i], r, \
                                  s, 1.0, 1.0));
+
+    /*Update Q if needed!*/
+    _Q_SCALAR_UPDATE(_QFF, K);
 #   undef K /*Don't nee K any more*/
 #   undef r
 #   undef v
@@ -463,6 +593,9 @@ yaflStatusEn yafl_ekf_adaptive_bierman_update_scalar(yaflKalmanBaseSt * self, \
 
     YAFL_TRY(status, \
              _bierman_update_body(_NX, _X, _UP, _DP, f, v, r, nu, ac, 1.0));
+
+    /*Update Q if needed!*/
+    _Q_SCALAR_UPDATE(_QFF, v);
 #   undef r
 #   undef v /*Don't nee v any more*/
 #   undef f
@@ -509,6 +642,9 @@ yaflStatusEn \
     YAFL_TRY(status, \
              _joseph_update_body(_NX, _X, _UP, _DP, f, v, K, _W, nu, r, s, \
                                  ac, 1.0));
+
+    /*Update Q if needed!*/
+    _Q_SCALAR_UPDATE(_QFF, K);
 #   undef K /*Don't nee K any more*/
 #   undef r
 #   undef v
@@ -625,7 +761,7 @@ yaflStatusEn \
 static inline yaflStatusEn \
     _scalar_robustify(yaflKalmanBaseSt * self, \
                       yaflKalmanRobFuncP g, yaflKalmanRobFuncP gdot, \
-                      yaflFloat * gdot_res, yaflFloat * nu, yaflFloat r05)
+                      yaflFloat * gdot_res, yaflFloat * nu, yaflFloat r)
 {
     yaflFloat tmp;
 
@@ -635,8 +771,10 @@ static inline yaflStatusEn \
 
     if (g)
     {
-        tmp = *nu / r05;
-        *nu = r05 * g(self, tmp);
+        r = YAFL_SQRT(r);/*We need sqrt here*/
+
+        tmp = *nu / r;
+        *nu = r * g(self, tmp);
 
         YAFL_CHECK(gdot, YAFL_ST_INV_ARG_1);
 
@@ -663,11 +801,11 @@ static inline yaflStatusEn \
     return YAFL_ST_OK;
 }
 
-#define _SCALAR_ROBUSTIFY(_self, _gdot_res, _nu, _r05) \
+#define _SCALAR_ROBUSTIFY(_self, _gdot_res, _nu, _r) \
     _scalar_robustify(self,                            \
                       ((yaflEKFRobustSt *)self)->g,    \
                       ((yaflEKFRobustSt *)self)->gdot, \
-                      _gdot_res, _nu, _r05)
+                      _gdot_res, _nu, _r)
 
 /*---------------------------------------------------------------------------*/
 yaflStatusEn \
@@ -676,16 +814,16 @@ yaflStatusEn \
     yaflStatusEn status = YAFL_ST_OK;
     yaflFloat gdot = 1.0;
     yaflFloat nu   = 0.0;
-    yaflFloat r05;
+    yaflFloat r;
     yaflFloat * h;
 
     _SCALAR_UPDATE_ARGS_CHECKS();
     _EKF_BIERMAN_SELF_INTERNALS_CHECKS();
 
-    r05 = _DR[i]; /* alpha = r**0.5 is stored in Dr*/
-    nu  = _Y[i];
+    r  = _DR[i];
+    nu = _Y[i];
 
-    YAFL_TRY(status, _SCALAR_ROBUSTIFY(self, &gdot, &nu, r05));
+    YAFL_TRY(status, _SCALAR_ROBUSTIFY(self, &gdot, &nu, r));
 
     h = _HY + _NX * i;
     /* f = h.dot(Up) */
@@ -697,9 +835,11 @@ yaflStatusEn \
     YAFL_TRY(status, YAFL_MATH_SET_DV(_NX, v, _DP, f));
 
     YAFL_TRY(status, \
-             _bierman_update_body(_NX, _X, _UP, _DP, f, v, r05 * r05, nu, \
+             _bierman_update_body(_NX, _X, _UP, _DP, f, v, r, nu, \
                                   1.0, gdot));
 
+    /*Update Q if needed!*/
+    _Q_SCALAR_UPDATE(_QFF, v);
 #   undef v  /*Don't nee v any more*/
 #   undef f
 
@@ -716,20 +856,17 @@ yaflStatusEn \
     yaflFloat gdot = 0.0;
     yaflFloat s    = 0.0;
     yaflFloat nu   = 0.0;
-    yaflFloat r05;
+    yaflFloat r;
     yaflFloat * h;
     yaflFloat * f;
 
     _SCALAR_UPDATE_ARGS_CHECKS();
     _EKF_JOSEPH_SELF_INTERNALS_CHECKS();
 
-    r05 = _DR[i]; /* alpha = r**0.5 is stored in Dr*/
+    r   = _DR[i];
     nu  = _Y[i];
 
-    YAFL_TRY(status, _SCALAR_ROBUSTIFY(self, &gdot, &nu, r05));
-
-    r05 *= r05;
-#   define A2 r05 /*Now it is r = alpha**2 */
+    YAFL_TRY(status, _SCALAR_ROBUSTIFY(self, &gdot, &nu, r));
 
     h = _HY + _NX * i;
 #   define v _D
@@ -741,19 +878,20 @@ yaflStatusEn \
     /* v = f.dot(Dp).T = Dp.dot(f.T).T */
     YAFL_TRY(status, YAFL_MATH_SET_DV(_NX, v, _DP, f));
 
-    /* s = alpha**2 + gdot * f.dot(v)*/
+    /* s = r + gdot * f.dot(v)*/
     YAFL_TRY(status, yafl_math_vtv(_NX, &s, f, v));
-    s = A2 + gdot * s;
+    s = r + gdot * s;
 
     /*K = Up.dot(v/s) = Up.dot(v)/s*/
 #   define K h /*Don't need h any more, use it to store K*/
     YAFL_TRY(status, \
-             _joseph_update_body(_NX, _X, _UP, _DP, f, v, K, _W, nu, A2, s, \
+             _joseph_update_body(_NX, _X, _UP, _DP, f, v, K, _W, nu, r, s, \
                                  1.0, gdot));
-#   undef K  /*Don't nee K any more*/
-#   undef v
-#   undef A2 /*Don't nee A2 any more*/
 
+    /*Update Q if needed!*/
+    _Q_SCALAR_UPDATE(_QFF, K);
+#   undef K  /*Don't nee K any more*/
+#   undef v  /*Don't nee v any more*/
     return status;
 }
 
@@ -768,19 +906,16 @@ yaflStatusEn \
     yaflFloat gdot = 1.0;
     yaflFloat ac   = 1.0;
     yaflFloat nu   = 0.0;
-    yaflFloat r05;
+    yaflFloat r;
     yaflFloat * h;
 
     _SCALAR_UPDATE_ARGS_CHECKS();
     _EKF_BIERMAN_SELF_INTERNALS_CHECKS();
 
-    r05 = _DR[i]; /* alpha = r**0.5 is stored in Dr*/
-    nu  = _Y[i];
+    r  = _DR[i];
+    nu = _Y[i];
 
-    YAFL_TRY(status, _SCALAR_ROBUSTIFY(self, &gdot, &nu, r05));
-
-    r05 *= r05;
-#   define A2 r05 /*Now it is r = alpha**2 */
+    YAFL_TRY(status, _SCALAR_ROBUSTIFY(self, &gdot, &nu, r));
 
     h = _HY + _NX * i;
 
@@ -793,14 +928,16 @@ yaflStatusEn \
     YAFL_TRY(status, YAFL_MATH_SET_DV(_NX, v, _DP, f));
 
     YAFL_TRY(status, \
-             _adaptive_correction(_NX, &ac, 0, f, v, A2, nu, gdot, \
+             _adaptive_correction(_NX, &ac, 0, f, v, r, nu, gdot, \
                                   ((yaflEKFAdaptiveRobustSt *)self)->chi2));
 
-    YAFL_TRY(status, _bierman_update_body(_NX, _X, _UP, _DP, f, v, A2, nu, \
+    YAFL_TRY(status, _bierman_update_body(_NX, _X, _UP, _DP, f, v, r, nu, \
                                           ac, gdot));
+
+    /*Update Q if needed!*/
+    _Q_SCALAR_UPDATE(_QFF, v);
 #   undef v  /*Don't nee v any more*/
 #   undef f
-#   undef A2 /*Don't nee A2 any more*/
 
     return status;
 }
@@ -818,19 +955,16 @@ yaflStatusEn \
     yaflFloat    s = 0.0;
     yaflFloat * h;
     yaflFloat * f;
-    yaflFloat r05;
+    yaflFloat r;
     yaflFloat nu;
 
     _SCALAR_UPDATE_ARGS_CHECKS();
     _EKF_JOSEPH_SELF_INTERNALS_CHECKS();
 
-    r05 = _DR[i]; /* alpha = r**0.5 is stored in Dr*/
-    nu  = _Y[i];
+    r  = _DR[i]; /* alpha = r**0.5 is stored in Dr*/
+    nu = _Y[i];
 
-    YAFL_TRY(status, _SCALAR_ROBUSTIFY(self, &gdot, &nu, r05));
-
-    r05 *= r05;
-#   define A2 r05 /*Now it is r = alpha**2 */
+    YAFL_TRY(status, _SCALAR_ROBUSTIFY(self, &gdot, &nu, r));
 
     h = _HY + _NX * i;
 #   define v _D
@@ -843,17 +977,19 @@ yaflStatusEn \
     YAFL_TRY(status, YAFL_MATH_SET_DV(_NX, v, _DP, f));
 
     YAFL_TRY(status, \
-             _adaptive_correction(_NX, &ac, &s, f, v, A2, nu, gdot, \
+             _adaptive_correction(_NX, &ac, &s, f, v, r, nu, gdot, \
                                   ((yaflEKFAdaptiveRobustSt *)self)->chi2));
 
     /* K = Up.dot(v * ac / s) = Up.dot(v) * (ac / s) */
 #   define K h /*Don't need h any more, use it to store K*/
     YAFL_TRY(status, \
-             _joseph_update_body(_NX, _X, _UP, _DP, f, v, K, _W, nu, A2, s, \
+             _joseph_update_body(_NX, _X, _UP, _DP, f, v, K, _W, nu, r, s, \
                                  ac, gdot));
+
+    /*Update Q if needed!*/
+    _Q_SCALAR_UPDATE(_QFF, K);
 #   undef K  /*Don't nee K any more*/
 #   undef v
-#   undef A2 /*Don't nee A2 any more*/
 
     return status;
 }
@@ -869,6 +1005,7 @@ yaflStatusEn \
 #undef _HY
 #undef _W
 #undef _D
+#undef _QFF
 
 /*=============================================================================
                     Basic UD-factorized UKF functions
@@ -903,6 +1040,7 @@ yaflStatusEn \
 #define _ZP        (self->zp)
 
 #define _SX        (self->Sx)
+#define _SZ        (self->Sz)
 
 #define _PZX       (self->Pzx)
 
@@ -936,6 +1074,74 @@ static inline yaflStatusEn _compute_res(yaflKalmanBaseSt * self, yaflInt sz,    
         for (j = 0; j < sz; j++)
         {
             res[j] = sigma[j] - pivot[j];
+        }
+    }
+    return status;
+}
+
+/*---------------------------------------------------------------------------*/
+static inline yaflStatusEn _unscented_mean(yaflUKFBaseSt * self, \
+                                           yaflInt    sz,        \
+                                           yaflFloat * mean,     \
+                                           yaflInt np,           \
+                                           yaflFloat * sigmas,   \
+                                           yaflKalmanFuncP    mf)
+{
+    yaflStatusEn status = YAFL_ST_OK;
+    /*Args get checked later, or don't need to be checked*/
+    if (mf)
+    {
+        /*mf must be aware of the current transform details...*/
+        YAFL_CHECK(self,   YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(_WM,    YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(mean,   YAFL_ST_INV_ARG_3);
+        YAFL_CHECK(sigmas, YAFL_ST_INV_ARG_5);
+        YAFL_TRY(status, mf(_KALMAN_SELF, mean, sigmas));
+    }
+    else
+    {
+        YAFL_TRY(status, yafl_math_set_vtm(np, sz, mean, _WM, sigmas));
+    }
+    return status;
+}
+
+/*---------------------------------------------------------------------------*/
+static inline yaflStatusEn _unscented_update(yaflUKFBaseSt * self,  \
+                                             yaflInt sz,            \
+                                             yaflFloat * u,         \
+                                             yaflFloat * d,         \
+                                             yaflFloat * pivot,     \
+                                             yaflInt np,            \
+                                             yaflFloat * sigmas,    \
+                                             yaflFloat * sp,        \
+                                             yaflKalmanResFuncP rf, \
+                                             yaflFloat n)
+{
+    yaflStatusEn status = YAFL_ST_OK;
+    yaflInt i;
+    yaflFloat * wc;
+
+    YAFL_CHECK(self,       YAFL_ST_INV_ARG_1);
+
+    wc = _WC;
+    YAFL_CHECK(wc,       YAFL_ST_INV_ARG_1);
+
+    /*Other args get checked later, or don't need to be checked*/
+    for (i = 0; i < np; i++)
+    {
+        yaflFloat wci;
+
+        YAFL_TRY(status, _compute_res(_KALMAN_SELF, sz, rf, sp, sigmas + sz * i, pivot));
+        /*Update res_u and res_d*/
+        /*wc should be sorted in descending order*/
+        wci = wc[i] * n;
+        if (wci >= 0.0)
+        {
+            YAFL_TRY(status, yafl_math_udu_up(sz, u, d, wci, sp));
+        }
+        else
+        {
+            YAFL_TRY(status, yafl_math_udu_down(sz, u, d, -wci, sp));
         }
     }
     return status;
@@ -980,18 +1186,7 @@ static yaflStatusEn _unscented_transform(yaflUKFBaseSt * self,   \
     np = sp_info->np;
     YAFL_CHECK(np > 1, YAFL_ST_INV_ARG_1);
 
-
-    if (mf)
-    {
-        /*mf must be aware of the current transform details...*/
-        YAFL_CHECK(res_v,  YAFL_ST_INV_ARG_3);
-        YAFL_CHECK(sigmas, YAFL_ST_INV_ARG_7);
-        YAFL_TRY(status, mf(_KALMAN_SELF, res_v, sigmas));
-    }
-    else
-    {
-        YAFL_TRY(status, yafl_math_set_vtm(np, res_sz, res_v, _WM, sigmas));
-    }
+    YAFL_TRY(status, _unscented_mean(self, res_sz, res_v, np, sigmas, mf));
 
     if (noise_u)
     {
@@ -1013,26 +1208,8 @@ static yaflStatusEn _unscented_transform(yaflUKFBaseSt * self,   \
         }
     }
 
-    for (i = 0; i < np; i++)
-    {
-        yaflFloat wci;
-
-        YAFL_TRY(status, _compute_res(_KALMAN_SELF, res_sz, rf , sp, \
-                                      sigmas + res_sz * i, res_v));
-        /*Update res_u and res_d*/
-        /*wc should be sorted in descending order*/
-        wci = _WC[i];
-        if (wci >= 0.0)
-        {
-            YAFL_TRY(status, \
-                     yafl_math_udu_up(res_sz, res_u, res_d, wci, sp));
-        }
-        else
-        {
-            YAFL_TRY(status, \
-                     yafl_math_udu_down(res_sz, res_u, res_d, -wci, sp));
-        }
-    }
+    YAFL_TRY(status, _unscented_update(self, res_sz, res_u, res_d, res_v, \
+                                       np, sigmas, sp, rf, 1.0));
     return status;
 }
 
@@ -1042,6 +1219,7 @@ yaflStatusEn yafl_ukf_base_predict(yaflUKFBaseSt * self)
     yaflStatusEn status = YAFL_ST_OK;
 
     yaflInt np;
+    yaflInt nx;
     yaflInt i;
     yaflUKFSigmaSt * sp_info;
 
@@ -1055,8 +1233,12 @@ yaflStatusEn yafl_ukf_base_predict(yaflUKFBaseSt * self)
     YAFL_CHECK(self->sp_info, YAFL_ST_INV_ARG_1);
     sp_info = self->sp_info;
 
-    YAFL_CHECK(sp_info->np > 1, YAFL_ST_INV_ARG_1);
     np = sp_info->np;
+    YAFL_CHECK(np > 1, YAFL_ST_INV_ARG_1);
+
+    nx = _UNX;
+    YAFL_CHECK(nx > 0, YAFL_ST_INV_ARG_1);
+
 
     /*Compute process sigmas*/
     YAFL_CHECK(_UFX, YAFL_ST_INV_ARG_1);
@@ -1066,15 +1248,140 @@ yaflStatusEn yafl_ukf_base_predict(yaflUKFBaseSt * self)
         for (i = 0; i < np; i++)
         {
             yaflFloat * sigmai;
-            sigmai = _SIGMAS_X + _UNX * i;
+            sigmai = _SIGMAS_X + nx * i;
             YAFL_TRY(status, _UFX(_KALMAN_SELF, sigmai, sigmai));
         }
     }
 
     /*Predict x, Up, Dp*/
     YAFL_TRY(status, \
-             _unscented_transform(self, _UNX, _UX, _UUP, _UDP, _SX, _SIGMAS_X, \
+             _unscented_transform(self, nx, _UX, _UUP, _UDP, _SX, _SIGMAS_X, \
                                   _UUQ, _UDQ, _XMF, _XRF));
+    return status;
+}
+
+/*---------------------------------------------------------------------------*/
+static inline yaflStatusEn _yafl_ukf_compute_sigmas_z_and_zp(yaflUKFBaseSt * self)
+{
+    yaflStatusEn status = YAFL_ST_OK;
+    yaflInt i;
+    yaflInt nx;
+    yaflInt nz;
+    yaflInt np;
+    yaflUKFSigmaSt * sp_info; /*Sigma point generator info*/
+
+    YAFL_CHECK(self,      YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(_ZP,       YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(_SIGMAS_Z, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(_WM,       YAFL_ST_INV_ARG_1);
+
+    nx = _UNX;
+    YAFL_CHECK(nx, YAFL_ST_INV_ARG_1);
+
+    nz = _UNZ;
+    YAFL_CHECK(nz, YAFL_ST_INV_ARG_1);
+
+    sp_info = self->sp_info;
+    YAFL_CHECK(sp_info, YAFL_ST_INV_ARG_1);
+
+    np = sp_info->np;
+    YAFL_CHECK(np > 1, YAFL_ST_INV_ARG_1);
+
+    for (i = 0; i < np; i++)
+    {
+        YAFL_TRY(status, _UHX(_KALMAN_SELF, _SIGMAS_Z + nz * i, \
+                              _SIGMAS_X + nx * i));
+    }
+
+    YAFL_TRY(status, _unscented_mean(self, nz, _ZP, np, _SIGMAS_Z, _ZMF));
+
+    return status;
+}
+
+/*---------------------------------------------------------------------------*/
+static inline yaflStatusEn _yafl_ukf_compute_residual(yaflUKFBaseSt * self, \
+                                                      yaflFloat * z)
+{
+    yaflStatusEn status = YAFL_ST_OK;
+    yaflFloat rff;
+
+    YAFL_CHECK(self, YAFL_ST_INV_ARG_1);
+
+    rff = _KALMAN_SELF->rff;
+    if (rff  > 0.0)
+    {
+        YAFL_CHECK(rff < 1.0, YAFL_ST_INV_ARG_1);
+        /*Compute residual if needed (need to generate new sigmas)*/
+        YAFL_TRY(status, yafl_ukf_gen_sigmas(self));
+        YAFL_TRY(status, _yafl_ukf_compute_sigmas_z_and_zp(self));
+        YAFL_TRY(status, _compute_res(_KALMAN_SELF, _UNZ, _UZRF, _UY, z, _ZP));
+    }
+    return status;
+}
+
+/*---------------------------------------------------------------------------*/
+static inline yaflStatusEn _yafl_ukf_compute_pzx(yaflUKFBaseSt * self)
+{
+    yaflStatusEn status = YAFL_ST_OK;
+
+    yaflUKFSigmaSt * sp_info;
+    yaflKalmanResFuncP zrf;
+    yaflKalmanResFuncP xrf;
+
+    yaflFloat * sigmas_x;
+    yaflFloat * sigmas_z;
+    yaflFloat * pzx;
+    yaflFloat * sx;
+    yaflFloat * sz;
+    yaflFloat * x;
+    yaflFloat * zp;
+    yaflFloat * wc;
+
+    yaflInt np;
+    yaflInt nz;
+    yaflInt nx;
+    yaflInt i;
+
+    YAFL_CHECK(self, YAFL_ST_INV_ARG_1);
+
+    nx = _UNX;
+    YAFL_CHECK(nx, YAFL_ST_INV_ARG_1);
+
+    nz = _UNZ;
+    YAFL_CHECK(nz, YAFL_ST_INV_ARG_1);
+
+    sp_info = self->sp_info;
+    YAFL_CHECK(sp_info, YAFL_ST_INV_ARG_1);
+
+    np = sp_info->np;
+    YAFL_CHECK(np > 1, YAFL_ST_INV_ARG_1);
+
+    wc = _WC;
+    YAFL_CHECK(wc, YAFL_ST_INV_ARG_1);
+
+    /*Will be checked by _compute_res*/
+    zrf      = _UZRF;
+    xrf      = _XRF;
+    pzx      = _PZX;
+    sx       = _SX;
+    sz       = _SZ;
+    x        = _UX;
+    zp       = _ZP;
+
+    sigmas_x = _SIGMAS_X;
+    sigmas_z = _SIGMAS_Z;
+
+    /* Compute Pzx */
+    YAFL_TRY(status, _compute_res(_KALMAN_SELF, nz, zrf, sz, sigmas_z, zp));
+    YAFL_TRY(status, _compute_res(_KALMAN_SELF, nx, xrf, sx, sigmas_x, x));
+    YAFL_TRY(status, yafl_math_set_vvtxn(nz, nx, pzx, sz, sx, wc[0]));
+
+    for (i = 1; i < np; i++)
+    {
+        YAFL_TRY(status, _compute_res(_KALMAN_SELF, nz, zrf, sz, sigmas_z + nz * i, zp));
+        YAFL_TRY(status, _compute_res(_KALMAN_SELF, nx, xrf, sx, sigmas_x + nx * i, x));
+        YAFL_TRY(status, yafl_math_add_vvtxn(nz, nx, pzx, sz, sx, wc[i]));
+    }
     return status;
 }
 
@@ -1093,64 +1400,73 @@ yaflStatusEn yafl_ukf_base_update(yaflUKFBaseSt * self, yaflFloat * z, \
 
     YAFL_CHECK(self,     YAFL_ST_INV_ARG_1);
 
-    YAFL_CHECK(_UHX, YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(_UX,  YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(_UY,  YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(_UUP, YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(_UUR, YAFL_ST_INV_ARG_1);
-
     nx = _UNX;
     YAFL_CHECK(nx, YAFL_ST_INV_ARG_1);
+
     nz = _UNZ;
     YAFL_CHECK(nz, YAFL_ST_INV_ARG_1);
 
-    YAFL_CHECK(_ZP,  YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(_SX,  YAFL_ST_INV_ARG_1);
     YAFL_CHECK(_PZX, YAFL_ST_INV_ARG_1);
 
     YAFL_CHECK(_SIGMAS_X, YAFL_ST_INV_ARG_1);
-
-    YAFL_CHECK(_SIGMAS_Z, YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(_WC, YAFL_ST_INV_ARG_1);
 
     sp_info = self->sp_info;
     YAFL_CHECK(sp_info, YAFL_ST_INV_ARG_1);
 
     np = sp_info->np;
     YAFL_CHECK(np > 1, YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(z, YAFL_ST_INV_ARG_2);
 
-    /* Compute measurement sigmas */
-    for (i = 0; i < np; i++)
+    /* Compute measurement sigmas and zp*/
+    YAFL_TRY(status, _yafl_ukf_compute_sigmas_z_and_zp(self));
+
+    /* Compute Pzx = H.dot(Up.dot(Dp.dot(Up.T))*/
+    YAFL_TRY(status, _yafl_ukf_compute_pzx(self));
+    /*Now _SIGMAS_Z and _SIGMAS_X may be spoiled*/
+
+    /*Compute H.dot(Up)*/
+    for (i = 0; i < nz; i++)
     {
-        YAFL_TRY(status, _UHX(_KALMAN_SELF, _SIGMAS_Z + nz * i, \
-                              _SIGMAS_X + nx * i));
+        yaflFloat * h;
+        h = _PZX + nx * i;
+        YAFL_TRY(status, yafl_math_ruv    (nx, h, _UUP));
+        YAFL_TRY(status, YAFL_MATH_SET_RDV(nx, h, _UDP, h));
     }
 
-    /* Compute zp*/
-    if (_ZMF)
+    /*Update R if needed!*/
+    if (_KALMAN_SELF->rff > 0.0)
     {
-        /*mf must be aware of the current transform details...*/
-        YAFL_TRY(status, _ZMF(_KALMAN_SELF, _ZP, _SIGMAS_Z));
-    }
-    else
-    {
-        YAFL_TRY(status, yafl_math_set_vtm(np, nz, _ZP, _WM, _SIGMAS_Z));
+        yaflStatusEn status_r = status; /*For quiet regularization*/
+        yaflFloat * d;
+        yaflFloat * w;
+        /*
+        WARNING:
+
+        1. _SIGMAS_X and _SIGMAS_Z must be parts of the larger
+            memory pool which has minimum size of (nx + nz) * (nz + 1)
+            or np * (nx + nz) where np is number of sigma points
+
+        2. _SIGMAS_X must be at start of this pool
+        */
+        d = _SIGMAS_X;
+        w = _SIGMAS_X + nx + nz;
+
+        /*Check input data*/
+        YAFL_CHECK(_UDR, YAFL_ST_INV_ARG_1);
+        /*Start R update*/
+        YAFL_TRY(status_r, yafl_math_bset_m(nx + nz, w, nz, nx, _PZX));
+        /*Now W = (HUp|***) */
+        YAFL_TRY(status_r, \
+                 _yafl_r_update(nx, nz, _KALMAN_SELF->rff, _UDP, \
+                                _UUR, _UDR, w, d, _UY));
+        /*Updated R, now _UY may be spoiled*/
     }
 
-    /* Compute Pzx */
-    YAFL_TRY(status, _compute_res(_KALMAN_SELF, nz, _UZRF,  _UY, _SIGMAS_Z, _ZP));
-    YAFL_TRY(status, _compute_res(_KALMAN_SELF, nx,  _XRF,  _SX, _SIGMAS_X, _UX));
-    YAFL_TRY(status, yafl_math_set_vvtxn(nz, nx, _PZX, _UY, _SX, _WC[0]));
-
-    for (i = 1; i < np; i++)
+    /*Compute H*/
+    for (i = 0; i < nz; i++)
     {
-        YAFL_TRY(status, _compute_res(_KALMAN_SELF,   nz, _UZRF, _UY, \
-                                      _SIGMAS_Z + nz * i, _ZP));
-        YAFL_TRY(status, _compute_res(_KALMAN_SELF, nx,  _XRF, _SX, \
-                                      _SIGMAS_X + nx * i, _UX));
-        YAFL_TRY(status, yafl_math_add_vvtxn(nz, nx, _PZX, _UY, _SX, _WC[i]));
+        YAFL_TRY(status, yafl_math_rutv(nx, _PZX + nx * i, _UUP));
     }
+    /*Now _PZX = H*/
 
     /*Compute innovation*/
     YAFL_TRY(status, _compute_res(_KALMAN_SELF, nz, _UZRF, _UY, z, _ZP));
@@ -1159,20 +1475,13 @@ yaflStatusEn yafl_ukf_base_update(yaflUKFBaseSt * self, yaflFloat * z, \
     YAFL_TRY(status, yafl_math_ruv(nz,      _UY, _UUR));
     YAFL_TRY(status, yafl_math_rum(nz, nx, _PZX, _UUR));
 
-    for (i = 0; i < nz; i++)
-    {
-        yaflFloat * h;
-        h = _PZX + nx * i;
-        YAFL_TRY(status, yafl_math_ruv    (nx, h, _UUP));
-        YAFL_TRY(status, YAFL_MATH_SET_RDV(nx, h, _UDP, h));
-        YAFL_TRY(status, yafl_math_rutv   (nx, h, _UUP));
-    }
-
     /*Now we can do scalar updates*/
     for (i = 0; i < nz; i++)
     {
         YAFL_TRY(status, scalar_update(_KALMAN_SELF, i));
     }
+
+    YAFL_TRY(status, _yafl_ukf_compute_residual(self, z));
     return status;
 }
 
@@ -1264,11 +1573,11 @@ yaflStatusEn yafl_ukf_adaptive_bierman_update_scalar(yaflKalmanBaseSt * self, ya
 /*=============================================================================
                            Robust Bierman UKF
 =============================================================================*/
-#define _SCALAR_ROBUSTIFY(_self, _gdot_res, _nu, _r05) \
+#define _SCALAR_ROBUSTIFY(_self, _gdot_res, _nu, _r)   \
     _scalar_robustify(self,                            \
                       ((yaflUKFRobustSt *)self)->g,    \
                       ((yaflUKFRobustSt *)self)->gdot, \
-                      _gdot_res, _nu, _r05)
+                      _gdot_res, _nu, _r)
 
 yaflStatusEn yafl_ukf_robust_bierman_update_scalar(yaflKalmanBaseSt * self, \
                                                    yaflInt i)
@@ -1277,7 +1586,7 @@ yaflStatusEn yafl_ukf_robust_bierman_update_scalar(yaflKalmanBaseSt * self, \
     yaflInt nx;
     yaflFloat gdot = 1.0;
     yaflFloat nu   = 0.0;
-    yaflFloat r05;
+    yaflFloat r;
     yaflFloat * v;
 
     _SCALAR_UPDATE_ARGS_CHECKS();
@@ -1285,10 +1594,10 @@ yaflStatusEn yafl_ukf_robust_bierman_update_scalar(yaflKalmanBaseSt * self, \
     nx = _NX;
     _UKF_BIERMAN_SELF_INTERNALS_CHECKS();
 
-    r05 = _DR[i]; /* alpha = r**0.5 is stored in Dr*/
-    nu  = _Y[i];
+    r  = _DR[i];
+    nu = _Y[i];
 
-    YAFL_TRY(status, _SCALAR_ROBUSTIFY(self, &gdot, &nu, r05));
+    YAFL_TRY(status, _SCALAR_ROBUSTIFY(self, &gdot, &nu, r));
 
     v = _UPZX + nx * i;/*h is stored in v*/
 
@@ -1300,7 +1609,7 @@ yaflStatusEn yafl_ukf_robust_bierman_update_scalar(yaflKalmanBaseSt * self, \
     YAFL_TRY(status, YAFL_MATH_SET_DV(nx, v, _DP, f));
 
     YAFL_TRY(status, \
-             _bierman_update_body(nx, _X, _UP, _DP, f, v, r05 * r05, nu, \
+             _bierman_update_body(nx, _X, _UP, _DP, f, v, r, nu, \
                                   1.0, gdot));
 #   undef f
     return status;
@@ -1318,7 +1627,7 @@ yaflStatusEn \
     yaflFloat gdot = 1.0;
     yaflFloat ac   = 1.0;
     yaflFloat nu   = 0.0;
-    yaflFloat r05;
+    yaflFloat r;
     yaflFloat * v;
 
     _SCALAR_UPDATE_ARGS_CHECKS();
@@ -1326,13 +1635,10 @@ yaflStatusEn \
     nx = _NX;
     _UKF_BIERMAN_SELF_INTERNALS_CHECKS();
 
-    r05 = _DR[i]; /* alpha = r**0.5 is stored in Dr*/
-    nu  = _Y[i];
+    r  = _DR[i];
+    nu = _Y[i];
 
-    YAFL_TRY(status, _SCALAR_ROBUSTIFY(self, &gdot, &nu, r05));
-
-    r05 *= r05;
-#   define A2 r05 /*Now it is r = alpha**2 */
+    YAFL_TRY(status, _SCALAR_ROBUSTIFY(self, &gdot, &nu, r));
 
     v = _UPZX + nx * i;/*h is stored in v*/
 
@@ -1345,13 +1651,12 @@ yaflStatusEn \
 
 
     YAFL_TRY(status, \
-             _adaptive_correction(nx, &ac, 0, f, v, A2, nu, gdot, \
+             _adaptive_correction(nx, &ac, 0, f, v, r, nu, gdot, \
                                   ((yaflUKFAdaptiveRobustSt *)self)->chi2));
 
     YAFL_TRY(status, \
-             _bierman_update_body(nx, _X, _UP, _DP, f, v, A2, nu, ac, gdot));
+             _bierman_update_body(nx, _X, _UP, _DP, f, v, r, nu, ac, gdot));
 #   undef f
-#   undef A2 /*Don't nee A2 any more*/
     return status;
 }
 
@@ -1361,25 +1666,25 @@ yaflStatusEn \
 #define _UUS (((yaflUKFSt *)self)->Us)
 #define _UDS (((yaflUKFSt *)self)->Ds)
 
-yaflStatusEn yafl_ukf_update(yaflUKFBaseSt * self, yaflFloat * z)
+static inline yaflStatusEn _yafl_ukf_compute_ms_zp_s(yaflUKFBaseSt * self)
 {
     yaflStatusEn status = YAFL_ST_OK;
+
+    yaflUKFSigmaSt * sp_info;
+
+    yaflFloat * sigmas_x;
+    yaflFloat * sigmas_z;
+    yaflFloat * dr;
+    yaflFloat * ur;
+
+    yaflFloat rff;
+
     yaflInt np;
     yaflInt nz;
     yaflInt nx;
     yaflInt i;
-    yaflUKFSigmaSt * sp_info; /*Sigma point generator info*/
-    yaflFloat * y;
-    yaflFloat * ds;
 
     YAFL_CHECK(self, YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(_UHX, YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(_UX,  YAFL_ST_INV_ARG_1);
-
-    y = _UY;
-    YAFL_CHECK(y,  YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(_UUP, YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(_UDP, YAFL_ST_INV_ARG_1);
 
     nx = _UNX;
     YAFL_CHECK(nx, YAFL_ST_INV_ARG_1);
@@ -1387,58 +1692,103 @@ yaflStatusEn yafl_ukf_update(yaflUKFBaseSt * self, yaflFloat * z)
     nz = _UNZ;
     YAFL_CHECK(nz, YAFL_ST_INV_ARG_1);
 
-    YAFL_CHECK(_SIGMAS_X, YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(_SIGMAS_Z, YAFL_ST_INV_ARG_1);
-
-    YAFL_CHECK(_WC, YAFL_ST_INV_ARG_1);
-
-    YAFL_CHECK(self->sp_info, YAFL_ST_INV_ARG_1);
     sp_info = self->sp_info;
+    YAFL_CHECK(sp_info, YAFL_ST_INV_ARG_1);
 
-    YAFL_CHECK(sp_info->np > 1, YAFL_ST_INV_ARG_1);
     np = sp_info->np;
+    YAFL_CHECK(np > 1, YAFL_ST_INV_ARG_1);
 
-    YAFL_CHECK(_PZX, YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(_SX, YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(_ZP, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(_UHX, YAFL_ST_INV_ARG_1);
 
-    YAFL_CHECK(_UUS, YAFL_ST_INV_ARG_1);
+    sigmas_x = _SIGMAS_X;
+    YAFL_CHECK(sigmas_x, YAFL_ST_INV_ARG_1);
 
-    ds = _UDS;
-    YAFL_CHECK(ds, YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(z, YAFL_ST_INV_ARG_2);
+    sigmas_z = _SIGMAS_Z;
+    YAFL_CHECK(sigmas_z, YAFL_ST_INV_ARG_1);
+
 
     /* Compute measurement sigmas */
     for (i = 0; i < np; i++)
     {
-        YAFL_TRY(status, _UHX(_KALMAN_SELF, _SIGMAS_Z + nz * i, \
-                              _SIGMAS_X + nx * i));
+        YAFL_TRY(status, _UHX(_KALMAN_SELF, sigmas_z + nz * i, sigmas_x + nx * i));
     }
 
-    /* Compute zp, Us, Ds */
-    YAFL_TRY(status, \
-             _unscented_transform(self, nz, _ZP, _UUS, ds, y, _SIGMAS_Z, \
-                                  _UUR, _UDR, _ZMF, _UZRF));
+    ur  = _UUR;
+    dr  = _UDR;
+
+    rff = _KALMAN_SELF->rff;
+    if (rff > 0.0)
+    {
+        /* Compute zp, update Ur, Dr, compute Us, Ds */
+        yaflFloat tmp;
+        yaflStatusEn r_status = YAFL_ST_OK; /*For silent R regularization*/
+
+        YAFL_CHECK(rff < 1.0,  YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(dr,         YAFL_ST_INV_ARG_1);
+
+        YAFL_TRY(status, _unscented_mean(self, nz, _ZP, np, sigmas_z, _ZMF));
+
+        /*Update Ur, Dr*/
+        /* R *= 1.0- rff */
+        tmp = 1.0 - rff;
+        for (i=0; i < nz; i++)
+        {
+            dr[i] *= tmp;
+        }
+
+        /* R += rff * y.dot(y.T) */
+        YAFL_TRY(r_status, yafl_math_udu_up(nz, ur, dr, rff, _UY));
+
+        /* R += rff * Pzz*/
+        YAFL_TRY(r_status, _unscented_update(self, nz, ur, dr, _ZP, \
+                                             np, sigmas_z, _SZ, _UZRF, rff));
+
+        /*Compute Us, Ds*/
+        memcpy((void *)_UUS, (void *)ur, (nz * (nz - 1)) / 2 * sizeof(yaflFloat));
+        memcpy((void *)_UDS, (void *)dr, nz * sizeof(yaflFloat));
+
+        YAFL_TRY(status, _unscented_update(self, nz, _UUS, _UDS, _ZP, \
+                                       np, sigmas_z, _SZ, _UZRF, 1.0));
+    }
+    else
+    {
+        /* Compute zp, Us, Ds */
+        YAFL_TRY(status, \
+                 _unscented_transform(self, nz, _ZP, _UUS, _UDS, \
+                                      _SZ, sigmas_z, ur, dr, _ZMF, _UZRF));
+    }
+    return status;
+}
+
+/*---------------------------------------------------------------------------*/
+static inline yaflStatusEn yafl_ukf_update_epilogue(yaflUKFBaseSt * self, yaflFloat * z)
+{
+    yaflStatusEn status = YAFL_ST_OK;
+    yaflInt nz;
+    yaflInt nx;
+    yaflInt i;
+
+    yaflFloat * y;
+    yaflFloat * ds;
+
+    YAFL_CHECK(self, YAFL_ST_INV_ARG_1);
+
+    y = _UY;
+    YAFL_CHECK(y,  YAFL_ST_INV_ARG_1);
+
+    nx = _UNX;
+    YAFL_CHECK(nx, YAFL_ST_INV_ARG_1);
+
+    nz = _UNZ;
+    YAFL_CHECK(nz, YAFL_ST_INV_ARG_1);
+
+    ds = _UDS;
+    YAFL_CHECK(ds, YAFL_ST_INV_ARG_1);
 
     /* Compute Pzx */
-    YAFL_TRY(status, _compute_res(_KALMAN_SELF, nz, _UZRF,   y, _SIGMAS_Z, _ZP));
-    YAFL_TRY(status, _compute_res(_KALMAN_SELF, nx,  _XRF, _SX, _SIGMAS_X, _UX));
-    YAFL_TRY(status, yafl_math_set_vvtxn(nz, nx, _PZX, y, _SX, _WC[0]));
+    YAFL_TRY(status, _yafl_ukf_compute_pzx(self));
 
-    for (i = 1; i < np; i++)
-    {
-        YAFL_TRY(status, _compute_res(_KALMAN_SELF, nz,  _UZRF, y, \
-                                      _SIGMAS_Z + nz * i,  _ZP));
-        YAFL_TRY(status, _compute_res(_KALMAN_SELF, nx, _XRF, _SX, \
-                                      _SIGMAS_X + nx * i, _UX));
-        YAFL_TRY(status, yafl_math_add_vvtxn(nz, nx, _PZX, y, _SX, _WC[i]));
-    }
-
-    /*Compute innovation*/
-    YAFL_TRY(status, _compute_res(_KALMAN_SELF, nz, _UZRF, y, z, _ZP));
-
-    /* Decorrelate measurements*/
-    YAFL_TRY(status, yafl_math_ruv(nz,        y, _UUS));
+    /* Decorrelate measurements part 2*/
     YAFL_TRY(status, yafl_math_rum(nz, nx, _PZX, _UUS));
 
     /*Now we can do scalar updates*/
@@ -1464,6 +1814,31 @@ yaflStatusEn yafl_ukf_update(yaflUKFBaseSt * self, yaflFloat * z)
         */
         YAFL_TRY(status, yafl_math_udu_down(nx, _UUP, _UDP, 1.0 / ds[i], pzxi));
     }
+
+    YAFL_TRY(status, _yafl_ukf_compute_residual(self, z));
+    return status;
+}
+
+/*---------------------------------------------------------------------------*/
+yaflStatusEn yafl_ukf_update(yaflUKFBaseSt * self, yaflFloat * z)
+{
+    yaflStatusEn status = YAFL_ST_OK;
+
+    /* Compute measurement sigmas, zp, Us, Ds*/
+    YAFL_TRY(status, _yafl_ukf_compute_ms_zp_s(self));
+
+    /*Compute innovation*/
+    YAFL_TRY(status, _compute_res(_KALMAN_SELF, _UNZ, _UZRF, _UY, z, _ZP));
+
+    /* Decorrelate measurements part 1*/
+    YAFL_TRY(status, yafl_math_ruv(_UNZ, _UY, _UUS));
+
+    /*
+    Decorrelate measurements part 2, compute Pzx,
+    update P and x, compute residual if needed
+    */
+    YAFL_TRY(status, yafl_ukf_update_epilogue(self, z));
+
     return status;
 }
 
@@ -1512,147 +1887,58 @@ static inline yaflStatusEn _ukf_compute_md(yaflUKFBaseSt * self, yaflFloat * z, 
 yaflStatusEn yafl_ukf_adaptive_update(yaflUKFBaseSt * self, yaflFloat * z)
 {
     yaflStatusEn status = YAFL_ST_OK;
-    yaflInt np;
-    yaflInt nz;
-    yaflInt nx;
-    yaflInt i;
-    yaflUKFSigmaSt * sp_info; /*Sigma point generator info*/
     yaflFloat delta;
-    yaflFloat * y;
-    yaflFloat * ds;
 
     YAFL_CHECK(self, YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(_UHX, YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(_UX,  YAFL_ST_INV_ARG_1);
 
-    y = _UY;
-    YAFL_CHECK(y,  YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(_UUP, YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(_UDP, YAFL_ST_INV_ARG_1);
+    /* Compute measurement sigmas, zp, Us, Ds*/
+    YAFL_TRY(status, _yafl_ukf_compute_ms_zp_s(self));
 
-    nx = _UNX;
-    YAFL_CHECK(nx, YAFL_ST_INV_ARG_1);
-
-    nz = _UNZ;
-    YAFL_CHECK(nz, YAFL_ST_INV_ARG_1);
-
-    YAFL_CHECK(_SIGMAS_X, YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(_SIGMAS_Z, YAFL_ST_INV_ARG_1);
-
-    YAFL_CHECK(_WC, YAFL_ST_INV_ARG_1);
-
-    YAFL_CHECK(self->sp_info, YAFL_ST_INV_ARG_1);
-    sp_info = self->sp_info;
-
-    YAFL_CHECK(sp_info->np > 1, YAFL_ST_INV_ARG_1);
-    np = sp_info->np;
-
-    YAFL_CHECK(_PZX, YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(_SX, YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(_ZP, YAFL_ST_INV_ARG_1);
-
-    YAFL_CHECK(_UUS, YAFL_ST_INV_ARG_1);
-    ds = _UDS;
-    YAFL_CHECK(ds, YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(z, YAFL_ST_INV_ARG_2);
-
-    /* Compute measurement sigmas */
-    for (i = 0; i < np; i++)
-    {
-        YAFL_TRY(status, _UHX(_KALMAN_SELF, _SIGMAS_Z + nz * i, \
-                              _SIGMAS_X + nx * i));
-    }
-
-    /* Compute zp, Us, Ds */
-    YAFL_TRY(status, \
-             _unscented_transform(self, nz, _ZP, _UUS, ds, y, _SIGMAS_Z, \
-                                  _UUR, _UDR, _ZMF, _UZRF));
-    /* Divergence test */
+    /* Compute md, innovation, decorrelate measurements part 1*/
     YAFL_TRY(status, _ukf_compute_md(self, z, &delta));
+
 #   define _CHI2 (((yaflUKFFullAdapiveSt *)self)->chi2)
     if (delta > _CHI2)
     {
+        yaflInt nz;
+
         /* Adaptive correction */
         yaflFloat ac;
 
+        nz = _UNZ;
+        YAFL_CHECK(nz, YAFL_ST_INV_ARG_1);
+
         /* Compute correction factor, we don't need old _ZP and _SIGMAS_Z now*/
         YAFL_TRY(status, \
-                 _unscented_transform(self, nz, _ZP, _UUS, ds, y, _SIGMAS_Z, \
+                 _unscented_transform(self, nz, _ZP, _UUS, _UDS, _SZ, _SIGMAS_Z, \
                                       0, 0, _ZMF, _UZRF));
+
         YAFL_TRY(status, _ukf_compute_md(self, z, &ac));
         ac *= 1.0 / _CHI2 - 1.0 / delta;
 
         /* Correct _UDP*/
-        YAFL_TRY(status, yafl_math_set_vxn(nx, _UDP, _UDP, 1.0 + ac));
+        YAFL_TRY(status, yafl_math_set_vxn(_UNX, _UDP, _UDP, 1.0 + ac));
 
         /* Generate new sigmas */
         YAFL_TRY(status, yafl_ukf_gen_sigmas(self));
 
-        /* Now begin update with new _SIGMAS_X */
-        /*  Recompute measurement sigmas */
-        for (i = 0; i < np; i++)
-        {
-            YAFL_TRY(status, _UHX(_KALMAN_SELF, _SIGMAS_Z + nz * i, \
-                              _SIGMAS_X + nx * i));
-        }
+        /* Now restart update with new sigmas */
+        YAFL_TRY(status, _yafl_ukf_compute_ms_zp_s(self));
 
-        /*  Recompute zp, Us, Ds */
-        YAFL_TRY(status, \
-                 _unscented_transform(self, nz, _ZP, _UUS, ds, y, _SIGMAS_Z, \
-                                      _UUR, _UDR, _ZMF, _UZRF));
         /*  Recompute innovation*/
-        YAFL_TRY(status, _compute_res(_KALMAN_SELF, nz, _UZRF, y, z, _ZP));
+        YAFL_TRY(status, _compute_res(_KALMAN_SELF, nz, _UZRF, _UY, z, _ZP));
 
         /*  Decorrelate measurements part 1*/
-        YAFL_TRY(status, yafl_math_ruv(nz, y, _UUS));
+        YAFL_TRY(status, yafl_math_ruv(nz, _UY, _UUS));
     }
 #   undef _CHI2
 
-    /* Compute Pzx */
-    YAFL_TRY(status, _compute_res(_KALMAN_SELF, nz, _UZRF,   y, _SIGMAS_Z, _ZP));
-    YAFL_TRY(status, _compute_res(_KALMAN_SELF, nx,  _XRF, _SX, _SIGMAS_X, _UX));
-    YAFL_TRY(status, yafl_math_set_vvtxn(nz, nx, _PZX, y, _SX, _WC[0]));
+    /*
+    Decorrelate measurements part 2, compute Pzx,
+    update P and x, compute residual if needed
+    */
+    YAFL_TRY(status, yafl_ukf_update_epilogue(self, z));
 
-    for (i = 1; i < np; i++)
-    {
-        YAFL_TRY(status, _compute_res(_KALMAN_SELF, nz,  _UZRF, y, \
-                                      _SIGMAS_Z + nz * i,  _ZP));
-        YAFL_TRY(status, _compute_res(_KALMAN_SELF, nx, _XRF, _SX, \
-                                      _SIGMAS_X + nx * i, _UX));
-        YAFL_TRY(status, yafl_math_add_vvtxn(nz, nx, _PZX, y, _SX, _WC[i]));
-    }
-
-    /*Compute innovation*/
-    YAFL_TRY(status, _compute_res(_KALMAN_SELF, nz, _UZRF, y, z, _ZP));
-
-    /* Decorrelate measurements*/
-    YAFL_TRY(status, yafl_math_ruv(nz, y, _UUS));
-    YAFL_TRY(status, yafl_math_rum(nz, nx, _PZX, _UUS));
-
-
-    /*Now we can do scalar updates*/
-    for (i = 0; i < nz; i++)
-    {
-        yaflFloat * pzxi;
-        pzxi = _PZX + nx * i;
-        /*
-        self.x += K * y[i]
-
-        K * y[i] = Pzx[i].T / ds[i] * y[i] = Pzx[i].T * (y[i] / ds[i])
-
-        self.x += Pzx[i].T * (y[i] / ds[i])
-        */
-        YAFL_TRY(status, yafl_math_add_vxn(nx, _UX, pzxi, y[i] / ds[i]));
-
-        /*
-        P -= K.dot(S.dot(K.T))
-        K.dot(S.dot(K.T)) = (Pzx[i].T / ds[i] * ds[i]).outer(Pzx[i] / ds[i]))
-        K.dot(S.dot(K.T)) = (Pzx[i].T).outer(Pzx[i]) / ds[i]
-        P -= (Pzx[i].T).outer(Pzx[i]) / ds[i]
-        Up, Dp = udu(P)
-        */
-        YAFL_TRY(status, yafl_math_udu_down(nx, _UUP, _UDP, 1.0 / ds[i], pzxi));
-    }
     return status;
 }
 

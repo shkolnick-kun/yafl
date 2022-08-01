@@ -72,7 +72,8 @@ typedef enum {
     YAFL_ST_INV_ARG_8    = 0x170,
     YAFL_ST_INV_ARG_9    = 0x180,
     YAFL_ST_INV_ARG_10   = 0x190,
-    YAFL_ST_INV_ARG_11   = 0x1a0
+    YAFL_ST_INV_ARG_11   = 0x1a0,
+    YAFL_ST_INV_ARG_12   = 0x1b0
 } yaflStatusEn;
 
 #define _YAFL_TRY(status, exp, file, func, line)                              \
@@ -213,7 +214,15 @@ yaflStatusEn yafl_math_add_u(yaflInt sz, yaflFloat *res, yaflFloat *u);         
 yaflStatusEn yafl_math_sub_u(yaflInt sz, yaflFloat *res, yaflFloat *u);                            /* res -= u          */
 
 /*Matrix row size and block start address*/
-#define YAFL_BLK(m,nc,r,c) nc, ((yaflFloat *)m + nc * r + c)
+#define YAFL_BLK_PTR(m,nc,r,c) ((yaflFloat *)m + nc * r + c)
+#define YAFL_BLK(m,nc,r,c) nc, YAFL_BLK_PTR(m,nc,r,c)
+
+/*For test purposes...*/
+static inline yaflFloat * _yafl_blk_ptr(yaflFloat * m, yaflInt nc, yaflInt r, yaflInt c)
+{
+    return YAFL_BLK_PTR(m,nc,r,c);
+}
+
 /*
 Block operations:
 
@@ -223,6 +232,14 @@ v - vector
 ------------------------------------------------------------------------------------------------------------------------
                                    Function/Macro                                                   NumPy expr
 ----------------------------------------------------------------------------------------------------------------------*/
+yaflStatusEn yafl_math_bset_m(yaflInt nc, yaflFloat *res, yaflInt sr, yaflInt sc, yaflFloat *a); /* res[:sr, :sc]  = a       */
+yaflStatusEn yafl_math_badd_m(yaflInt nc, yaflFloat *res, yaflInt sr, yaflInt sc, yaflFloat *a); /* res[:sr, :sc] += a       */
+yaflStatusEn yafl_math_bsub_m(yaflInt nc, yaflFloat *res, yaflInt sr, yaflInt sc, yaflFloat *a); /* res[:sr, :sc] -= a       */
+
+#define YAFL_MATH_BSET_M(nc, r, c, m, sr, sc, a) yafl_math_bset_u(YAFL_BLK(m,nc,r,c), sr, sc, a) /* m[r:r+sz, c:c+sz]  = a   */
+#define YAFL_MATH_BADD_M(nc, r, c, m, sr, sc, a) yafl_math_badd_u(YAFL_BLK(m,nc,r,c), sr, sc, a) /* m[r:r+sz, c:c+sz] += a   */
+#define YAFL_MATH_BSUB_M(nc, r, c, m, sr, sc, a) yafl_math_bsub_u(YAFL_BLK(m,nc,r,c), sr, sc, a) /* m[r:r+sz, c:c+sz] -= a   */
+
 yaflStatusEn yafl_math_bset_u(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *u);      /* res[:sz, :sz]  = u       */
 yaflStatusEn yafl_math_badd_u(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *u);      /* res[:sz, :sz] += u       */
 yaflStatusEn yafl_math_bsub_u(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *u);      /* res[:sz, :sz] -= u       */

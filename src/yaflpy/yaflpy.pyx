@@ -72,9 +72,111 @@ cdef extern from "yafl_math.c":
         YAFL_ST_INV_ARG_9    = 0x180
         YAFL_ST_INV_ARG_10   = 0x190
         YAFL_ST_INV_ARG_11   = 0x1a0
+        YAFL_ST_INV_ARG_12   = 0x1b0
 
     #--------------------------------------------------------------------------
-    #cdef yaflStatusEn yafl_math_set_u(yaflInt sz, yaflFloat *res, yaflFloat *u)
+    cdef yaflStatusEn yafl_math_set_vxn(yaflInt sz, yaflFloat *res, yaflFloat *v, yaflFloat n)
+    cdef yaflStatusEn yafl_math_add_vxn(yaflInt sz, yaflFloat *res, yaflFloat *v, yaflFloat n)
+    cdef yaflStatusEn yafl_math_sub_vxn(yaflInt sz, yaflFloat *res, yaflFloat *v, yaflFloat n)
+
+    cdef yaflStatusEn yafl_math_set_vrn(yaflInt sz, yaflFloat *res, yaflFloat *v, yaflFloat n)
+    cdef yaflStatusEn yafl_math_add_vrn(yaflInt sz, yaflFloat *res, yaflFloat *v, yaflFloat n)
+    cdef yaflStatusEn yafl_math_sub_vrn(yaflInt sz, yaflFloat *res, yaflFloat *v, yaflFloat n)
+
+    cdef yaflStatusEn yafl_math_set_vxv(yaflInt sz, yaflFloat *res, yaflFloat *a, yaflFloat *b)
+    cdef yaflStatusEn yafl_math_add_vxv(yaflInt sz, yaflFloat *res, yaflFloat *a, yaflFloat *b)
+    cdef yaflStatusEn yafl_math_sub_vxv(yaflInt sz, yaflFloat *res, yaflFloat *a, yaflFloat *b)
+
+    cdef yaflStatusEn yafl_math_set_vrv(yaflInt sz, yaflFloat *res, yaflFloat *a, yaflFloat *b)
+    cdef yaflStatusEn yafl_math_add_vrv(yaflInt sz, yaflFloat *res, yaflFloat *a, yaflFloat *b)
+    cdef yaflStatusEn yafl_math_sub_vrv(yaflInt sz, yaflFloat *res, yaflFloat *a, yaflFloat *b)
+
+    #--------------------------------------------------------------------------
+    cdef yaflStatusEn yafl_math_vtv(yaflInt sz, yaflFloat *res, yaflFloat *a, yaflFloat *b)
+
+    cdef yaflStatusEn yafl_math_set_vvt(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloat *b)
+    cdef yaflStatusEn yafl_math_add_vvt(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloat *b)
+    cdef yaflStatusEn yafl_math_sub_vvt(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloat *b)
+
+    cdef yaflStatusEn yafl_math_set_vvtxn(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloat *b, yaflFloat n)
+    cdef yaflStatusEn yafl_math_add_vvtxn(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloat *b, yaflFloat n)
+    cdef yaflStatusEn yafl_math_sub_vvtxn(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloat *b, yaflFloat n)
+
+    #--------------------------------------------------------------------------
+    cdef yaflStatusEn yafl_math_set_mv(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloat *b)
+    cdef yaflStatusEn yafl_math_add_mv(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloat *b)
+    cdef yaflStatusEn yafl_math_sub_mv(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloat *b)
+
+    cdef yaflStatusEn yafl_math_set_vtm(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloat *b)
+    cdef yaflStatusEn yafl_math_add_vtm(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloat *b)
+    cdef yaflStatusEn yafl_math_sub_vtm(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloat *b)
+
+    cdef yaflStatusEn yafl_math_set_mm(yaflInt nr,  yaflInt ncr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloat *b)
+    cdef yaflStatusEn yafl_math_add_mm(yaflInt nr,  yaflInt ncr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloat *b)
+    cdef yaflStatusEn yafl_math_sub_mm(yaflInt nr,  yaflInt ncr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloat *b)
+
+    #--------------------------------------------------------------------------
+    cdef yaflStatusEn yafl_math_set_vtu(yaflInt sz, yaflFloat *res, yaflFloat *a, yaflFloat *b)
+    cdef yaflStatusEn yafl_math_add_vtu(yaflInt sz, yaflFloat *res, yaflFloat *a, yaflFloat *b)
+    cdef yaflStatusEn yafl_math_sub_vtu(yaflInt sz, yaflFloat *res, yaflFloat *a, yaflFloat *b)
+
+    cdef yaflStatusEn yafl_math_set_uv(yaflInt sz, yaflFloat *res, yaflFloat *a, yaflFloat *b)
+    cdef yaflStatusEn yafl_math_add_uv(yaflInt sz, yaflFloat *res, yaflFloat *a, yaflFloat *b)
+    cdef yaflStatusEn yafl_math_sub_uv(yaflInt sz, yaflFloat *res, yaflFloat *a, yaflFloat *b)
+
+    cdef yaflStatusEn yafl_math_set_mu(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloat *b)
+    cdef yaflStatusEn yafl_math_add_mu(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloat *b)
+    cdef yaflStatusEn yafl_math_sub_mu(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloat *b)
+
+    cdef yaflStatusEn yafl_math_set_u(yaflInt sz, yaflFloat *res, yaflFloat *u)
+    cdef yaflStatusEn yafl_math_add_u(yaflInt sz, yaflFloat *res, yaflFloat *u)
+    cdef yaflStatusEn yafl_math_sub_u(yaflInt sz, yaflFloat *res, yaflFloat *u)
+
+    #--------------------------------------------------------------------------
+    cdef yaflFloat * _yafl_blk_ptr(yaflFloat * m, yaflInt nc, yaflInt r, yaflInt c)
+
+    cdef yaflStatusEn yafl_math_bset_m(yaflInt nc, yaflFloat *res, yaflInt sr, yaflInt sc, yaflFloat *a)
+    cdef yaflStatusEn yafl_math_badd_m(yaflInt nc, yaflFloat *res, yaflInt sr, yaflInt sc, yaflFloat *a)
+    cdef yaflStatusEn yafl_math_bsub_m(yaflInt nc, yaflFloat *res, yaflInt sr, yaflInt sc, yaflFloat *a)
+
+    cdef yaflStatusEn yafl_math_bset_u(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *u)
+    cdef yaflStatusEn yafl_math_badd_u(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *u)
+    cdef yaflStatusEn yafl_math_bsub_u(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *u)
+
+    cdef yaflStatusEn yafl_math_bset_ut(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *u)
+    cdef yaflStatusEn yafl_math_badd_ut(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *u)
+    cdef yaflStatusEn yafl_math_bsub_ut(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *u)
+
+    cdef yaflStatusEn yafl_math_bset_v(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *v)
+    cdef yaflStatusEn yafl_math_badd_v(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *v)
+    cdef yaflStatusEn yafl_math_bsub_v(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *v)
+
+    #--------------------------------------------------------------------------
+    cdef yaflStatusEn yafl_math_bset_vvt(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *a, yaflFloat *b)
+    cdef yaflStatusEn yafl_math_badd_vvt(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *a, yaflFloat *b)
+    cdef yaflStatusEn yafl_math_bsub_vvt(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *a, yaflFloat *b)
+
+    #--------------------------------------------------------------------------
+    cdef yaflStatusEn yafl_math_bset_mu(yaflInt rnc, yaflFloat *res, yaflInt nr, yaflInt nc, yaflFloat *a, yaflFloat *b)
+    cdef yaflStatusEn yafl_math_badd_mu(yaflInt rnc, yaflFloat *res, yaflInt nr, yaflInt nc, yaflFloat *a, yaflFloat *b)
+    cdef yaflStatusEn yafl_math_bsub_mu(yaflInt rnc, yaflFloat *res, yaflInt nr, yaflInt nc, yaflFloat *a, yaflFloat *b)
+
+    #--------------------------------------------------------------------------
+    cdef yaflStatusEn yafl_math_bset_bu(yaflInt rnc, yaflFloat *res, yaflInt nr, yaflInt nc, yaflInt anc, yaflFloat *a, yaflFloat *b)
+    cdef yaflStatusEn yafl_math_badd_bu(yaflInt rnc, yaflFloat *res, yaflInt nr, yaflInt nc, yaflInt anc, yaflFloat *a, yaflFloat *b)
+    cdef yaflStatusEn yafl_math_bsub_bu(yaflInt rnc, yaflFloat *res, yaflInt nr, yaflInt nc, yaflInt anc, yaflFloat *a, yaflFloat *b)
+
+    #--------------------------------------------------------------------------
+    cdef yaflStatusEn yafl_math_ruv(yaflInt sz, yaflFloat *res, yaflFloat *u)
+    cdef yaflStatusEn yafl_math_rutv(yaflInt sz, yaflFloat *res, yaflFloat *u)
+    cdef yaflStatusEn yafl_math_rum(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *u)
+
+    #--------------------------------------------------------------------------
+    cdef yaflStatusEn yafl_math_mwgsu(yaflInt nr, yaflInt nc, yaflFloat *res_u, yaflFloat *res_d, yaflFloat *w, yaflFloat *d)
+
+    #--------------------------------------------------------------------------
+    cdef yaflStatusEn yafl_math_udu_up(yaflInt sz, yaflFloat *res_u, yaflFloat *res_d, yaflFloat alpha, yaflFloat *v)
+    cdef yaflStatusEn yafl_math_udu_down(yaflInt sz, yaflFloat *res_u, yaflFloat *res_d, yaflFloat alpha, yaflFloat *v)
 
 #------------------------------------------------------------------------------
 cdef extern from "yafl.c":
@@ -109,6 +211,8 @@ cdef extern from "yafl.c":
         yaflFloat * Ur   #
         yaflFloat * Dr   #
 
+        yaflFloat rff    #
+
         yaflInt   Nx     #
         yaflInt   Nz     #
 
@@ -124,6 +228,8 @@ cdef extern from "yafl.c":
         yaflFloat * H      #
         yaflFloat * W      #
         yaflFloat * D      #
+
+        yaflFloat qff      #
 
     cdef yaflStatusEn yafl_ekf_base_predict(yaflKalmanBaseSt * self)
 
@@ -226,6 +332,7 @@ cdef extern from "yafl.c":
         yaflFloat * zp
 
         yaflFloat * Sx
+        yaflFloat * Sz
         yaflFloat * Pzx
 
         yaflFloat * sigmas_x
@@ -359,6 +466,1756 @@ ST_INV_ARG_8  = YAFL_ST_INV_ARG_8
 ST_INV_ARG_9  = YAFL_ST_INV_ARG_9
 ST_INV_ARG_10 = YAFL_ST_INV_ARG_10
 ST_INV_ARG_11 = YAFL_ST_INV_ARG_11
+ST_INV_ARG_12 = YAFL_ST_INV_ARG_12
+
+#==============================================================================
+#                            Helper functions
+#==============================================================================
+cdef int _U_sz(int dim_u):
+    return max(1, (dim_u * (dim_u - 1))//2)
+
+#==============================================================================
+#                            Test functions
+#==============================================================================
+def _set_vxn(v, yaflFloat n):
+    assert isinstance(v, np.ndarray)
+    assert NP_DTYPE == v.dtype
+    assert 1 == len(v.shape)
+
+    sz = v.shape[0]
+    res = np.zeros((sz,), dtype=NP_DTYPE)
+
+    cdef yaflFloat [::1]    v_v = v
+    cdef yaflFloat [::1]    v_r = res
+
+    status = yafl_math_set_vxn(sz, &v_r[0], &v_v[0], n)
+    return status, res
+
+#------------------------------------------------------------------------------
+def _add_vxn(a, b, yaflFloat n):
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    sz = a.shape[0]
+    assert b.shape[0] == sz
+
+    res = a.copy()
+
+    cdef yaflFloat [::1]    v_v = b
+    cdef yaflFloat [::1]    v_r = res
+
+    status = yafl_math_add_vxn(sz, &v_r[0], &v_v[0], n)
+    return status, res
+
+#------------------------------------------------------------------------------
+def _sub_vxn(a, b, yaflFloat n):
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    sz = a.shape[0]
+    assert b.shape[0] == sz
+
+    res = a.copy()
+
+    cdef yaflFloat [::1]    v_v = b
+    cdef yaflFloat [::1]    v_r = res
+
+    status = yafl_math_sub_vxn(sz, &v_r[0], &v_v[0], n)
+    return status, res
+
+#------------------------------------------------------------------------------
+def _set_vrn(v, yaflFloat n):
+    assert isinstance(v, np.ndarray)
+    assert NP_DTYPE == v.dtype
+    assert 1 == len(v.shape)
+
+    sz = v.shape[0]
+    res = np.zeros((sz,), dtype=NP_DTYPE)
+
+    cdef yaflFloat [::1]    v_v = v
+    cdef yaflFloat [::1]    v_r = res
+
+    status = yafl_math_set_vrn(sz, &v_r[0], &v_v[0], n)
+    return status, res
+
+#------------------------------------------------------------------------------
+def _add_vrn(a, b, yaflFloat n):
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    sz = a.shape[0]
+    assert b.shape[0] == sz
+
+    res = a.copy()
+
+    cdef yaflFloat [::1]    v_v = b
+    cdef yaflFloat [::1]    v_r = res
+
+    status = yafl_math_add_vrn(sz, &v_r[0], &v_v[0], n)
+    return status, res
+
+#------------------------------------------------------------------------------
+def _sub_vrn(a, b, yaflFloat n):
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    sz = a.shape[0]
+    assert b.shape[0] == sz
+
+    res = a.copy()
+
+    cdef yaflFloat [::1]    v_v = b
+    cdef yaflFloat [::1]    v_r = res
+
+    status = yafl_math_sub_vrn(sz, &v_r[0], &v_v[0], n)
+    return status, res
+
+#------------------------------------------------------------------------------
+def _set_vxv(a, b):
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    sz = a.shape[0]
+    assert b.shape[0] == sz
+
+    res = np.zeros((sz,), dtype=NP_DTYPE)
+
+    cdef yaflFloat [::1]    v_a = a
+    cdef yaflFloat [::1]    v_b = b
+    cdef yaflFloat [::1]    v_r = res
+
+    status = yafl_math_set_vxv(sz, &v_r[0], &v_a[0], &v_b[0])
+    return status, res
+
+#------------------------------------------------------------------------------
+def _add_vxv(res, a, b):
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 1 == len(res.shape)
+
+    sz = a.shape[0]
+    assert b.shape[0] == sz
+    assert res.shape[0] == sz
+
+    cdef yaflFloat [::1]    v_a = a
+    cdef yaflFloat [::1]    v_b = b
+    cdef yaflFloat [::1]    v_r = res
+
+    status = yafl_math_add_vxv(sz, &v_r[0], &v_a[0], &v_b[0])
+    return status
+
+#------------------------------------------------------------------------------
+def _sub_vxv(res, a, b):
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 1 == len(res.shape)
+
+    sz = a.shape[0]
+    assert b.shape[0] == sz
+    assert res.shape[0] == sz
+
+    cdef yaflFloat [::1]    v_a = a
+    cdef yaflFloat [::1]    v_b = b
+    cdef yaflFloat [::1]    v_r = res
+
+    status = yafl_math_sub_vxv(sz, &v_r[0], &v_a[0], &v_b[0])
+    return status
+
+#------------------------------------------------------------------------------
+def _set_vrv(a, b):
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    sz = a.shape[0]
+    assert b.shape[0] == sz
+
+    res = np.zeros((sz,), dtype=NP_DTYPE)
+
+    cdef yaflFloat [::1]    v_a = a
+    cdef yaflFloat [::1]    v_b = b
+    cdef yaflFloat [::1]    v_r = res
+
+    status = yafl_math_set_vrv(sz, &v_r[0], &v_a[0], &v_b[0])
+    return status, res
+
+#------------------------------------------------------------------------------
+def _add_vrv(res, a, b):
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 1 == len(res.shape)
+
+    sz = a.shape[0]
+    assert b.shape[0] == sz
+    assert res.shape[0] == sz
+
+    cdef yaflFloat [::1]    v_a = a
+    cdef yaflFloat [::1]    v_b = b
+    cdef yaflFloat [::1]    v_r = res
+
+    status = yafl_math_add_vrv(sz, &v_r[0], &v_a[0], &v_b[0])
+    return status
+
+#------------------------------------------------------------------------------
+def _sub_vrv(res, a, b):
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 1 == len(res.shape)
+
+    sz = a.shape[0]
+    assert b.shape[0] == sz
+    assert res.shape[0] == sz
+
+    cdef yaflFloat [::1]    v_a = a
+    cdef yaflFloat [::1]    v_b = b
+    cdef yaflFloat [::1]    v_r = res
+
+    status = yafl_math_sub_vrv(sz, &v_r[0], &v_a[0], &v_b[0])
+    return status
+
+#------------------------------------------------------------------------------
+def _vtv(a, b):
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    sz = a.shape[0]
+    assert b.shape[0] == sz
+
+    cdef yaflFloat [::1]    v_a = a
+    cdef yaflFloat [::1]    v_b = b
+    cdef yaflFloat res = 0
+
+    status = yafl_math_vtv(sz, &res, &v_a[0], &v_b[0])
+    return status, res
+
+#------------------------------------------------------------------------------
+def _set_vvt(a, b):
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    nr = a.shape[0]
+    nc = b.shape[0]
+
+    res = np.zeros((nr,nc), dtype=NP_DTYPE)
+
+    cdef yaflFloat [::1]    v_a = a
+    cdef yaflFloat [::1]    v_b = b
+    cdef yaflFloat [:, ::1] v_r = res
+
+    status = yafl_math_set_vvt(nr, nc, &v_r[0,0], &v_a[0], &v_b[0])
+    return status, res
+
+#------------------------------------------------------------------------------
+def _add_vvt(res, a, b):
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 2 == len(res.shape)
+
+    nr = a.shape[0]
+    nc = b.shape[0]
+    assert res.shape[0] == nr
+    assert res.shape[1] == nc
+
+    cdef yaflFloat [::1]    v_a = a
+    cdef yaflFloat [::1]    v_b = b
+    cdef yaflFloat [:, ::1] v_r = res
+
+    status = yafl_math_add_vvt(nr, nc, &v_r[0,0], &v_a[0], &v_b[0])
+    return status
+
+#------------------------------------------------------------------------------
+def _sub_vvt(res, a, b):
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 2 == len(res.shape)
+
+    nr = a.shape[0]
+    nc = b.shape[0]
+    assert res.shape[0] == nr
+    assert res.shape[1] == nc
+
+    cdef yaflFloat [::1]    v_a = a
+    cdef yaflFloat [::1]    v_b = b
+    cdef yaflFloat [:, ::1] v_r = res
+
+    status = yafl_math_sub_vvt(nr, nc, &v_r[0,0], &v_a[0], &v_b[0])
+    return status
+
+#------------------------------------------------------------------------------
+def _set_vvtxn(a, b, yaflFloat n):
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    nr = a.shape[0]
+    nc = b.shape[0]
+
+    res = np.zeros((nr,nc), dtype=NP_DTYPE)
+
+    cdef yaflFloat [::1]    v_a = a
+    cdef yaflFloat [::1]    v_b = b
+    cdef yaflFloat [:, ::1] v_r = res
+
+    status = yafl_math_set_vvtxn(nr, nc, &v_r[0,0], &v_a[0], &v_b[0], n)
+    return status, res
+
+#------------------------------------------------------------------------------
+def _add_vvtxn(res, a, b, yaflFloat n):
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 2 == len(res.shape)
+
+    nr = a.shape[0]
+    nc = b.shape[0]
+    assert res.shape[0] == nr
+    assert res.shape[1] == nc
+
+    cdef yaflFloat [::1]    v_a = a
+    cdef yaflFloat [::1]    v_b = b
+    cdef yaflFloat [:, ::1] v_r = res
+
+    status = yafl_math_add_vvtxn(nr, nc, &v_r[0,0], &v_a[0], &v_b[0], n)
+    return status
+
+#------------------------------------------------------------------------------
+def _sub_vvtxn(res, a, b, yaflFloat n):
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 2 == len(res.shape)
+
+    nr = a.shape[0]
+    nc = b.shape[0]
+    assert res.shape[0] == nr
+    assert res.shape[1] == nc
+
+    cdef yaflFloat [::1]    v_a = a
+    cdef yaflFloat [::1]    v_b = b
+    cdef yaflFloat [:, ::1] v_r = res
+
+    status = yafl_math_sub_vvtxn(nr, nc, &v_r[0,0], &v_a[0], &v_b[0], n)
+    return status
+
+#------------------------------------------------------------------------------
+def _set_mv(a, b):
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 2 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    nr = a.shape[0]
+    nc = a.shape[1]
+
+    assert b.shape[0] == nc
+
+    res = np.zeros((nr,), dtype=NP_DTYPE)
+
+    cdef yaflFloat [:, ::1] v_a = a
+    cdef yaflFloat [::1]    v_b = b
+    cdef yaflFloat [::1]    v_r = res
+
+    status = yafl_math_set_mv(nr, nc, &v_r[0], &v_a[0,0], &v_b[0])
+    return status, res
+
+#------------------------------------------------------------------------------
+def _add_mv(res, a, b):
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 2 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 1 == len(res.shape)
+
+    nr = a.shape[0]
+    nc = a.shape[1]
+
+    assert b.shape[0]   == nc
+    assert res.shape[0] == nr
+
+    cdef yaflFloat [:, ::1] v_a = a
+    cdef yaflFloat [::1]    v_b = b
+    cdef yaflFloat [::1]    v_r = res
+
+    status = yafl_math_add_mv(nr, nc, &v_r[0], &v_a[0,0], &v_b[0])
+    return status
+
+#------------------------------------------------------------------------------
+def _sub_mv(res, a, b):
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 2 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 1 == len(res.shape)
+
+    nr = a.shape[0]
+    nc = a.shape[1]
+
+    assert b.shape[0]   == nc
+    assert res.shape[0] == nr
+
+    cdef yaflFloat [:, ::1] v_a = a
+    cdef yaflFloat [::1]    v_b = b
+    cdef yaflFloat [::1]    v_r = res
+
+    status = yafl_math_sub_mv(nr, nc, &v_r[0], &v_a[0,0], &v_b[0])
+    return status
+
+#------------------------------------------------------------------------------
+def _set_vtm(a, b):
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 2 == len(b.shape)
+
+    nr = b.shape[0]
+    nc = b.shape[1]
+
+    assert a.shape[0] == nr
+
+    res = np.zeros((nc,), dtype=NP_DTYPE)
+
+    cdef yaflFloat [::1]    v_a = a
+    cdef yaflFloat [:, ::1] v_b = b
+    cdef yaflFloat [::1]    v_r = res
+
+    status = yafl_math_set_vtm(nr, nc, &v_r[0], &v_a[0], &v_b[0,0])
+    return status, res
+
+#------------------------------------------------------------------------------
+def _add_vtm(res, a, b):
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 2 == len(b.shape)
+
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 1 == len(res.shape)
+
+    nr = b.shape[0]
+    nc = b.shape[1]
+
+    assert a.shape[0]   == nr
+    assert res.shape[0] == nc
+
+    cdef yaflFloat [::1]    v_a = a
+    cdef yaflFloat [:, ::1] v_b = b
+    cdef yaflFloat [::1]    v_r = res
+
+    status = yafl_math_add_vtm(nr, nc, &v_r[0], &v_a[0], &v_b[0,0])
+    return status
+
+#------------------------------------------------------------------------------
+def _sub_vtm(res, a, b):
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 2 == len(b.shape)
+
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 1 == len(res.shape)
+
+    nr = b.shape[0]
+    nc = b.shape[1]
+
+    assert a.shape[0]   == nr
+    assert res.shape[0] == nc
+
+    cdef yaflFloat [::1]    v_a = a
+    cdef yaflFloat [:, ::1] v_b = b
+    cdef yaflFloat [::1]    v_r = res
+
+    status = yafl_math_sub_vtm(nr, nc, &v_r[0], &v_a[0], &v_b[0,0])
+    return status
+
+#------------------------------------------------------------------------------
+def _set_mm(a, b):
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 2 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 2 == len(b.shape)
+
+    nr =  a.shape[0]
+    ncr = a.shape[1]
+
+    assert b.shape[0] == ncr
+    nc =  b.shape[1]
+
+    res = np.zeros((nr,nc), dtype=NP_DTYPE)
+
+    cdef yaflFloat [:, ::1] v_a = a
+    cdef yaflFloat [:, ::1] v_b = b
+    cdef yaflFloat [:, ::1] v_r = res
+
+    status = yafl_math_set_mm(nr, ncr, nc, &v_r[0,0], &v_a[0,0], &v_b[0,0])
+    return status, res
+
+#------------------------------------------------------------------------------
+def _add_mm(res, a, b):
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 2 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 2 == len(b.shape)
+
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 2 == len(res.shape)
+
+    nr =  a.shape[0]
+    ncr = a.shape[1]
+
+    assert b.shape[0] == ncr
+    nc =  b.shape[1]
+
+    assert res.shape[0] == nr
+    assert res.shape[1] == nc
+
+    cdef yaflFloat [:, ::1] v_a = a
+    cdef yaflFloat [:, ::1] v_b = b
+    cdef yaflFloat [:, ::1] v_r = res
+
+    status = yafl_math_add_mm(nr, ncr, nc, &v_r[0,0], &v_a[0,0], &v_b[0,0])
+    return status
+
+#------------------------------------------------------------------------------
+def _sub_mm(res, a, b):
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 2 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 2 == len(b.shape)
+
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 2 == len(res.shape)
+
+    nr =  a.shape[0]
+    ncr = a.shape[1]
+
+    assert b.shape[0] == ncr
+    nc =  b.shape[1]
+
+    assert res.shape[0] == nr
+    assert res.shape[1] == nc
+
+    cdef yaflFloat [:, ::1] v_a = a
+    cdef yaflFloat [:, ::1] v_b = b
+    cdef yaflFloat [:, ::1] v_r = res
+
+    status = yafl_math_sub_mm(nr, ncr, nc, &v_r[0,0], &v_a[0,0], &v_b[0,0])
+    return status
+
+#------------------------------------------------------------------------------
+def _set_u(u):
+    assert isinstance(u, np.ndarray)
+    assert NP_DTYPE == u.dtype
+    assert 1 == len(u.shape)
+
+    n = u.shape[0]
+    sz = int(round((1. + (1. + 8. * n)**0.5)/2.))
+
+    assert _U_sz(sz) == n
+
+    res = np.zeros((sz,sz), dtype=NP_DTYPE)
+
+    cdef yaflFloat [::1]    v_u = u
+    cdef yaflFloat [:, ::1] v_r = res
+
+    status = yafl_math_set_u(sz, &v_r[0,0], &v_u[0])
+    return status, res
+
+#------------------------------------------------------------------------------
+def _add_u(res, u):
+    assert isinstance(u, np.ndarray)
+    assert NP_DTYPE == u.dtype
+    assert 1 == len(u.shape)
+
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 2 == len(res.shape)
+
+    n = u.shape[0]
+    sz = res.shape[0]
+    assert res.shape[1] == sz
+    assert _U_sz(sz) == n
+
+    cdef yaflFloat [::1]    v_u = u
+    cdef yaflFloat [:, ::1] v_r = res
+
+    status = yafl_math_add_u(sz, &v_r[0,0], &v_u[0])
+    return status
+
+#------------------------------------------------------------------------------
+def _sub_u(res, u):
+    assert isinstance(u, np.ndarray)
+    assert NP_DTYPE == u.dtype
+    assert 1 == len(u.shape)
+
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 2 == len(res.shape)
+
+    n = u.shape[0]
+    sz = res.shape[0]
+    assert res.shape[1] == sz
+    assert _U_sz(sz) == n
+
+    cdef yaflFloat [::1]    v_u = u
+    cdef yaflFloat [:, ::1] v_r = res
+
+    status = yafl_math_sub_u(sz, &v_r[0,0], &v_u[0])
+    return status
+
+#------------------------------------------------------------------------------
+def _set_vtu(a, b):
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    sz = a.shape[0]
+    assert _U_sz(sz) == b.shape[0]
+
+    res = np.zeros((sz,), dtype=NP_DTYPE)
+
+    cdef yaflFloat [::1] v_a = a
+    cdef yaflFloat [::1] v_b = b
+    cdef yaflFloat [::1] v_r = res
+
+    status = yafl_math_set_vtu(sz, &v_r[0], &v_a[0], &v_b[0])
+    return status, res
+
+#------------------------------------------------------------------------------
+def _add_vtu(res, a, b):
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 1 == len(res.shape)
+
+    sz = a.shape[0]
+    assert _U_sz(sz) == b.shape[0]
+    assert res.shape[0] == sz
+
+    cdef yaflFloat [::1] v_a = a
+    cdef yaflFloat [::1] v_b = b
+    cdef yaflFloat [::1] v_r = res
+
+    status = yafl_math_add_vtu(sz, &v_r[0], &v_a[0], &v_b[0])
+    return status
+
+#------------------------------------------------------------------------------
+def _sub_vtu(res, a, b):
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 1 == len(res.shape)
+
+    sz = a.shape[0]
+    assert _U_sz(sz) == b.shape[0]
+    assert res.shape[0] == sz
+
+    cdef yaflFloat [::1] v_a = a
+    cdef yaflFloat [::1] v_b = b
+    cdef yaflFloat [::1] v_r = res
+
+    status = yafl_math_sub_vtu(sz, &v_r[0], &v_a[0], &v_b[0])
+    return status
+
+#------------------------------------------------------------------------------
+def _set_uv(a, b):
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    sz = b.shape[0]
+    assert _U_sz(sz) == a.shape[0]
+
+    res = np.zeros((sz,), dtype=NP_DTYPE)
+
+    cdef yaflFloat [::1] v_a = a
+    cdef yaflFloat [::1] v_b = b
+    cdef yaflFloat [::1] v_r = res
+
+    status = yafl_math_set_uv(sz, &v_r[0], &v_a[0], &v_b[0])
+    return status, res
+
+#------------------------------------------------------------------------------
+def _add_uv(res, a, b):
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 1 == len(res.shape)
+
+    sz = b.shape[0]
+    assert _U_sz(sz) == a.shape[0]
+    assert res.shape[0] == sz
+
+    cdef yaflFloat [::1] v_a = a
+    cdef yaflFloat [::1] v_b = b
+    cdef yaflFloat [::1] v_r = res
+
+    status = yafl_math_add_uv(sz, &v_r[0], &v_a[0], &v_b[0])
+    return status
+
+#------------------------------------------------------------------------------
+def _sub_uv(res, a, b):
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 1 == len(res.shape)
+
+    sz = b.shape[0]
+    assert _U_sz(sz) == a.shape[0]
+    assert res.shape[0] == sz
+
+    cdef yaflFloat [::1] v_a = a
+    cdef yaflFloat [::1] v_b = b
+    cdef yaflFloat [::1] v_r = res
+
+    status = yafl_math_sub_uv(sz, &v_r[0], &v_a[0], &v_b[0])
+    return status
+
+#------------------------------------------------------------------------------
+def _set_mu(a, b):
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 2 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    nr = a.shape[0]
+    nc = a.shape[1]
+    assert _U_sz(nc) == b.shape[0]
+
+    res = np.zeros((nr,nc), dtype=NP_DTYPE)
+
+    cdef yaflFloat [:, ::1] v_a = a
+    cdef yaflFloat [::1]    v_b = b
+    cdef yaflFloat [:, ::1] v_r = res
+
+    status = yafl_math_set_mu(nr, nc, &v_r[0,0], &v_a[0,0], &v_b[0])
+    return status, res
+
+#------------------------------------------------------------------------------
+def _add_mu(res, a, b):
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 2 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 2 == len(res.shape)
+
+    nr = a.shape[0]
+    nc = a.shape[1]
+    assert _U_sz(nc) == b.shape[0]
+    assert res.shape == a.shape
+
+    cdef yaflFloat [:, ::1] v_a = a
+    cdef yaflFloat [::1]    v_b = b
+    cdef yaflFloat [:, ::1] v_r = res
+
+    status = yafl_math_add_mu(nr, nc, &v_r[0,0], &v_a[0,0], &v_b[0])
+    return status
+
+#------------------------------------------------------------------------------
+def _sub_mu(res, a, b):
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 2 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 2 == len(res.shape)
+
+    nr = a.shape[0]
+    nc = a.shape[1]
+    assert _U_sz(nc) == b.shape[0]
+    assert res.shape == a.shape
+
+    cdef yaflFloat [:, ::1] v_a = a
+    cdef yaflFloat [::1]    v_b = b
+    cdef yaflFloat [:, ::1] v_r = res
+
+    status = yafl_math_sub_mu(nr, nc, &v_r[0,0], &v_a[0,0], &v_b[0])
+    return status
+
+#------------------------------------------------------------------------------
+def _bset_m(res, a, yaflInt r, yaflInt c):
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 2 == len(res.shape)
+
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 2 == len(a.shape)
+
+    rnr = res.shape[0]
+    rnc = res.shape[1]
+
+    nr = a.shape[0]
+    nc = a.shape[1]
+
+    assert r >= 0
+    assert c >= 0
+    assert r + nr <= rnr
+    assert c + nc <= rnc
+
+    cdef yaflFloat [:, ::1] v_r = res
+    cdef yaflFloat [:, ::1] v_a = a
+
+    status = yafl_math_bset_m(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), \
+                              nr, nc, &v_a[0,0])
+    return status
+
+#------------------------------------------------------------------------------
+def _badd_m(res, a, yaflInt r, yaflInt c):
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 2 == len(res.shape)
+
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 2 == len(a.shape)
+
+    rnr = res.shape[0]
+    rnc = res.shape[1]
+
+    nr = a.shape[0]
+    nc = a.shape[1]
+
+    assert r >= 0
+    assert c >= 0
+    assert r + nr <= rnr
+    assert c + nc <= rnc
+
+    cdef yaflFloat [:, ::1] v_r = res
+    cdef yaflFloat [:, ::1] v_a = a
+
+    status = yafl_math_badd_m(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), \
+                              nr, nc, &v_a[0,0])
+    return status
+
+#------------------------------------------------------------------------------
+def _bsub_m(res, a, yaflInt r, yaflInt c):
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 2 == len(res.shape)
+
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 2 == len(a.shape)
+
+    rnr = res.shape[0]
+    rnc = res.shape[1]
+
+    nr = a.shape[0]
+    nc = a.shape[1]
+
+    assert r >= 0
+    assert c >= 0
+    assert r + nr <= rnr
+    assert c + nc <= rnc
+
+    cdef yaflFloat [:, ::1] v_r = res
+    cdef yaflFloat [:, ::1] v_a = a
+
+    status = yafl_math_bsub_m(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), \
+                              nr, nc, &v_a[0,0])
+    return status
+
+#------------------------------------------------------------------------------
+def _bset_u(res, a, yaflInt r, yaflInt c):
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 2 == len(res.shape)
+
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    rnr = res.shape[0]
+    rnc = res.shape[1]
+
+    n = a.shape[0]
+    sz = int(round((1. + (1. + 8. * n)**0.5)/2.))
+
+    assert _U_sz(sz) == n
+
+    assert r >= 0
+    assert c >= 0
+    assert r + sz <= rnr
+    assert c + sz <= rnc
+
+    cdef yaflFloat [:, ::1] v_r = res
+    cdef yaflFloat [::1]    v_a = a
+
+    status = yafl_math_bset_u(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), \
+                              sz, &v_a[0])
+    return status
+
+#------------------------------------------------------------------------------
+def _badd_u(res, a, yaflInt r, yaflInt c):
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 2 == len(res.shape)
+
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    rnr = res.shape[0]
+    rnc = res.shape[1]
+
+    n = a.shape[0]
+    sz = int(round((1. + (1. + 8. * n)**0.5)/2.))
+
+    assert _U_sz(sz) == n
+
+    assert r >= 0
+    assert c >= 0
+    assert r + sz <= rnr
+    assert c + sz <= rnc
+
+    cdef yaflFloat [:, ::1] v_r = res
+    cdef yaflFloat [::1]    v_a = a
+
+    status = yafl_math_badd_u(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), \
+                              sz, &v_a[0])
+    return status
+
+#------------------------------------------------------------------------------
+def _bsub_u(res, a, yaflInt r, yaflInt c):
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 2 == len(res.shape)
+
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    rnr = res.shape[0]
+    rnc = res.shape[1]
+
+    n = a.shape[0]
+    sz = int(round((1. + (1. + 8. * n)**0.5)/2.))
+
+    assert _U_sz(sz) == n
+
+    assert r >= 0
+    assert c >= 0
+    assert r + sz <= rnr
+    assert c + sz <= rnc
+
+    cdef yaflFloat [:, ::1] v_r = res
+    cdef yaflFloat [::1]    v_a = a
+
+    status = yafl_math_bsub_u(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), \
+                              sz, &v_a[0])
+    return status
+
+#------------------------------------------------------------------------------
+def _bset_ut(res, a, yaflInt r, yaflInt c):
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 2 == len(res.shape)
+
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    rnr = res.shape[0]
+    rnc = res.shape[1]
+
+    n = a.shape[0]
+    sz = int(round((1. + (1. + 8. * n)**0.5)/2.))
+
+    assert _U_sz(sz) == n
+
+    assert r >= 0
+    assert c >= 0
+    assert r + sz <= rnr
+    assert c + sz <= rnc
+
+    cdef yaflFloat [:, ::1] v_r = res
+    cdef yaflFloat [::1]    v_a = a
+
+    status = yafl_math_bset_ut(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), \
+                              sz, &v_a[0])
+    return status
+
+#------------------------------------------------------------------------------
+def _badd_ut(res, a, yaflInt r, yaflInt c):
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 2 == len(res.shape)
+
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    rnr = res.shape[0]
+    rnc = res.shape[1]
+
+    n = a.shape[0]
+    sz = int(round((1. + (1. + 8. * n)**0.5)/2.))
+
+    assert _U_sz(sz) == n
+
+    assert r >= 0
+    assert c >= 0
+    assert r + sz <= rnr
+    assert c + sz <= rnc
+
+    cdef yaflFloat [:, ::1] v_r = res
+    cdef yaflFloat [::1]    v_a = a
+
+    status = yafl_math_badd_ut(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), \
+                              sz, &v_a[0])
+    return status
+
+#------------------------------------------------------------------------------
+def _bsub_ut(res, a, yaflInt r, yaflInt c):
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 2 == len(res.shape)
+
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    rnr = res.shape[0]
+    rnc = res.shape[1]
+
+    n = a.shape[0]
+    sz = int(round((1. + (1. + 8. * n)**0.5)/2.))
+
+    assert _U_sz(sz) == n
+
+    assert r >= 0
+    assert c >= 0
+    assert r + sz <= rnr
+    assert c + sz <= rnc
+
+    cdef yaflFloat [:, ::1] v_r = res
+    cdef yaflFloat [::1]    v_a = a
+
+    status = yafl_math_bsub_ut(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), \
+                              sz, &v_a[0])
+    return status
+
+#------------------------------------------------------------------------------
+def _bset_v(res, a, yaflInt r, yaflInt c):
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 2 == len(res.shape)
+
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    rnr = res.shape[0]
+    rnc = res.shape[1]
+
+    sz = a.shape[0]
+
+    assert r >= 0
+    assert c >= 0
+    assert r + sz <= rnr
+    assert c + 1  <= rnc
+
+    cdef yaflFloat [:, ::1] v_r = res
+    cdef yaflFloat [::1]    v_a = a
+
+    status = yafl_math_bset_v(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), \
+                              sz, &v_a[0])
+    return status
+
+#------------------------------------------------------------------------------
+def _badd_v(res, a, yaflInt r, yaflInt c):
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 2 == len(res.shape)
+
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    rnr = res.shape[0]
+    rnc = res.shape[1]
+
+    sz = a.shape[0]
+
+    assert r >= 0
+    assert c >= 0
+    assert r + sz <= rnr
+    assert c + 1  <= rnc
+
+    cdef yaflFloat [:, ::1] v_r = res
+    cdef yaflFloat [::1]    v_a = a
+
+    status = yafl_math_badd_v(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), \
+                              sz, &v_a[0])
+    return status
+
+#------------------------------------------------------------------------------
+def _bsub_v(res, a, yaflInt r, yaflInt c):
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 2 == len(res.shape)
+
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    rnr = res.shape[0]
+    rnc = res.shape[1]
+
+    sz = a.shape[0]
+
+    assert r >= 0
+    assert c >= 0
+    assert r + sz <= rnr
+    assert c + 1  <= rnc
+
+    cdef yaflFloat [:, ::1] v_r = res
+    cdef yaflFloat [::1]    v_a = a
+
+    status = yafl_math_bsub_v(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), \
+                              sz, &v_a[0])
+    return status
+
+#------------------------------------------------------------------------------
+def _bset_vvt(res, a, b, yaflInt r, yaflInt c):
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 2 == len(res.shape)
+
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    rnr = res.shape[0]
+    rnc = res.shape[1]
+
+    sz = a.shape[0]
+    assert b.shape[0] == sz
+
+    assert r >= 0
+    assert c >= 0
+    assert r + sz <= rnr
+    assert c + sz <= rnc
+
+    cdef yaflFloat [:, ::1] v_r = res
+    cdef yaflFloat [::1]    v_a = a
+    cdef yaflFloat [::1]    v_b = b
+
+    status = yafl_math_bset_vvt(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), \
+                              sz, &v_a[0], &v_b[0])
+    return status
+
+#------------------------------------------------------------------------------
+def _badd_vvt(res, a, b, yaflInt r, yaflInt c):
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 2 == len(res.shape)
+
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    rnr = res.shape[0]
+    rnc = res.shape[1]
+
+    sz = a.shape[0]
+    assert b.shape[0] == sz
+
+    assert r >= 0
+    assert c >= 0
+    assert r + sz <= rnr
+    assert c + sz <= rnc
+
+    cdef yaflFloat [:, ::1] v_r = res
+    cdef yaflFloat [::1]    v_a = a
+    cdef yaflFloat [::1]    v_b = b
+
+    status = yafl_math_badd_vvt(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), \
+                              sz, &v_a[0], &v_b[0])
+    return status
+
+#------------------------------------------------------------------------------
+def _bsub_vvt(res, a, b, yaflInt r, yaflInt c):
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 2 == len(res.shape)
+
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 1 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    rnr = res.shape[0]
+    rnc = res.shape[1]
+
+    sz = a.shape[0]
+    assert b.shape[0] == sz
+
+    assert r >= 0
+    assert c >= 0
+    assert r + sz <= rnr
+    assert c + sz <= rnc
+
+    cdef yaflFloat [:, ::1] v_r = res
+    cdef yaflFloat [::1]    v_a = a
+    cdef yaflFloat [::1]    v_b = b
+
+    status = yafl_math_bsub_vvt(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), \
+                              sz, &v_a[0], &v_b[0])
+    return status
+
+#------------------------------------------------------------------------------
+def _bset_mu(res, a, b, yaflInt r, yaflInt c):
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 2 == len(res.shape)
+
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 2 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    rnr = res.shape[0]
+    rnc = res.shape[1]
+
+    nr = a.shape[0]
+    nc = a.shape[1]
+
+    assert _U_sz(nc) == b.shape[0]
+
+    assert r >= 0
+    assert c >= 0
+    assert r + nr <= rnr
+    assert c + nc <= rnc
+
+    cdef yaflFloat [:, ::1] v_r = res
+    cdef yaflFloat [:, ::1] v_a = a
+    cdef yaflFloat [::1]    v_b = b
+
+    status = yafl_math_bset_mu(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), \
+                              nr, nc, &v_a[0,0], &v_b[0])
+    return status
+
+#------------------------------------------------------------------------------
+def _badd_mu(res, a, b, yaflInt r, yaflInt c):
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 2 == len(res.shape)
+
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 2 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    rnr = res.shape[0]
+    rnc = res.shape[1]
+
+    nr = a.shape[0]
+    nc = a.shape[1]
+
+    assert _U_sz(nc) == b.shape[0]
+
+    assert r >= 0
+    assert c >= 0
+    assert r + nr <= rnr
+    assert c + nc <= rnc
+
+    cdef yaflFloat [:, ::1] v_r = res
+    cdef yaflFloat [:, ::1] v_a = a
+    cdef yaflFloat [::1]    v_b = b
+
+    status = yafl_math_badd_mu(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), \
+                              nr, nc, &v_a[0,0], &v_b[0])
+    return status
+
+#------------------------------------------------------------------------------
+def _bsub_mu(res, a, b, yaflInt r, yaflInt c):
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 2 == len(res.shape)
+
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 2 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    rnr = res.shape[0]
+    rnc = res.shape[1]
+
+    nr = a.shape[0]
+    nc = a.shape[1]
+
+    assert _U_sz(nc) == b.shape[0]
+
+    assert r >= 0
+    assert c >= 0
+    assert r + nr <= rnr
+    assert c + nc <= rnc
+
+    cdef yaflFloat [:, ::1] v_r = res
+    cdef yaflFloat [:, ::1] v_a = a
+    cdef yaflFloat [::1]    v_b = b
+
+    status = yafl_math_bsub_mu(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), \
+                              nr, nc, &v_a[0,0], &v_b[0])
+    return status
+
+#------------------------------------------------------------------------------
+def _bset_bu(res, a, b, yaflInt r, yaflInt c, yaflInt ar, yaflInt ac, yaflInt nr, yaflInt nc):
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 2 == len(res.shape)
+
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 2 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    rnr = res.shape[0]
+    rnc = res.shape[1]
+
+    anr = a.shape[0]
+    anc = a.shape[1]
+
+    assert _U_sz(nc) == b.shape[0]
+
+    assert r >= 0
+    assert c >= 0
+    assert r + nr <= rnr
+    assert c + nc <= rnc
+    assert ar + nr <= anr
+    assert ac + nc <= anc
+
+    cdef yaflFloat [:, ::1] v_r = res
+    cdef yaflFloat [:, ::1] v_a = a
+    cdef yaflFloat [::1]    v_b = b
+
+    status = yafl_math_bset_bu(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), nr, nc, \
+                               anc, _yafl_blk_ptr(&v_a[0,0], anc, ar, ac), &v_b[0])
+    return status
+
+#------------------------------------------------------------------------------
+def _badd_bu(res, a, b, yaflInt r, yaflInt c, yaflInt ar, yaflInt ac, yaflInt nr, yaflInt nc):
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 2 == len(res.shape)
+
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 2 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    rnr = res.shape[0]
+    rnc = res.shape[1]
+
+    anr = a.shape[0]
+    anc = a.shape[1]
+
+    assert _U_sz(nc) == b.shape[0]
+
+    assert r >= 0
+    assert c >= 0
+    assert r + nr <= rnr
+    assert c + nc <= rnc
+    assert ar + nr <= anr
+    assert ac + nc <= anc
+
+    cdef yaflFloat [:, ::1] v_r = res
+    cdef yaflFloat [:, ::1] v_a = a
+    cdef yaflFloat [::1]    v_b = b
+
+    status = yafl_math_badd_bu(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), nr, nc, \
+                               anc, _yafl_blk_ptr(&v_a[0,0], anc, ar, ac), &v_b[0])
+    return status
+
+#------------------------------------------------------------------------------
+def _bsub_bu(res, a, b, yaflInt r, yaflInt c, yaflInt ar, yaflInt ac, yaflInt nr, yaflInt nc):
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 2 == len(res.shape)
+
+    assert isinstance(a, np.ndarray)
+    assert NP_DTYPE == a.dtype
+    assert 2 == len(a.shape)
+
+    assert isinstance(b, np.ndarray)
+    assert NP_DTYPE == b.dtype
+    assert 1 == len(b.shape)
+
+    rnr = res.shape[0]
+    rnc = res.shape[1]
+
+    anr = a.shape[0]
+    anc = a.shape[1]
+
+    assert _U_sz(nc) == b.shape[0]
+
+    assert r >= 0
+    assert c >= 0
+    assert r + nr <= rnr
+    assert c + nc <= rnc
+    assert ar + nr <= anr
+    assert ac + nc <= anc
+
+    cdef yaflFloat [:, ::1] v_r = res
+    cdef yaflFloat [:, ::1] v_a = a
+    cdef yaflFloat [::1]    v_b = b
+
+    status = yafl_math_bsub_bu(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), nr, nc, \
+                               anc, _yafl_blk_ptr(&v_a[0,0], anc, ar, ac), &v_b[0])
+    return status
+
+#------------------------------------------------------------------------------
+def _ruv(u, v):
+    assert isinstance(u, np.ndarray)
+    assert NP_DTYPE == u.dtype
+    assert 1 == len(u.shape)
+
+    assert isinstance(v, np.ndarray)
+    assert NP_DTYPE == v.dtype
+    assert 1 == len(v.shape)
+    sz = v.shape[0]
+
+    assert u.shape[0] == _U_sz(sz)
+
+    v = v.copy()
+    cdef yaflFloat [::1]    v_v = v
+    cdef yaflFloat [::1]    v_u = u
+    res = yafl_math_ruv(sz, &v_v[0], &v_u[0])
+    return res, v
+
+#------------------------------------------------------------------------------
+def _rutv(u, v):
+    assert isinstance(u, np.ndarray)
+    assert NP_DTYPE == u.dtype
+    assert 1 == len(u.shape)
+
+    assert isinstance(v, np.ndarray)
+    assert NP_DTYPE == v.dtype
+    assert 1 == len(v.shape)
+    sz = v.shape[0]
+
+    assert u.shape[0] == _U_sz(sz)
+
+    v = v.copy()
+    cdef yaflFloat [::1]    v_v = v
+    cdef yaflFloat [::1]    v_u = u
+    res = yafl_math_rutv(sz, &v_v[0], &v_u[0])
+    return res, v
+
+#------------------------------------------------------------------------------
+def _rum(res, u):
+    assert isinstance(res, np.ndarray)
+    assert NP_DTYPE == res.dtype
+    assert 2 == len(res.shape)
+
+    assert isinstance(u, np.ndarray)
+    assert NP_DTYPE == u.dtype
+    assert 1 == len(u.shape)
+
+    nr = res.shape[0]
+    nc = res.shape[1]
+    assert _U_sz(nr) == u.shape[0]
+
+    cdef yaflFloat [:, ::1] v_r = res
+    cdef yaflFloat [::1]    v_u = u
+
+    status = yafl_math_rum(nr, nc, &v_r[0,0], &v_u[0])
+    return status
+
+#------------------------------------------------------------------------------
+def _mwgs(W, D):
+    assert isinstance(W, np.ndarray)
+    assert NP_DTYPE == W.dtype
+    assert 2 == len(W.shape)
+    nr = W.shape[0]
+    nc = W.shape[1]
+
+    assert isinstance(D, np.ndarray)
+    assert NP_DTYPE == D.dtype
+    assert 1 == len(D.shape)
+    assert D.shape[0] == nc
+
+    u = np.zeros((_U_sz(nr),), dtype=NP_DTYPE)
+    d = np.ones((nr,), dtype=NP_DTYPE)
+
+    cdef yaflFloat [:, ::1] v_W = W
+    cdef yaflFloat [::1]    v_D = D
+    cdef yaflFloat [::1]    v_u = u
+    cdef yaflFloat [::1]    v_d = d
+
+    res = yafl_math_mwgsu(nr, nc, &v_u[0], &v_d[0], &v_W[0,0], &v_D[0])
+    return res, u, d
+
+#------------------------------------------------------------------------------
+def _udu_up(u,d, yaflFloat alpha, v):
+    assert isinstance(u, np.ndarray)
+    assert NP_DTYPE == u.dtype
+    assert 1 == len(u.shape)
+
+    assert isinstance(d, np.ndarray)
+    assert NP_DTYPE == d.dtype
+    assert 1 == len(d.shape)
+
+    assert isinstance(v, np.ndarray)
+    assert NP_DTYPE == v.dtype
+    assert 1 == len(v.shape)
+
+    assert alpha > 0.0
+
+    sz = d.shape[0]
+    assert _U_sz(sz) == u.shape[0]
+    assert v.shape[0] == sz
+
+    cdef yaflFloat [::1]    v_u = u
+    cdef yaflFloat [::1]    v_d = d
+    cdef yaflFloat [::1]    v_v = v
+
+    return yafl_math_udu_up(sz, &v_u[0], &v_d[0], alpha, &v_v[0])
+
+#------------------------------------------------------------------------------
+def _udu_down(u,d, yaflFloat alpha, v):
+    assert isinstance(u, np.ndarray)
+    assert NP_DTYPE == u.dtype
+    assert 1 == len(u.shape)
+
+    assert isinstance(d, np.ndarray)
+    assert NP_DTYPE == d.dtype
+    assert 1 == len(d.shape)
+
+    assert isinstance(v, np.ndarray)
+    assert NP_DTYPE == v.dtype
+    assert 1 == len(v.shape)
+
+    assert alpha > 0.0
+
+    sz = d.shape[0]
+    assert _U_sz(sz) == u.shape[0]
+    assert v.shape[0] == sz
+
+    cdef yaflFloat [::1]    v_u = u
+    cdef yaflFloat [::1]    v_d = d
+    cdef yaflFloat [::1]    v_v = v
+
+    return yafl_math_udu_down(sz, &v_u[0], &v_d[0], alpha, &v_v[0])
 
 #==============================================================================
 #                          UD-factorized EKF API
@@ -389,10 +2246,6 @@ ctypedef struct yaflPyKalmanBaseSt:
 
     # Python/Cython self
     void * py_self
-
-#------------------------------------------------------------------------------
-cdef int _U_sz(int dim_u):
-    return max(1, (dim_u * (dim_u - 1))//2)
 
 #------------------------------------------------------------------------------
 #                             Basic Filter class
@@ -445,6 +2298,9 @@ cdef class yaflKalmanBase:
         #Store dimensions
         self.c_self.base.base.Nx = dim_x
         self.c_self.base.base.Nz = dim_z
+
+        #Set forgetting factors
+        self.c_self.base.base.rff = 0.0
 
         #Setup callbacks
         self.c_self.py_self = <void *>self
@@ -573,6 +2429,48 @@ cdef class yaflKalmanBase:
     @Dr.setter
     def Dr(self, value):
         self._Dr[:] = value
+
+    #--------------------------------------------------------------------------
+    @property
+    def P(self):
+        _,u = _set_u(self._Up)
+        return u.dot(np.diag(self._Dp).dot(u.T))
+
+    @P.setter
+    def P(self, value):
+        raise AttributeError('yaflKalmanBase does not support this!')
+
+    #--------------------------------------------------------------------------
+    @property
+    def Q(self):
+        _,u = _set_u(self._Uq)
+        return u.dot(np.diag(self._Dq).dot(u.T))
+
+    @Q.setter
+    def Q(self, value):
+        raise AttributeError('yaflKalmanBase does not support this!')
+
+    #--------------------------------------------------------------------------
+    @property
+    def R(self):
+        _,u = _set_u(self._Ur)
+        return u.dot(np.diag(self._Dr).dot(u.T))
+
+    @R.setter
+    def R(self, value):
+        raise AttributeError('yaflKalmanBase does not support this!')
+
+    #--------------------------------------------------------------------------
+    @property
+    def rff(self):
+        return self.c_self.base.base.rff
+
+    @rff.setter
+    def rff(self, yaflFloat value):
+        if value < 0.0 or value >= 1.0:
+            raise ValueError('rff value must be in [0.0, 1.0)')
+
+        self.c_self.base.base.rff = value
 
     #==========================================================================
     def _predict(self):
@@ -716,7 +2614,7 @@ cdef class yaflExtendedBase(yaflKalmanBase):
 
     # Kalman filter memory views
     cdef yaflFloat [:, ::1] v_H
-    cdef yaflFloat [:, ::1] v_W
+    cdef yaflFloat [::1]    v_W
     cdef yaflFloat [::1]    v_D
 
     # Kalman filter numpy arrays
@@ -736,6 +2634,8 @@ cdef class yaflExtendedBase(yaflKalmanBase):
 
         super().__init__(dim_x, dim_z, dt, fx, hx, residual_z)
 
+        self.c_self.base.ekf.qff = 0.0
+
         if not callable(jfx):
             raise ValueError('jfx must be callable!')
         self.c_self.base.ekf.jf = <yaflKalmanFuncP>yafl_py_ekf_jfx
@@ -752,13 +2652,28 @@ cdef class yaflExtendedBase(yaflKalmanBase):
         self.v_H = self._H
         self.c_self.base.ekf.H = &self.v_H[0, 0]
 
-        self._W  = np.zeros((dim_x, 2 * dim_x), dtype=NP_DTYPE)
+        # We may need some memory for P and R updates
+        n = max(2 * dim_x * dim_x, (dim_x + dim_z) * dim_z)
+        self._W  = np.zeros((n,), dtype=NP_DTYPE)
         self.v_W = self._W
-        self.c_self.base.ekf.W = &self.v_W[0,0]
+        self.c_self.base.ekf.W = &self.v_W[0]
 
-        self._D  = np.ones((2 * dim_x,), dtype=NP_DTYPE)
+        n = max(2 * dim_x, dim_x + dim_z)
+        self._D  = np.ones((n,), dtype=NP_DTYPE)
         self.v_D = self._D
         self.c_self.base.ekf.D = &self.v_D[0]
+
+    #--------------------------------------------------------------------------
+    @property
+    def qff(self):
+        return self.c_self.base.ekf.qff
+
+    @qff.setter
+    def qff(self, yaflFloat value):
+        if value < 0.0 or value >= 1.0:
+            raise ValueError('qff value must be in [0.0, 1.0)')
+
+        self.c_self.base.ekf.qff = value
 
     #==========================================================================
     def _predict(self):
@@ -790,8 +2705,17 @@ cdef yaflStatusEn yafl_py_ekf_jfx(yaflPyKalmanBaseSt * self, yaflFloat * w, \
         if not isinstance(fx_args, dict):
             raise ValueError('Invalid fx_args type (must be dict)!')
 
-        #How about handling exceptions here???
-        py_self._W[:, :self.base.base.Nx] = jfx(py_self._x, dt, **fx_args)
+        # Read x size
+        dim_x = self.base.base.Nx
+
+        # Interpret x
+        _x = np.asarray(<yaflFloat[:dim_x]> x)
+
+        # Interpret w.shape as (dim_x, 2 * dim_x)
+        _w = np.asarray(<yaflFloat[:dim_x, :2 * dim_x]> w)
+
+        # Calculate Jacobian
+        _w[:, :dim_x] = jfx(_x, dt, **fx_args)
 
         return YAFL_ST_OK
 
@@ -817,8 +2741,18 @@ cdef yaflStatusEn yafl_py_ekf_jhx(yaflPyKalmanBaseSt * self, yaflFloat * h, \
         if not isinstance(hx_args, dict):
             raise ValueError('Invalid hx_args type (must be dict)!')
 
-        #How about handling exceptions here???
-        py_self._H[:,:] = jhx(py_self._x, **hx_args)
+        # Read x and z size
+        dim_x = self.base.base.Nx
+        dim_z = self.base.base.Nz
+
+        # Interpret x
+        _x = np.asarray(<yaflFloat[:dim_x]> x)
+
+        # Interpret h.shape as (dim_x, 2 * dim_x)
+        _h = np.asarray(<yaflFloat[:dim_z, :dim_x]> h)
+
+        # Calculate Jacobian
+        _h[:,:] = jhx(_x, **hx_args)
 
         return YAFL_ST_OK
 
@@ -1083,9 +3017,10 @@ cdef class yaflUnscentedBase(yaflKalmanBase):
     cdef yaflFloat [::1]    v_zp
 
     cdef yaflFloat [::1]    v_Sx
+    cdef yaflFloat [::1]    v_Sz
     cdef yaflFloat [:, ::1] v_Pzx
 
-    cdef yaflFloat [:, ::1] v_sigmas_x
+    cdef yaflFloat [::1]    v_sigmas_x
     cdef yaflFloat [:, ::1] v_sigmas_z
     cdef yaflFloat [::1]    v_wm
     cdef yaflFloat [::1]    v_wc
@@ -1094,6 +3029,7 @@ cdef class yaflUnscentedBase(yaflKalmanBase):
     cdef np.ndarray  _zp
 
     cdef np.ndarray  _Sx
+    cdef np.ndarray  _Sz
     cdef np.ndarray  _Pzx
 
     cdef np.ndarray  _sigmas_x
@@ -1167,9 +3103,11 @@ cdef class yaflUnscentedBase(yaflKalmanBase):
         self.v_wc = self._wc
         self.c_self.base.ukf.wc = &self.v_wc[0]
 
-        self._sigmas_x  = np.zeros((pnum, dim_x), dtype=NP_DTYPE)
+        #Memory pool for sigmas_z and R updates
+        n = max(pnum * dim_x, (dim_x + dim_z) * (dim_z + 1))
+        self._sigmas_x  = np.zeros((n,), dtype=NP_DTYPE)
         self.v_sigmas_x = self._sigmas_x
-        self.c_self.base.ukf.sigmas_x = &self.v_sigmas_x[0, 0]
+        self.c_self.base.ukf.sigmas_x = &self.v_sigmas_x[0]
 
         self._sigmas_z  = np.zeros((pnum, dim_z), dtype=NP_DTYPE)
         self.v_sigmas_z = self._sigmas_z
@@ -1188,6 +3126,10 @@ cdef class yaflUnscentedBase(yaflKalmanBase):
         self.v_Sx = self._Sx
         self.c_self.base.ukf.Sx = &self.v_Sx[0]
 
+        self._Sz  = np.zeros((dim_z,), dtype=NP_DTYPE)
+        self.v_Sz = self._Sz
+        self.c_self.base.ukf.Sz = &self.v_Sz[0]
+
         #Call C-post init
         yafl_ukf_post_init(&self.c_self.base.ukf)
 
@@ -1205,7 +3147,9 @@ cdef class yaflUnscentedBase(yaflKalmanBase):
     #--------------------------------------------------------------------------
     @property
     def sigmas_x(self):
-        return self._sigmas_x
+        dim_x = self.c_self.base.base.Nx
+        pnum  = self._points.pnum
+        return self._sigmas_x[:pnum * dim_x].copy().reshape((pnum, dim_x))
 
     @sigmas_x.setter
     def sigmas_x(self, value):
