@@ -86,28 +86,28 @@ struct _yaflKalmanBaseSt {
 
 /*---------------------------------------------------------------------------*/
 /*TODO: make qff and rff parameters*/
-#define YAFL_KALMAN_BASE_INITIALIZER(_f, _h, _zrf, _nx, _nz, _mem) \
-{                                                                  \
-    .f   = (yaflKalmanFuncP)_f,                                    \
-    .h   = (yaflKalmanFuncP)_h,                                    \
-    .zrf = (yaflKalmanResFuncP)_zrf,                               \
-                                                                   \
-    .x   = _mem.x,                                                 \
-    .y   = _mem.y,                                                 \
-                                                                   \
-    .Up  = _mem.Up,                                                \
-    .Dp  = _mem.Dp,                                                \
-                                                                   \
-    .Uq  = _mem.Uq,                                                \
-    .Dq  = _mem.Dq,                                                \
-                                                                   \
-    .Ur  = _mem.Ur,                                                \
-    .Dr  = _mem.Dr,                                                \
-                                                                   \
-    .rff = 0.0,                                                    \
-                                                                   \
-    .Nx  = _nx,                                                    \
-    .Nz  = _nz                                                     \
+#define YAFL_KALMAN_BASE_INITIALIZER(_f, _h, _zrf, _nx, _nz, _rff, _mem) \
+{                                                                        \
+    .f   = (yaflKalmanFuncP)_f,                                          \
+    .h   = (yaflKalmanFuncP)_h,                                          \
+    .zrf = (yaflKalmanResFuncP)_zrf,                                     \
+                                                                         \
+    .x   = _mem.x,                                                       \
+    .y   = _mem.y,                                                       \
+                                                                         \
+    .Up  = _mem.Up,                                                      \
+    .Dp  = _mem.Dp,                                                      \
+                                                                         \
+    .Uq  = _mem.Uq,                                                      \
+    .Dq  = _mem.Dq,                                                      \
+                                                                         \
+    .Ur  = _mem.Ur,                                                      \
+    .Dr  = _mem.Dr,                                                      \
+                                                                         \
+    .rff = _rff,                                                         \
+                                                                         \
+    .Nx  = _nx,                                                          \
+    .Nz  = _nz                                                           \
 }
 
 /*---------------------------------------------------------------------------*/
@@ -160,18 +160,19 @@ struct _yaflEKFBaseSt {
 
 
 /*---------------------------------------------------------------------------*/
-#define YAFL_EKF_BASE_INITIALIZER(_f, _jf, _h, _jh, _zrf, _nx, _nz, _mem) \
-{                                                                         \
-    .base = YAFL_KALMAN_BASE_INITIALIZER(_f, _h, _zrf, _nx, _nz, _mem),   \
-                                                                          \
-    .jf  = (yaflKalmanFuncP)_jf,                                          \
-    .jh  = (yaflKalmanFuncP)_jh,                                          \
-                                                                          \
-    .H   = _mem.H,                                                        \
-    .W   = _mem.W.x,                                                      \
-    .D   = _mem.D.x,                                                      \
-                                                                          \
-    .qff = 0.0                                                            \
+#define YAFL_EKF_BASE_INITIALIZER(_f, _jf, _h, _jh, _zrf, _nx, _nz,           \
+                                  _rff, _qff, _mem)                           \
+{                                                                             \
+    .base = YAFL_KALMAN_BASE_INITIALIZER(_f, _h, _zrf, _nx, _nz, _rff, _mem), \
+                                                                              \
+    .jf  = (yaflKalmanFuncP)_jf,                                              \
+    .jh  = (yaflKalmanFuncP)_jh,                                              \
+                                                                              \
+    .H   = _mem.H,                                                            \
+    .W   = _mem.W.x,                                                          \
+    .D   = _mem.D.x,                                                          \
+                                                                              \
+    .qff = _qff                                                               \
 }
 
 /*---------------------------------------------------------------------------*/
@@ -214,14 +215,16 @@ typedef struct {
 } yaflEKFAdaptiveSt; /*Adaptive kKalman-Hinfinity filter structure*/
 
 /*---------------------------------------------------------------------------*/
-#define YAFL_EKF_ADAPTIVE_INITIALIZER(_f, _jf, _h, _jh, _zrf, _nx, _nz, _mem)  \
-{                                                                              \
-    .base = YAFL_EKF_BASE_INITIALIZER(_f, _jf, _h, _jh, _zrf, _nx, _nz, _mem), \
-    .chi2 = 10.8275662                                                         \
+#define YAFL_EKF_ADAPTIVE_INITIALIZER(_f, _jf, _h, _jh, _zrf, _nx, _nz, \
+                                      _rff, _qff, _chi2, _mem)          \
+{                                                                       \
+    .base = YAFL_EKF_BASE_INITIALIZER(_f, _jf, _h, _jh, _zrf, _nx, _nz, \
+                                      _rff, _qff, _mem),                \
+    .chi2 = _chi2                                                       \
 }
 /*
-Default value for chi2 is:
-  scipy.stats.chi2.ppf(0.999, 1)
+A good value of chi2 for yaflEKFAdaptiveSt is:
+  scipy.stats.chi2.ppf(0.999, 1) == 10.827566170662733
 */
 
 /*---------------------------------------------------------------------------*/
@@ -277,10 +280,10 @@ typedef struct {
 
 /*---------------------------------------------------------------------------*/
 #define YAFL_EKF_ROBUST_INITIALIZER(_f, _jf, _h, _jh, _zrf, _g, _gdot,  \
-                                    _nx, _nz, _mem)                     \
+                                    _nx, _nz, _rff, _qff, _mem)         \
 {                                                                       \
     .base = YAFL_EKF_BASE_INITIALIZER(_f, _jf, _h, _jh, _zrf, _nx, _nz, \
-                                      _mem),                            \
+                                      _rff, _qff, _mem),                \
     .g    = _g,                                                         \
     .gdot = _gdot                                                       \
 }
@@ -309,16 +312,16 @@ typedef struct {
 } yaflEKFAdaptiveRobustSt; /*Robust EKF*/
 
 /*---------------------------------------------------------------------------*/
-#define YAFL_EKF_ADAPTIVE_ROBUST_INITIALIZER(_f, _jf, _h, _jh, _zrf,    \
-                                             _g, _gdot, _nx, _nz, _mem) \
-{                                                                       \
-    .base = YAFL_EKF_ROBUST_INITIALIZER(_f, _jf, _h, _jh, _zrf,         \
-                                        _g, _gdot, _nx, _nz, _mem),     \
-    .chi2 = 8.8074684                                                   \
+#define YAFL_EKF_ADAPTIVE_ROBUST_INITIALIZER(_f, _jf, _h, _jh, _zrf, _g, _gdot, \
+                                             _nx, _nz, _rff, _qff, _chi2, _mem) \
+{                                                                               \
+    .base = YAFL_EKF_ROBUST_INITIALIZER(_f, _jf, _h, _jh, _zrf, _g, _gdot,      \
+                                        _nx, _nz, _rff, _qff, _mem),            \
+    .chi2 = _chi2                                                               \
 }
 /*
-Default value for chi2 is:
-  scipy.stats.chi2.ppf(0.997, 1)
+A good value of chi2 for yaflEKFAdaptiveRobustSt is:
+  scipy.stats.chi2.ppf(0.997, 1) == 8.807468393511947
 */
 
 /*---------------------------------------------------------------------------*/
@@ -445,10 +448,10 @@ WARNING:
     } pool
 
 /*---------------------------------------------------------------------------*/
-#define YAFL_UKF_BASE_INITIALIZER(_p, _pm, _f, _xmf, _xrf, _h, _zmf,          \
-                                   _zrf, _nx, _nz, _mem)                      \
+#define YAFL_UKF_BASE_INITIALIZER(_p, _pm, _f, _xmf, _xrf, _h, _zmf, _zrf,    \
+                                  _nx, _nz, _rff, _mem)                       \
 {                                                                             \
-    .base = YAFL_KALMAN_BASE_INITIALIZER(_f, _h, _zrf, _nx, _nz, _mem),       \
+    .base = YAFL_KALMAN_BASE_INITIALIZER(_f, _h, _zrf, _nx, _nz, _rff, _mem), \
                                                                               \
     .sp_info = _p,                                                            \
     .sp_meth = _pm,                                                           \
@@ -518,14 +521,17 @@ typedef struct {
 } yaflUKFAdaptivedSt;
 
 /*---------------------------------------------------------------------------*/
-#define YAFL_UKF_ADAPTIVE_INITIALIZER(_p, _pm, _f, _xmf, _xrf, _h,       \
-                                            _zmf, _zrf, _nx, _nz, _mem)  \
-{                                                                        \
-    .base = YAFL_UKF_BASE_INITIALIZER(_p, _pm, _f, _xmf, _xrf, _h, _zmf, \
-                                       _zrf, _nx, _nz, _mem) ,           \
-    .chi2 = 10.8275662                                                   \
+#define YAFL_UKF_ADAPTIVE_INITIALIZER(_p, _pm, _f, _xmf, _xrf, _h, _zmf,  \
+                                      _zrf, _nx, _nz, _rff, _chi2, _mem)  \
+{                                                                         \
+    .base = YAFL_UKF_BASE_INITIALIZER(_p, _pm, _f, _xmf, _xrf, _h,        \
+                                      _zmf, _zrf, _nx, _nz, _rff, _mem) , \
+    .chi2 = _chi2                                                         \
 }
-
+/*
+A good value of chi2 for yaflUKFAdaptivedSt is:
+  scipy.stats.chi2.ppf(0.999, 1) == 10.827566170662733
+*/
 /*---------------------------------------------------------------------------*/
 YAFL_UKF_PREDICT_WRAPPER(yafl_ukf_adaptive_bierman_predict, yaflUKFAdaptivedSt)
 YAFL_UKF_UPDATE_IMPL(yafl_ukf_adaptive_bierman_update, yaflUKFAdaptivedSt)
@@ -543,10 +549,10 @@ typedef struct {
 
 /*---------------------------------------------------------------------------*/
 #define YAFL_UKF_ROBUST_INITIALIZER(_p, _pm, _f, _xmf, _xrf, _h, _zmf, _zrf, \
-                                    _g, _gdot, _nx, _nz, _mem)               \
+                                    _g, _gdot, _nx, _nz, _rff, _mem)         \
 {                                                                            \
     .base = YAFL_UKF_BASE_INITIALIZER(_p, _pm, _f, _xmf, _xrf, _h, _zmf,     \
-                                       _zrf, _nx, _nz, _mem) ,               \
+                                      _zrf, _nx, _nz, _rff, _mem) ,          \
     .g    = _g,                                                              \
     .gdot = _gdot                                                            \
 }
@@ -564,13 +570,18 @@ typedef struct {
 } yaflUKFAdaptiveRobustSt; /*Robust EKF*/
 
 /*---------------------------------------------------------------------------*/
-#define YAFL_UKF_ADAPTIVE_ROBUST_INITIALIZER(_f, _jf, _h, _jh, _zrf,    \
-                                             _g, _gdot, _nx, _nz, _mem) \
-{                                                                       \
-    .base = YAFL_UKF_ROBUST_INITIALIZER(_f, _jf, _h, _jh, _zrf,         \
-                                        _g, _gdot, _nx, _nz, _mem),     \
-    .chi2 = 8.8074684                                                   \
+#define YAFL_UKF_ADAPTIVE_ROBUST_INITIALIZER(_f, _jf, _h, _jh, _zrf,      \
+                                             _g, _gdot, _nx, _nz,         \
+                                             _rff, _chi2, _mem)           \
+{                                                                         \
+    .base = YAFL_UKF_ROBUST_INITIALIZER(_f, _jf, _h, _jh, _zrf,           \
+                                        _g, _gdot, _nx, _nz, _rff, _mem), \
+    .chi2 = _chi2                                                         \
 }
+/*
+A good value of chi2 for yaflUKFAdaptiveRobustSt is:
+  scipy.stats.chi2.ppf(0.997, 1) == 8.807468393511947
+*/
 
 /*---------------------------------------------------------------------------*/
 YAFL_UKF_PREDICT_WRAPPER(yafl_ukf_adaptive_robust_bierman_predict, \
@@ -599,10 +610,10 @@ Warning: sigmas_x and _sigmas_z aren't defined in this mixin, see
 
 /*---------------------------------------------------------------------------*/
 #define YAFL_UKF_INITIALIZER(_p, _pm, _f, _xmf, _xrf, _h, _zmf,               \
-                                   _zrf, _nx, _nz, _mem)                      \
+                                   _zrf, _nx, _nz, _rff, _mem)                \
 {                                                                             \
     .base = YAFL_UKF_BASE_INITIALIZER(_p, _pm, _f, _xmf, _xrf, _h, _zmf,      \
-                                      _zrf, _nx, _nz, _mem),                  \
+                                      _zrf, _nx, _nz, _rff, _mem),            \
     .Us  = _mem.Us,                                                           \
     .Ds  = _mem.Ds                                                            \
 }
@@ -620,12 +631,13 @@ typedef struct {
 } yaflUKFFullAdapiveSt;
 
 /*---------------------------------------------------------------------------*/
-#define YAFL_UKF_FULL_ADAPTIVE_INITIALIZER(_p, _pm, _f, _xmf, _xrf, _h, _zmf, \
-                                   _zrf, _nx, _nz, _chi2, _mem)               \
-{                                                                             \
-    .base = YAFL_UKF_BASE_INITIALIZER(_p, _pm, _f, _xmf, _xrf, _h, _zmf,      \
-                                      _zrf, _nx, _nz, _mem),                  \
-    .chi2 = _chi2                                                             \
+#define YAFL_UKF_FULL_ADAPTIVE_INITIALIZER(_p, _pm, _f, _xmf, _xrf, _h,  \
+                                           _zmf, _zrf, _nx, _nz,         \
+                                           _rff, _chi2, _mem)            \
+{                                                                        \
+    .base = YAFL_UKF_BASE_INITIALIZER(_p, _pm, _f, _xmf, _xrf, _h, _zmf, \
+                                      _zrf, _nx, _nz, _rff, _mem),       \
+    .chi2 = _chi2                                                        \
 }
 
 /*---------------------------------------------------------------------------*/
@@ -660,7 +672,7 @@ typedef struct _yaflUKFMerweSt {
 }
 
 /*---------------------------------------------------------------------------*/
-const yaflUKFSigmaMethodsSt yafl_ukf_merwe_spm;
+extern const yaflUKFSigmaMethodsSt yafl_ukf_merwe_spm;
 
 /*=============================================================================
                      Julier sigma point generator
@@ -682,6 +694,6 @@ typedef struct _yaflUKFJulierSt {
 }
 
 /*---------------------------------------------------------------------------*/
-const yaflUKFSigmaMethodsSt yafl_ukf_julier_spm;
+extern const yaflUKFSigmaMethodsSt yafl_ukf_julier_spm;
 
 #endif // YAFL_H

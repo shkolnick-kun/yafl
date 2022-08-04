@@ -459,8 +459,8 @@ static inline yaflStatusEn \
 }
 
 /*---------------------------------------------------------------------------*/
-#define _EKF_JOSEPH_SELF_INTERNALS_CHECKS()      \
-do {                                         \
+#define _EKF_JOSEPH_SELF_INTERNALS_CHECKS() \
+do {                                        \
     YAFL_CHECK(_NX > 1, YAFL_ST_INV_ARG_1); \
     YAFL_CHECK(_UP,     YAFL_ST_INV_ARG_1); \
     YAFL_CHECK(_DP,     YAFL_ST_INV_ARG_1); \
@@ -801,7 +801,7 @@ static inline yaflStatusEn \
     return YAFL_ST_OK;
 }
 
-#define _SCALAR_ROBUSTIFY(_self, _gdot_res, _nu, _r) \
+#define _SCALAR_ROBUSTIFY(_self, _gdot_res, _nu, _r)   \
     _scalar_robustify(self,                            \
                       ((yaflEKFRobustSt *)self)->g,    \
                       ((yaflEKFRobustSt *)self)->gdot, \

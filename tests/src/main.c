@@ -149,7 +149,7 @@ kfMemorySt kf_memory =
     .Dr = {DZ, DZ}
 };
 
-yaflEKFBaseSt kf = YAFL_EKF_BASE_INITIALIZER(fx, jfx, hx, jhx, 0, NX, NZ, kf_memory);
+yaflEKFBaseSt kf = YAFL_EKF_BASE_INITIALIZER(fx, jfx, hx, jhx, 0, NX, NZ, 0.0, 0.0, kf_memory);
 
 /*-----------------------------------------------------------------------------
                                   Test data
