@@ -337,8 +337,9 @@ YAFL_EKF_UPDATE_IMPL(yafl_ekf_adaptive_robust_bierman_update, \
 /*-----------------------------------------------------------------------------
                            Adaptive Joseph filter
 -----------------------------------------------------------------------------*/
-#define YAFL_EKF_ADAPTIVE_ROBUST_JOSEPH_PREDICT(self) \
+#define YAFL_EKF_ADAPTIVE_ROBUST_JOSEPH_PREDICT \
     _yafl_ada_rob_predict_wrapper
+
 YAFL_EKF_UPDATE_IMPL(yafl_ekf_adaptive_robust_joseph_update, \
                      yaflEKFAdaptiveRobustSt)
 

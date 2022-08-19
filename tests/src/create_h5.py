@@ -21,7 +21,7 @@ with h5py.File('../data/input.h5', 'w') as h5f:
     h5f.create_dataset('noisy', data=noisy)
 
 #Run kf aplication here
-subprocess.call(['../projects/bin/Debug/hdf5_test'])
+subprocess.call(['../projects/bieman/bin/Debug/hdf5_test'])
 
 with h5py.File('../data/output.h5', 'r') as h5f:
     kf_out = h5f['kf_out'][:]
