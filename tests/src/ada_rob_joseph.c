@@ -121,12 +121,12 @@ yaflFloat g(yaflKalmanBaseSt * self, yaflFloat x)
 {
     (void)self;
 
-    if (3.0 < fabs(x))
+    if (3.0 >= fabs(x))
     {
         return x;
     }
 
-    if (6.0 < fabs(x))
+    if (6.0 >= fabs(x))
     {
         return x/3.0;
     }
@@ -138,12 +138,12 @@ yaflFloat gdot(yaflKalmanBaseSt * self, yaflFloat x)
 {
     (void)self;
 
-    if (3.0 < fabs(x))
+    if (3.0 >= fabs(x))
     {
         return 1.0;
     }
 
-    if (6.0 < fabs(x))
+    if (6.0 >= fabs(x))
     {
         return 1.0/3.0;
     }

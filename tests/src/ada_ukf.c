@@ -15,7 +15,6 @@
     and limitations under the License.
 ******************************************************************************/
 #include <assert.h>
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -41,37 +40,6 @@ yaflStatusEn fx(yaflKalmanBaseSt * self, yaflFloat * x, yaflFloat * xz)
     return YAFL_ST_OK;
 }
 
-yaflStatusEn jfx(yaflKalmanBaseSt * self, yaflFloat * w, yaflFloat * x)
-{
-    yaflInt i;
-    yaflInt nx;
-    yaflInt nx2;
-
-    (void)x;
-    YAFL_CHECK(self,          YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(4 == self->Nx, YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(w,             YAFL_ST_INV_ARG_2);
-
-    nx  = self->Nx;
-    nx2 = nx * 2;
-
-    for (i = 0; i < nx; i++)
-    {
-        yaflInt j;
-        yaflInt nci;
-
-        nci = nx2 * i;
-        for (j = 0; j < nx; j++)
-        {
-            w[nci + j] = (i != j) ? 0.0 : 1.0;
-        }
-    }
-
-    w[nx2*0 + 2] = 0.1;
-    w[nx2*1 + 3] = 0.1;
-    return YAFL_ST_OK;
-}
-
 yaflStatusEn hx(yaflKalmanBaseSt * self, yaflFloat * y, yaflFloat * x)
 {
     YAFL_CHECK(self,          YAFL_ST_INV_ARG_1);
@@ -84,77 +52,11 @@ yaflStatusEn hx(yaflKalmanBaseSt * self, yaflFloat * y, yaflFloat * x)
     return YAFL_ST_OK;
 }
 
-yaflStatusEn jhx(yaflKalmanBaseSt * self, yaflFloat * h, yaflFloat * x)
-{
-    yaflInt i;
-    yaflInt nx;
-    yaflInt nz;
-
-    YAFL_CHECK(self,          YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(4 == self->Nx, YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(2 == self->Nz, YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(h,             YAFL_ST_INV_ARG_2);
-    YAFL_CHECK(x,             YAFL_ST_INV_ARG_3);
-
-    nx = self->Nx;
-    nz = self->Nz;
-
-    for (i = 0; i < nz; i++)
-    {
-        yaflInt j;
-        yaflInt nci;
-
-        nci = nx * i;
-        for (j = 0; j < nx; j++)
-        {
-            h[nci + j] = 0.0;
-        }
-    }
-
-    h[nx*0 + 0] = 1.0;
-    h[nx*1 + 1] = 1.0;
-    return YAFL_ST_OK;
-}
-
-/*---------------------------------------------------------------------------*/
-yaflFloat g(yaflKalmanBaseSt * self, yaflFloat x)
-{
-    (void)self;
-
-    if (3.0 >= fabs(x))
-    {
-        return x;
-    }
-
-    if (6.0 >= fabs(x))
-    {
-        return x/3.0;
-    }
-
-    return (x > 0.0) ? 1.0 : -1.0;
-}
-
-yaflFloat gdot(yaflKalmanBaseSt * self, yaflFloat x)
-{
-    (void)self;
-
-    if (3.0 >= fabs(x))
-    {
-        return 1.0;
-    }
-
-    if (6.0 >= fabs(x))
-    {
-        return 1.0/3.0;
-    }
-
-    return 0.0;
-}
-
 /*---------------------------------------------------------------------------*/
 typedef struct
 {
-    YAFL_EKF_BASE_MEMORY_MIXIN(NX, NZ);
+    YAFL_UKF_MEMORY_MIXIN(NX, NZ);
+    YAFL_UKF_JULIER_MEMORY_MIXIN(NX, NZ);
     yaflFloat dummy[30];
 } kfMemorySt;
 
@@ -186,15 +88,16 @@ kfMemorySt kf_memory =
     .Dr = {DZ, DZ}
 };
 
-yaflEKFRobustSt kf = YAFL_EKF_ROBUST_INITIALIZER(fx, jfx, hx, jhx, 0, g, gdot, NX, NZ, 0.0, 0.0, kf_memory);
+yaflUKFJulierSt      sp = YAFL_UKF_JULIER_INITIALIZER(NX, 0, 0.0, kf_memory);
+yaflUKFFullAdapiveSt kf = YAFL_UKF_FULL_ADAPTIVE_INITIALIZER(&sp.base, &yafl_ukf_julier_spm, fx, 0, 0, hx, 0, 0, NX, NZ, 0.0, 27.631021115871036, kf_memory);
 
 /*-----------------------------------------------------------------------------
                                   Test data
 -----------------------------------------------------------------------------*/
-#define IN_FILE  "../../data/input.h5"
+#define IN_FILE  "../data/input.h5"
 #define IN_DS    "noisy"
 
-#define OUT_FILE "../../data/output.h5"
+#define OUT_FILE "../data/output.h5"
 #define OUT_DS   "kf_out"
 
 /*---------------------------------------------------------------------------*/
@@ -210,12 +113,15 @@ int main (void)
     printf("File %s closed with status: %d\n", IN_FILE, status);
 
     assert(mat.shape.dim.y == NZ);
+
+    yafl_ukf_post_init(&kf.base.base);
+
     for (i=0; i<mat.shape.dim.x; i++)
     {
-        YAFL_EKF_ROBUST_JOSEPH_PREDICT(&kf);
-        yafl_ekf_robust_joseph_update(&kf, mat.data + NZ*i);
-        mat.data[NZ*i + 0] = kf.base.base.x[0];
-        mat.data[NZ*i + 1] = kf.base.base.x[1];
+        yafl_ukf_adaptive_predict(&kf);
+        yafl_ukf_adaptive_update(&kf.base.base, mat.data + NZ*i);
+        mat.data[NZ*i + 0] = kf.base.base.base.x[0];
+        mat.data[NZ*i + 1] = kf.base.base.base.x[1];
     }
 
     file = H5Fcreate(OUT_FILE, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);

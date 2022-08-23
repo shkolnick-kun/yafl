@@ -121,12 +121,12 @@ yaflFloat g(yaflKalmanBaseSt * self, yaflFloat x)
 {
     (void)self;
 
-    if (3.0 < fabs(x))
+    if (3.0 >= fabs(x))
     {
         return x;
     }
 
-    if (6.0 < fabs(x))
+    if (6.0 >= fabs(x))
     {
         return x/3.0;
     }
@@ -138,12 +138,12 @@ yaflFloat gdot(yaflKalmanBaseSt * self, yaflFloat x)
 {
     (void)self;
 
-    if (3.0 < fabs(x))
+    if (3.0 >= fabs(x))
     {
         return 1.0;
     }
 
-    if (6.0 < fabs(x))
+    if (6.0 >= fabs(x))
     {
         return 1.0/3.0;
     }
@@ -191,10 +191,10 @@ yaflEKFAdaptiveRobustSt kf = YAFL_EKF_ADAPTIVE_ROBUST_INITIALIZER(fx, jfx, hx, j
 /*-----------------------------------------------------------------------------
                                   Test data
 -----------------------------------------------------------------------------*/
-#define IN_FILE  "../../data/input.h5"
+#define IN_FILE  "../data/input.h5"
 #define IN_DS    "noisy"
 
-#define OUT_FILE "../../data/output.h5"
+#define OUT_FILE "../data/output.h5"
 #define OUT_DS   "kf_out"
 
 /*---------------------------------------------------------------------------*/
