@@ -31,6 +31,15 @@ where:
 For all **EKF** variants we have **Bierman** and **Joseph** updates.
 For sequential UD-factorized **UKF** only **Bierman** updates have been implemented.
 
+Technically speaking all filters in YAFL are adaptive since all of them have at least measurement noice covariance atadpive adjustment.
+
+### Notes on process and measurement noice covariance adjustments
+We used [this paper](https://arxiv.org/pdf/1702.00884.pdf) to implement optional Q and R adaptive adjustments.
+Here are som notes on our implementation:
+* All filters in this lib have the optional measurement noice covariance adjustment which can be enabled by setting `rff` to a small positive number e.g. `1e-4`.
+* All EKF filters in this lib have the optional process noice covariance adjustment which can be enabled by setting `qff` to a small positive number e.g. `1e-4`.
+* None of UKF filters have the optional process noice covariance adjustment as it leads to filters instability.
+
 And yes, we [**can actually**](./doc/UsingEKFTricksWithSPKF.pdf) use **EKF** tricks with **UKF**!
 
 The library is written in C and is intended for embedded systems usage:
