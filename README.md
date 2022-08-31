@@ -11,7 +11,7 @@ There are also libraries for python:
 * [pykalman](https://github.com/pykalman/pykalman).
 
 ## The library
-Technically speaking all filters in YAFL are adaptive since all of them have at least measurement noice covariance adjustment.
+Technically speaking all filters in YAFL are adaptive since all of them have at least a measurement noice covariance adjustment.
 The term **Adaptive** is used in our docs for **Kalman filter** variants with H-infinity divergence correction.
 
 In YAFL you can find these **Kalman filter** variants:
