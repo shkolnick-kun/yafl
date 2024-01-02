@@ -2,7 +2,7 @@
 <CodeBlocks_project_file>
 	<FileVersion major="1" minor="6" />
 	<Project>
-		<Option title="hdf5_test" />
+		<Option title="ada_ukf_bierman" />
 		<Option pch_mode="2" />
 		<Option compiler="gcc" />
 		<Build>
@@ -24,12 +24,10 @@
 			<Add option="-Wextra" />
 			<Add option="-Wall" />
 			<Add option="-g" />
-			<Add option="-fstack-usage" />
-			<Add option="-fdump-ipa-cgraph" />
 			<Add option="-DYAFL_USE_64_BIT=1" />
-			<Add directory="../src" />
 			<Add directory="../../src" />
-			<Add directory="../../src/yaflpy" />
+			<Add directory="../../../src" />
+			<Add directory="../../../src/yaflpy" />
 		</Compiler>
 		<Linker>
 			<Add library="/usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5.a" />
@@ -40,22 +38,22 @@
 			<Add library="m" />
 			<Add directory="/home/anon/Documents/Projects/hdf5_test/" />
 		</Linker>
-		<Unit filename="../../src/yafl.c">
+		<Unit filename="../../../src/yafl.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="../../src/yafl.h" />
-		<Unit filename="../../src/yafl_math.c">
+		<Unit filename="../../../src/yafl.h" />
+		<Unit filename="../../../src/yafl_math.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="../../src/yafl_math.h" />
-		<Unit filename="../../src/yaflpy/yafl_config.h" />
-		<Unit filename="../src/hdf5utils.c">
+		<Unit filename="../../../src/yafl_math.h" />
+		<Unit filename="../../../src/yaflpy/yafl_config.h" />
+		<Unit filename="../../src/ada_ukf_bierman.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="../src/hdf5utils.h" />
-		<Unit filename="../src/main.c">
+		<Unit filename="../../src/hdf5utils.c">
 			<Option compilerVar="CC" />
 		</Unit>
+		<Unit filename="../../src/hdf5utils.h" />
 		<Extensions>
 			<lib_finder disable_auto="1" />
 		</Extensions>

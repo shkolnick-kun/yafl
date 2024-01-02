@@ -238,8 +238,8 @@ kfMemorySt kf_memory =
 };
 
 /*This is EKF structure definition*/
-/*                                           fx  jfx  hx  jhx zrf nx  nz   memory */
-yaflEKFBaseSt kf = YAFL_EKF_BASE_INITIALIZER(fx, jfx, hx, jhx, 0, NX, NZ, kf_memory);
+/*                                           fx  jfx  hx  jhx zrf nx  nz  rff  qff  memory */
+yaflEKFBaseSt kf = YAFL_EKF_BASE_INITIALIZER(fx, jfx, hx, jhx, 0, NX, NZ, 0.0, 0.0, kf_memory);
 
 /*
 Arguments of initializer macro:
@@ -250,6 +250,8 @@ jhx    - measurement Jacobian function pointer
 zrf    - measurement Residual function pointer (needed to calculate the distance between forecast and measurement vectors)
 nx     - the dimension of state vector
 nz     - the dimension of measurement vector
+rff    - measurement noice covatiance forgetting factor
+qff    - process noice covatiance forgetting factor
 memory - the name of a memory structure.
 */
 ```
@@ -300,7 +302,7 @@ Filter algorithms and data structures are declared in [src/yafl.h](./src/yafl.h)
 To power the filtering code we need some math functions which are declared in [src/yafl_math](./src/yafl_math.h).
 
 Functions declared in [src/yafl.h](./src/yafl.h) and [src/yafl_math](./src/yafl_math.h) return result code, defined in `yaflStatusEn`.
-If everything is OK then `YAFL_ST_OK = 0` is returned. If something went wrong the result code is actually a bit mask. 
+If everything is OK then `YAFL_ST_OK = 0` is returned. If something went wrong the result code is actually a bit mask.
 Here is the bit field list:
 * Warning bit fields:
   * `YAFL_ST_MSK_REGULARIZED`  - we had to do regularization to maintain the filter integrity
@@ -341,7 +343,7 @@ To disthiguish between warinings and errors `YAFL_ST_ERR_THR` is used, e.g.:
 We prefer using static memory allocation so filter structure initializers look like this:
 ```C
 /*yaflKalmanBaseSt is for internal usage only, so our code axemple is about EKF*/
-yaflEKFBaseSt kf = YAFL_EKF_BASE_INITIALIZER(fx, jfx, hx, jhx, zrf, nx, nz, memory);
+yaflEKFBaseSt kf = YAFL_EKF_BASE_INITIALIZER(fx, jfx, hx, jhx, zrf, nx, nz, rff, qff, memory);
 ```
 where:
 * `fx`     - state transition function pointer
@@ -351,6 +353,8 @@ where:
 * `zrf`    - measurement Residual function pointer (needed to calculate the distance between forecast and measurement vectors)
 * `nx`     - the dimension of state vector
 * `nz`     - the dimension of measurement vector
+* `rff`    - measurement noice covatiance forgetting factor
+* `qff`    - process noice covatiance forgetting factor
 * `memory` - the name of the memory structure.
 
 The filter control block does not store an data it has only pointers to data storage, so we must have som separate data storage called `memory`.
@@ -367,11 +371,18 @@ The function `zrf` must have the prototype which must be similar to:
 
 it is utilized to compute the error vectors as there are some cases when we can't use the Euclid distance.
 
-As you can see all functions have `yaflKalmanBaseSt * self` as their first parameter this is done to enable passing additional data to these functions. 
+As you can see all functions have `yaflKalmanBaseSt * self` as their first parameter this is done to enable passing additional data to these functions.
 So all these functions are **"methods"** of some **"class"** which has `yaflKalmanBaseSt` as its **"basic class"**. As you can see we are using **OOP** approach here.
 
 Now let's talk about memory. We use **mixins** to declare filter memory pools so users can put more fields at their filter memory pools.
 This also enables us to do nested **mixin** macros calls while keeping memory pool strustures flat.
+
+### Notes on Q and R adjustments
+We used [this paper](https://arxiv.org/pdf/1702.00884.pdf) to implement optional Q and R adaptive adjustments.
+Here are som notes on our implementation:
+* All filters in this lib have the optional measurement noice covariance adjustment which can be enabled by setting `rff` to a small positive number e.g. `1e-4`.
+* All EKF filters in this lib have the optional process noice covariance adjustment which can be enabled by setting `qff` to a small positive number e.g. `1e-4`.
+* None of UKF filters have the optional process noice covariance adjustment as it leads to filters instability.
 
 ### EKF stuff
 The basic type for all **EKF** control blocks is `yaflEKFBaseSt`. It is initialized with `YAFL_EKF_BASE_INITIALIZER` macro.
@@ -584,7 +595,7 @@ someMemorySt memory =
 #### Basic EKF variants
 Basic **EKF** control block can be initialized with:
 ```C
-yaflEKFBaseSt kf = YAFL_EKF_BASE_INITIALIZER(fx, jfx, hx, jhx, zrf, nx, nz, memory);
+yaflEKFBaseSt kf = YAFL_EKF_BASE_INITIALIZER(fx, jfx, hx, jhx, zrf, nx, nz, rff, qff, memory);
 ```
 
 Predict macros are:
@@ -628,7 +639,7 @@ The memory mixin used is `YAFL_EKF_BASE_MEMORY_MIXIN`.
 
 The initilizer macro is:
 ```C
-YAFL_EKF_ADAPTIVE_INITIALIZER(fx, jfx, hx, jhx, zrf, nx, nz, memory)
+YAFL_EKF_ADAPTIVE_INITIALIZER(fx, jfx, hx, jhx, zrf, nx, nz, rff, qff, chi2, memory)
 ```
 
 As you can see it takes the same parameter list as `YAFL_EKF_BASE_INITIALIZER`. the `chi2` field is set to `scipy.stats.chi2.ppf(0.999, 1)`
@@ -673,7 +684,7 @@ The noise model is Normal with Poisson outliers.
 See:
 
 A.V. Chernodarov, G.I. Djandjgava and A.P. Rogalev (1999).
-Monitoring and adaptive robust protection of the integrity of air data 
+Monitoring and adaptive robust protection of the integrity of air data
 inertial satellite navigation systems for maneuverable aircraft.
 
 In: Proceedings of the RTO SCI International Conference on Integrated Navigation Systems,
@@ -683,12 +694,13 @@ held at "Electropribor", St. Petersburg, pp. 2111-10, RTO-MP-43 , NeuiIly-sur-Se
 yaflFloat psi(yaflKalmanBaseSt * self, yaflFloat normalized_error)
 {
     (void)self;
-    if (3.0 >= normalized_error)
+    yaflFloat abs_ne = fabs(normalized_error);
+    if (3.0 >= abs_ne)
     {
         return normalized_error;
     }
 
-    if (6.0 >= normalized_error)
+    if (6.0 >= abs_ne)
     {
         /*Small glitch*/
         return normalized_error / 3.0;
@@ -701,12 +713,13 @@ yaflFloat psi(yaflKalmanBaseSt * self, yaflFloat normalized_error)
 yaflFloat psi_dot(yaflKalmanBaseSt * self, yaflFloat normalized_error)
 {
     (void)self;
-    if (3.0 >= normalized_error)
+    yaflFloat abs_ne = fabs(normalized_error);
+    if (3.0 >= abs_ne)
     {
         return 1.0;
     }
 
-    if (6.0 >= normalized_error)
+    if (6.0 >= abs_ne)
     {
         /*Small glitch*/
         return 1.0 / 3.0;
@@ -734,7 +747,7 @@ The memory mixin used is `YAFL_EKF_BASE_MEMORY_MIXIN`.
 
 The initilizer macro is:
 ```C
-YAFL_EKF_ROBUST_INITIALIZER(fx, jfx, hx, jhx, zrf, g, gdot,  nx, nz, memory)
+YAFL_EKF_ROBUST_INITIALIZER(fx, jfx, hx, jhx, zrf, g, gdot, nx, nz, rff, qff, memory)
 ```
 
 Note that we have two additional arguments:
@@ -743,7 +756,7 @@ Note that we have two additional arguments:
 
 The example for `YAFL_EKF_ROBUST_INITIALIZER` call is:
 ```C
-yaflEKFRobustSt kf = YAFL_EKF_ROBUST_INITIALIZER(fx, jfx, hx, jhx, zrf, psi, psi_dot,  nx, nz, memory);
+yaflEKFRobustSt kf = YAFL_EKF_ROBUST_INITIALIZER(fx, jfx, hx, jhx, zrf, psi, psi_dot, nx, nz, rff, qff, memory);
 ```
 
 Predict macros are:
@@ -786,7 +799,7 @@ The memory mixin used is `YAFL_EKF_BASE_MEMORY_MIXIN`.
 
 The initilizer macro is:
 ```C
-YAFL_EKF_ADAPTIVE_ROBUST_INITIALIZER(fx, jfx, hx, jhx, zrf, g, gdot,  nx, nz, memory)
+YAFL_EKF_ADAPTIVE_ROBUST_INITIALIZER(fx, jfx, hx, jhx, zrf, g, gdot, nx, nz, rff, qff, chi2, memory)
 ```
 
 As you can see it takes the same parameter list as `YAFL_EKF_ROBUST_INITIALIZER`. the `chi2` field is set to `scipy.stats.chi2.ppf(0.997, 1)`
@@ -823,7 +836,7 @@ The basic type for all **UKF** control blocks is `yaflUKFBaseSt`.
 The memory mixin used is `YAFL_UKF_BASE_MEMORY_MIXIN` which is similar to other memory mixins in YAFL.
 
 ```C
-YAFL_UKF_BASE_INITIALIZER(points, points_methods, fx, xmf, xrf, hx, zmf, zrf, nx, nz, memory)
+YAFL_UKF_BASE_INITIALIZER(points, points_methods, fx, xmf, xrf, hx, zmf, zrf, nx, nz, rff, memory)
 ```
 It is quite similar to **EKF** base initializer but there are no Jacobian function pointers and there are som new parameters:
 * `points`         - a pointer to sigma point generator object
@@ -831,6 +844,8 @@ It is quite similar to **EKF** base initializer but there are no Jacobian functi
 * `xmf`            - a pointer to a state mean function
 * `xrf`            - a pointer to a state residual function
 * `zmf`            - a ponter to a measurement mean function
+
+**Note that we don't have `qff` parameter since `Q` adjustment leads to numerical instability of Unscented filter variants!**
 
 #### Siama points generators
 Sigma point generator is runtime extension to `yaflUKFBaseSt` data type.
@@ -1115,8 +1130,8 @@ extern yaflStatusEn  hx(yaflKalmanBaseSt * self, yaflFloat * y, yaflFloat * x)
 extern yaflStatusEn zmf(yaflKalmanBaseSt * self, yaflFloat *result, yaflFloat *sigmas_z);
 extern yaflStatusEn zrf(yaflKalmanBaseSt * self, yaflFloat *result, yaflFloat *a, yaflFloat *b)
 
-/*                                         points   points_metods    fx  xmf  xrf  hx  zmf  zrf  nx  nz   memory */
-yaflEKFBaseSt kf = YAFL_UKF_BASE_INITIALIZER(sp, yafl_ukf_merwe_spm, fx, xmf, xrf, hx, zmf, zrf, NX, NX, ukf_memory);
+/*                                         points   points_metods    fx  xmf  xrf  hx  zmf  zrf  nx  nz  rff  memory */
+yaflEKFBaseSt kf = YAFL_UKF_BASE_INITIALIZER(sp, yafl_ukf_merwe_spm, fx, xmf, xrf, hx, zmf, zrf, NX, NX, 0.0, ukf_memory);
 
 ```
 
@@ -1201,7 +1216,7 @@ The memory mixin used is `YAFL_UKF_BASE_MEMORY_MIXIN` which is similar to other 
 
 The initializer used is:
 ```C
-yaflEKFBaseSt kf = YAFL_UKF_ROBUST_INITIALIZER(points, points_methods, fx, xmf, xrf, hx, zmf, zrf, g, gdot, nx, nz, memory);
+yaflEKFBaseSt kf = YAFL_UKF_ROBUST_INITIALIZER(points, points_methods, fx, xmf, xrf, hx, zmf, zrf, g, gdot, nx, nz, rff, memory);
 ```
 
 where:
@@ -1223,8 +1238,8 @@ extern yaflFloat psi(yaflKalmanBaseSt * self, yaflFloat normalized_error);
 extern yaflFloat psi_dot(yaflKalmanBaseSt * self, yaflFloat normalized_error);
 
 /*The filter is initiated differently from basic UKF:*/
-/*                                           points   points_metods    fx  xmf  xrf  hx  zmf  zrf   g     gdot   nx  nz   memory */
-yaflEKFBaseSt kf = YAFL_UKF_ROBUST_INITIALIZER(sp, yafl_ukf_merwe_spm, fx, xmf, xrf, hx, zmf, zrf, psi, psi_dot, NX, NX, ukf_memory);
+/*                                           points   points_metods    fx  xmf  xrf  hx  zmf  zrf   g     gdot   nx  nz  rff  memory */
+yaflEKFBaseSt kf = YAFL_UKF_ROBUST_INITIALIZER(sp, yafl_ukf_merwe_spm, fx, xmf, xrf, hx, zmf, zrf, psi, psi_dot, NX, NX, 0.0, ukf_memory);
 ```
 
 #### Adaptive robust Bierman UKF
@@ -1271,8 +1286,8 @@ The memory mixin used is `YAFL_UKF_MEMORY_MIXIN` which is similar to other memor
 
 The initializer used is: `YAFL_UKF_INITIALIZER`
 ```C
-/*                                                  points   points_metods    fx  xmf  xrf  hx  zmf  zrf  nx  nz  chi2    memory */
-yaflEKFBaseSt kf = YAFL_UKF_FULL_ADAPTIVE_INITIALIZER(sp, yafl_ukf_merwe_spm, fx, xmf, xrf, hx, zmf, zrf, NX, NX, chi2, ukf_memory);
+/*                                                  points   points_metods    fx  xmf  xrf  hx  zmf  zrf  nx  nz  rff, chi2    memory */
+yaflEKFBaseSt kf = YAFL_UKF_FULL_ADAPTIVE_INITIALIZER(sp, yafl_ukf_merwe_spm, fx, xmf, xrf, hx, zmf, zrf, NX, NX, rff, chi2, ukf_memory);
 ```
 where `chi2` must be set to `scipy.stats.chi2.ppf(1.0 - some_small_number, NZ)` as we can not predict `chi2` for specific `nz` at compile time using C-preprocessor.
 

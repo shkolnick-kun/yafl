@@ -337,8 +337,9 @@ YAFL_EKF_UPDATE_IMPL(yafl_ekf_adaptive_robust_bierman_update, \
 /*-----------------------------------------------------------------------------
                            Adaptive Joseph filter
 -----------------------------------------------------------------------------*/
-#define YAFL_EKF_ADAPTIVE_ROBUST_JOSEPH_PREDICT(self) \
+#define YAFL_EKF_ADAPTIVE_ROBUST_JOSEPH_PREDICT \
     _yafl_ada_rob_predict_wrapper
+
 YAFL_EKF_UPDATE_IMPL(yafl_ekf_adaptive_robust_joseph_update, \
                      yaflEKFAdaptiveRobustSt)
 
@@ -456,10 +457,10 @@ WARNING:
     .sp_info = _p,                                                            \
     .sp_meth = _pm,                                                           \
                                                                               \
-    .xmf = (yaflUKFFuncP)_xmf,                                                \
-    .xrf = (yaflUKFResFuncP)_xrf,                                             \
+    .xmf = (yaflKalmanFuncP)_xmf,                                             \
+    .xrf = (yaflKalmanResFuncP)_xrf,                                          \
                                                                               \
-    .zmf = (yaflUKFFuncP)_zmf,                                                \
+    .zmf = (yaflKalmanFuncP)_zmf,                                             \
                                                                               \
     .zp  = _mem.zp,                                                           \
                                                                               \
@@ -570,13 +571,13 @@ typedef struct {
 } yaflUKFAdaptiveRobustSt; /*Robust EKF*/
 
 /*---------------------------------------------------------------------------*/
-#define YAFL_UKF_ADAPTIVE_ROBUST_INITIALIZER(_f, _jf, _h, _jh, _zrf,      \
-                                             _g, _gdot, _nx, _nz,         \
-                                             _rff, _chi2, _mem)           \
-{                                                                         \
-    .base = YAFL_UKF_ROBUST_INITIALIZER(_f, _jf, _h, _jh, _zrf,           \
-                                        _g, _gdot, _nx, _nz, _rff, _mem), \
-    .chi2 = _chi2                                                         \
+#define YAFL_UKF_ADAPTIVE_ROBUST_INITIALIZER(_p, _pm, _f, _xmf, _xrf, _h,        \
+                                             _zmf, _zrf, _g, _gdot, _nx,         \
+                                             _nz, _rff, _chi2, _mem)             \
+{                                                                                \
+    .base = YAFL_UKF_ROBUST_INITIALIZER(_p, _pm, _f, _xmf, _xrf, _h, _zmf, _zrf, \
+                                        _g, _gdot, _nx, _nz, _rff, _mem),        \
+    .chi2 = _chi2                                                                \
 }
 /*
 A good value of chi2 for yaflUKFAdaptiveRobustSt is:
@@ -631,13 +632,13 @@ typedef struct {
 } yaflUKFFullAdapiveSt;
 
 /*---------------------------------------------------------------------------*/
-#define YAFL_UKF_FULL_ADAPTIVE_INITIALIZER(_p, _pm, _f, _xmf, _xrf, _h,  \
-                                           _zmf, _zrf, _nx, _nz,         \
-                                           _rff, _chi2, _mem)            \
-{                                                                        \
-    .base = YAFL_UKF_BASE_INITIALIZER(_p, _pm, _f, _xmf, _xrf, _h, _zmf, \
-                                      _zrf, _nx, _nz, _rff, _mem),       \
-    .chi2 = _chi2                                                        \
+#define YAFL_UKF_FULL_ADAPTIVE_INITIALIZER(_p, _pm, _f, _xmf, _xrf, _h,   \
+                                           _zmf, _zrf, _nx, _nz,          \
+                                           _rff, _chi2, _mem)             \
+{                                                                         \
+    .base = YAFL_UKF_INITIALIZER(_p, _pm, _f, _xmf, _xrf, _h, _zmf, _zrf, \
+                                 _nx, _nz, _rff, _mem),                   \
+    .chi2 = _chi2                                                         \
 }
 
 /*---------------------------------------------------------------------------*/

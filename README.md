@@ -11,7 +11,10 @@ There are also libraries for python:
 * [pykalman](https://github.com/pykalman/pykalman).
 
 ## The library
-In our you can find some **Kalman filter** variants:
+Technically speaking all filters in YAFL are adaptive since all of them have at least a measurement noice covariance adjustment.
+The term **Adaptive** is used in our docs for **Kalman filter** variants with H-infinity divergence correction.
+
+In YAFL you can find these **Kalman filter** variants:
 
 | Algorithm family | Basic        | Adaptive     | Robust       | Adaptive robust |
 | :--------------- | :----------: | :----------: | :----------: | --------------: |
@@ -33,12 +36,21 @@ For sequential UD-factorized **UKF** only **Bierman** updates have been implemen
 
 And yes, we [**can actually**](./doc/UsingEKFTricksWithSPKF.pdf) use **EKF** tricks with **UKF**!
 
+## Notes on process and measurement noice covariance adjustments
+We used [this paper](https://arxiv.org/pdf/1702.00884.pdf) to implement optional Q and R adaptive adjustments.
+Here are som notes on our implementation:
+* All filters in this lib have the optional measurement noice covariance adjustment which can be enabled by setting `rff` to a small positive number e.g. `1e-4`.
+* All EKF filters in this lib have the optional process noice covariance adjustment which can be enabled by setting `qff` to a small positive number e.g. `1e-4`.
+* None of UKF filters have the optional process noice covariance adjustment as it leads to filters instability.
+
+## Notes on implementation
 The library is written in C and is intended for embedded systems usage:
 * We use static memory allocation
 * We use cache-friendly algorithms when available.
 * Regularization techniques are used when necessary. The code is numerically stable.
 * Depends only on C standard library.
 
+## Using with C
 To use the library you need to:
 * go to our [Releases page](https://github.com/shkolnick-kun/yafl/releases),
 * download and unpack the latest release source code archive,

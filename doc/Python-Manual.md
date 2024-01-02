@@ -103,6 +103,7 @@ The Kalman filter has these attrbutes:
 * `P = Up.dot(Dp.dot(Up.T))` which is state covariance matrix
 * `Q = Uq.dot(Dq.dot(Uq.T))` which is process noise matrix
 * `R = Ur.dot(Dr.dot(Ur.T))` which is measurement noise matrix
+* `rff` which is `R` forgetting factor used to ajust measurement noice covariance at runtime
 
 Since YAFL implements UD-factorized filters we don't have these attributes directly, but have vectors to store UD-decomposition elements of these attributes:
 * `Up :np.array((max(1, (dim_x * (dim_x - 1))//2), ))` is vector with upper triangular elements of P
@@ -111,6 +112,13 @@ Since YAFL implements UD-factorized filters we don't have these attributes direc
 * `Dq :np.array((dim_x, ))` is vector with diagonal elements of Q
 * `Ur :np.array((max(1, (dim_z * (dim_z - 1))//2), ))` is vector with upper triangular elements of R
 * `Dr :np.array((dim_z, ))` is vector with diagonal elements of R
+
+### Notes on Q and R adjustments
+We used [this paper](https://arxiv.org/pdf/1702.00884.pdf) to implement optional Q and R adaptive adjustments.
+Here are som notes on our implementation:
+* All filters in this lib have the optional measurement noice covariance adjustment which can be enabled by setting `rff` attribute to a small positive number e.g. `1e-4`.
+* All EKF filters in this lib have the optional process noice covariance adjustment which can be enabled by setting `qff` attribute to a small positive number e.g. `1e-4`.
+* None of UKF filters have the optional process noice covariance adjustment as it leads to filters instability.
 
 ### EKF stuf
 The base class for all **EKF** variants is
@@ -122,6 +130,8 @@ where:
 * `jhx :function(x)` is function which computes the Jacobian of the `hx` function. Returns: `np.array((dim_x, dim_x))`.
 
 This class extends `yaflpy.yaflKalmanBase`. This class is not supposet to be used directly.
+
+**NOTE: In addition to `rff` all EKF variants have `qff` attribute which is `Q` forgetting factor used to ajust process noice covariance at runtime**
 
 #### Basic EKF variants
 Basic UD-factorized **EKF** variants are:

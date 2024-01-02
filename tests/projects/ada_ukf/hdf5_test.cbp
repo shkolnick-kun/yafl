@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="ada_ukf" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="bin/Debug/hdf5_test" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wcast-align" />
+			<Add option="-Wfloat-equal" />
+			<Add option="-Wunreachable-code" />
+			<Add option="-pedantic" />
+			<Add option="-Wextra" />
+			<Add option="-Wall" />
+			<Add option="-g" />
+			<Add option="-DYAFL_USE_64_BIT=1" />
+			<Add directory="../../src" />
+			<Add directory="../../../src" />
+			<Add directory="../../../src/yaflpy" />
+		</Compiler>
+		<Linker>
+			<Add library="/usr/lib/x86_64-linux-gnu/hdf5/serial/libhdf5.a" />
+			<Add library="pthread" />
+			<Add library="dl" />
+			<Add library="sz" />
+			<Add library="z" />
+			<Add library="m" />
+			<Add directory="/home/anon/Documents/Projects/hdf5_test/" />
+		</Linker>
+		<Unit filename="../../../src/yafl.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../src/yafl.h" />
+		<Unit filename="../../../src/yafl_math.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../../src/yafl_math.h" />
+		<Unit filename="../../../src/yaflpy/yafl_config.h" />
+		<Unit filename="../../src/ada_ukf.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../src/hdf5utils.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../../src/hdf5utils.h" />
+		<Extensions>
+			<lib_finder disable_auto="1" />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

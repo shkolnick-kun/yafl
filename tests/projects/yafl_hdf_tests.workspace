@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_workspace_file>
+	<Workspace title="Workspace">
+		<Project filename="joseph/hdf5_test.cbp" />
+		<Project filename="bierman/hdf5_test.cbp" />
+		<Project filename="ada_bierman/hdf5_test.cbp" />
+		<Project filename="ada_joseph/hdf5_test.cbp" />
+		<Project filename="ada_rob_bierman/hdf5_test.cbp" />
+		<Project filename="ada_rob_joseph/hdf5_test.cbp" />
+		<Project filename="rob_bierman/hdf5_test.cbp" />
+		<Project filename="rob_joseph/hdf5_test.cbp" />
+	</Workspace>
+</CodeBlocks_workspace_file>
