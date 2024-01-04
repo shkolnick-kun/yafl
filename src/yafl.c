@@ -61,7 +61,7 @@ yaflStatusEn yafl_ekf_base_predict(yaflKalmanBaseSt * self)
     YAFL_CHECK(_DP,     YAFL_ST_INV_ARG_1);
     YAFL_CHECK(_UQ,     YAFL_ST_INV_ARG_1);
     YAFL_CHECK(_DQ,     YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(_NX > 1, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(_NX > 0, YAFL_ST_INV_ARG_1);
 
     YAFL_CHECK(_W,      YAFL_ST_INV_ARG_1);
     YAFL_CHECK(_D,      YAFL_ST_INV_ARG_1);
@@ -166,7 +166,7 @@ yaflStatusEn _yafl_ekf_compute_error(yaflKalmanBaseSt * self, yaflFloat * z)
     YAFL_CHECK(_X,      YAFL_ST_INV_ARG_1);
     YAFL_CHECK(_Y,      YAFL_ST_INV_ARG_1);
 
-    YAFL_CHECK(_NX > 1, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(_NX > 0, YAFL_ST_INV_ARG_1);
     YAFL_CHECK(_NZ > 0, YAFL_ST_INV_ARG_1);
 
     YAFL_TRY(status, _HX(self, _Y,  _X)); /* self.y = h(x,...) */
@@ -201,7 +201,7 @@ yaflStatusEn yafl_ekf_base_update(yaflKalmanBaseSt * self, yaflFloat * z, yaflKa
     YAFL_CHECK(_Y,      YAFL_ST_INV_ARG_1);
     YAFL_CHECK(_UR,     YAFL_ST_INV_ARG_1);
 
-    YAFL_CHECK(_NX > 1, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(_NX > 0, YAFL_ST_INV_ARG_1);
     YAFL_CHECK(_NZ > 0, YAFL_ST_INV_ARG_1);
 
     YAFL_CHECK(_JHX,    YAFL_ST_INV_ARG_1);
@@ -360,7 +360,7 @@ do {                                              \
 /*---------------------------------------------------------------------------*/
 #define _EKF_BIERMAN_SELF_INTERNALS_CHECKS()  \
 do {                                          \
-    YAFL_CHECK(_NX > 1,   YAFL_ST_INV_ARG_1); \
+    YAFL_CHECK(_NX > 0,   YAFL_ST_INV_ARG_1); \
     YAFL_CHECK(_UP, YAFL_ST_INV_ARG_1);       \
     YAFL_CHECK(_DP, YAFL_ST_INV_ARG_1);       \
     YAFL_CHECK(_HY, YAFL_ST_INV_ARG_1);       \
@@ -461,7 +461,7 @@ static inline yaflStatusEn \
 /*---------------------------------------------------------------------------*/
 #define _EKF_JOSEPH_SELF_INTERNALS_CHECKS() \
 do {                                        \
-    YAFL_CHECK(_NX > 1, YAFL_ST_INV_ARG_1); \
+    YAFL_CHECK(_NX > 0, YAFL_ST_INV_ARG_1); \
     YAFL_CHECK(_UP,     YAFL_ST_INV_ARG_1); \
     YAFL_CHECK(_DP,     YAFL_ST_INV_ARG_1); \
     YAFL_CHECK(_HY,     YAFL_ST_INV_ARG_1); \
@@ -1495,7 +1495,7 @@ yaflStatusEn yafl_ukf_base_update(yaflUKFBaseSt * self, yaflFloat * z, \
 
 #define _UKF_BIERMAN_SELF_INTERNALS_CHECKS()  \
 do {                                          \
-    YAFL_CHECK(_NX > 1, YAFL_ST_INV_ARG_1);   \
+    YAFL_CHECK(_NX > 0, YAFL_ST_INV_ARG_1);   \
     YAFL_CHECK(_UP,     YAFL_ST_INV_ARG_1);   \
     YAFL_CHECK(_DP,     YAFL_ST_INV_ARG_1);   \
     YAFL_CHECK(_UPZX,   YAFL_ST_INV_ARG_1);   \

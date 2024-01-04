@@ -472,6 +472,7 @@ ST_INV_ARG_12 = YAFL_ST_INV_ARG_12
 #                            Helper functions
 #==============================================================================
 cdef int _U_sz(int dim_u):
+    assert 0 < dim_u
     return max(1, (dim_u * (dim_u - 1))//2)
 
 #==============================================================================
@@ -2163,6 +2164,7 @@ def _mwgs(W, D):
     cdef yaflFloat [::1]    v_d = d
 
     res = yafl_math_mwgsu(nr, nc, &v_u[0], &v_d[0], &v_W[0,0], &v_D[0])
+
     return res, u, d
 
 #------------------------------------------------------------------------------
@@ -2433,8 +2435,12 @@ cdef class yaflKalmanBase:
     #--------------------------------------------------------------------------
     @property
     def P(self):
-        _,u = _set_u(self._Up)
-        return u.dot(np.diag(self._Dp).dot(u.T))
+        #
+        if self.c_self.base.base.Nx > 1:
+            _,u = _set_u(self._Up)
+            return u.dot(np.diag(self._Dp).dot(u.T))
+        #
+        return self._Dp.copy().reshape((1,1))
 
     @P.setter
     def P(self, value):
@@ -2443,8 +2449,12 @@ cdef class yaflKalmanBase:
     #--------------------------------------------------------------------------
     @property
     def Q(self):
-        _,u = _set_u(self._Uq)
-        return u.dot(np.diag(self._Dq).dot(u.T))
+        #
+        if self.c_self.base.base.Nx > 1:
+            _,u = _set_u(self._Uq)
+            return u.dot(np.diag(self._Dq).dot(u.T))
+        #
+        return self._Dq.copy().reshape((1,1))
 
     @Q.setter
     def Q(self, value):
@@ -2453,8 +2463,12 @@ cdef class yaflKalmanBase:
     #--------------------------------------------------------------------------
     @property
     def R(self):
-        _,u = _set_u(self._Ur)
-        return u.dot(np.diag(self._Dr).dot(u.T))
+        #
+        if self.c_self.base.base.Nz > 1:
+            _,u = _set_u(self._Ur)
+            return u.dot(np.diag(self._Dr).dot(u.T))
+        #
+        return self._Dr.copy().reshape((1,1))
 
     @R.setter
     def R(self, value):
@@ -2564,7 +2578,7 @@ cdef yaflStatusEn yafl_py_kalman_hx(yaflPyKalmanBaseSt * self, \
             raise ValueError('nx must be > 0!')
 
         nz = self.base.base.Nz
-        if nx <= 0:
+        if nz <= 0:
             raise ValueError('nz must be > 0!')
 
         _x = np.asarray(<yaflFloat[:nx]> x) #
@@ -2593,7 +2607,7 @@ cdef yaflStatusEn yafl_py_kalman_zrf(yaflPyKalmanBaseSt * self, yaflFloat * res,
 
         nz = self.base.base.Nz
         if nz <= 0:
-            raise ValueError('nx must be > 0!')
+            raise ValueError('nz must be > 0!')
 
         _res   = np.asarray(<yaflFloat[:nz]> res)   #
         _sigma = np.asarray(<yaflFloat[:nz]> sigma) #
