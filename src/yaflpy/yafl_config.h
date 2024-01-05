@@ -22,7 +22,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#define YAFL_LOG(...) fprintf(stderr, __VA_ARGS__)
+#define YAFL_DBG(...) fprintf(stderr, __VA_ARGS__)
 
 typedef int32_t yaflInt;
 
@@ -35,11 +35,16 @@ typedef int32_t yaflInt;
 #   define YAFL_EPS  (1.0e-15)
 #   define YAFL_SQRT sqrt
 #   define YAFL_ABS  fabs
+#   define YAFL_ABS  fabs
+#   define YAFL_EXP  exp
+#   define YAFL_LOG  log
 #else/*YAFL_USE_64_BIT*/
     typedef float  yaflFloat;
 #   define YAFL_EPS  (1.0e-6)
 #   define YAFL_SQRT sqrtf
 #   define YAFL_ABS  fabsf
+#   define YAFL_EXP  expf
+#   define YAFL_LOG  logf
 #endif/*YAFL_USE_64_BIT*/
 
 #ifdef __GNUC__

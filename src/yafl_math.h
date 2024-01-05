@@ -25,15 +25,18 @@
 do {                                                                       \
     if (YAFL_UNLIKELY(!(cond)))                                            \
     {                                                                      \
-        YAFL_LOG("YAFL:The expression (%s) is false in \n function: %s",   \
+        YAFL_DBG("YAFL:The expression (%s) is false in \n function: %s",   \
                  #cond, func);                                             \
-        YAFL_LOG("\n file: %s\n line: %d\n will return: %s\n",             \
+        YAFL_DBG("\n file: %s\n line: %d\n will return: %s\n",             \
                  file, line, #err);                                        \
         return err;                                                        \
     }                                                                      \
 } while (0)
 
 #define YAFL_CHECK(cond, err) _YAFL_CHECK(cond, err, __FILE__, __func__, __LINE__)
+
+/*np.log(2. * np.pi)*/
+#define YAFL_L2PI (1.8378770664093453)
 
 typedef enum {
     /*Warning flag masks*/
@@ -81,9 +84,9 @@ do {                                                                          \
     (status) |= (exp);                                                        \
     if (YAFL_UNLIKELY(YAFL_ST_ERR_THR <= (status)))                           \
     {                                                                         \
-        YAFL_LOG("YAFL:The expression (%s) gave an error in \n function: %s", \
+        YAFL_DBG("YAFL:The expression (%s) gave an error in \n function: %s", \
                  #exp, func);                                                 \
-        YAFL_LOG("\n file: %s\n line: %d\n will return: %d\n",                \
+        YAFL_DBG("\n file: %s\n line: %d\n will return: %d\n",                \
                  file, line, status);                                         \
         return status;                                                        \
     }                                                                         \

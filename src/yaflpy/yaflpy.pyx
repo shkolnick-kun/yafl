@@ -211,6 +211,8 @@ cdef extern from "yafl.c":
         yaflFloat * Ur   #
         yaflFloat * Dr   #
 
+        yaflFloat * l    #
+
         yaflFloat rff    #
 
         yaflInt   Nx     #
@@ -2256,6 +2258,8 @@ cdef class yaflKalmanBase:
     # Kalman filter C-self
     cdef yaflPyKalmanBaseSt c_self
 
+    cdef yaflFloat _l
+
     # Kalman filter memory views
     cdef yaflFloat [::1]    v_x
     cdef yaflFloat [::1]    v_y
@@ -2300,6 +2304,9 @@ cdef class yaflKalmanBase:
         #Store dimensions
         self.c_self.base.base.Nx = dim_x
         self.c_self.base.base.Nz = dim_z
+
+        #Set likelihood storage
+        self.c_self.base.base.l = &self._l
 
         #Set forgetting factors
         self.c_self.base.base.rff = 0.0
@@ -2431,6 +2438,15 @@ cdef class yaflKalmanBase:
     @Dr.setter
     def Dr(self, value):
         self._Dr[:] = value
+
+    #--------------------------------------------------------------------------
+    @property
+    def l(self):
+        return self._l
+
+    @l.setter
+    def l(self, value):
+        raise AttributeError('yaflKalmanBase does not support this!')
 
     #--------------------------------------------------------------------------
     @property

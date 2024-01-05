@@ -64,6 +64,8 @@ struct _yaflKalmanBaseSt {
     yaflFloat * Ur; /*Upper triangular part of R*/
     yaflFloat * Dr; /*Diagonal part of R*/
 
+    yaflFloat * l;  /*likelihood*/
+
     yaflFloat rff;  /*R forgetting factor*/
 
     yaflInt   Nx;   /*State vector size*/
@@ -82,7 +84,8 @@ struct _yaflKalmanBaseSt {
     yaflFloat Dq[nx];                         \
                                               \
     yaflFloat Ur[((nz - 1) * nz)/2];          \
-    yaflFloat Dr[nz]
+    yaflFloat Dr[nz];                         \
+    yaflFloat l
 
 /*---------------------------------------------------------------------------*/
 /*TODO: make qff and rff parameters*/
@@ -105,6 +108,8 @@ struct _yaflKalmanBaseSt {
     .Dr  = _mem.Dr,                                                      \
                                                                          \
     .rff = _rff,                                                         \
+                                                                         \
+    .l   = &_mem.l,                                                      \
                                                                          \
     .Nx  = _nx,                                                          \
     .Nz  = _nz                                                           \

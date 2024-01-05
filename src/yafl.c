@@ -34,6 +34,8 @@
 #define _UR  (self->Ur)
 #define _DR  (self->Dr)
 
+#define _L   (self->l)
+
 #define _NX  (self->Nx)
 #define _NZ  (self->Nz)
 
@@ -251,11 +253,17 @@ yaflStatusEn yafl_ekf_base_update(yaflKalmanBaseSt * self, yaflFloat * z, yaflKa
         YAFL_TRY(status_q, yafl_math_set_vxn(_NX, _DQ, _DQ, 1.0 - _QFF));
     }
 
+    /*Start log likelihood computation*/
+    *self->l = _NZ * YAFL_L2PI;
+
     /* Do scalar updates */
     for (j = 0; j < _NZ; j++)
     {
         YAFL_TRY(status, scalar_update(self, j)); /*Q is updated here if needed!*/
     }
+
+    /*Finalize log likelihood value*/
+    *self->l *= -0.5;
 
     if (self->rff > 0.0)
     {
@@ -271,7 +279,7 @@ static inline yaflStatusEn \
     _bierman_update_body(yaflInt    nx, yaflFloat * x, yaflFloat * u, \
                         yaflFloat * d, yaflFloat * f, yaflFloat * v, \
                         yaflFloat   r, yaflFloat  nu, yaflFloat  ac, \
-                        yaflFloat   gdot)
+                        yaflFloat   gdot, yaflFloat * l)
 {
     yaflStatusEn status = YAFL_ST_OK;
     yaflInt j;
@@ -313,6 +321,10 @@ static inline yaflStatusEn \
 #undef  p /*Don't need p any more...*/
         r = a;
     }
+
+    /*Compute log likelihood*/
+    *l += nu * (nu / r) + YAFL_LOG(r);
+
     /*
     Now we must do:
     x += K * nu
@@ -388,7 +400,7 @@ yaflStatusEn yafl_ekf_bierman_update_scalar(yaflKalmanBaseSt * self, yaflInt i)
     YAFL_TRY(status, YAFL_MATH_SET_DV(_NX, v, _DP, f));
     YAFL_TRY(status, \
              _bierman_update_body(_NX, _X, _UP, _DP, f, v, _DR[i], _Y[i], \
-                                  1.0, 1.0));
+                                  1.0, 1.0, _L));
     /*Update Q if needed!*/
     _Q_SCALAR_UPDATE(_QFF, v);
 #   undef v /*Don't nee v any more*/
@@ -405,7 +417,7 @@ static inline yaflStatusEn \
                         yaflFloat * d, yaflFloat * f, yaflFloat * v, \
                         yaflFloat * k, yaflFloat * w, yaflFloat  nu, \
                         yaflFloat  r, yaflFloat   s, yaflFloat  ac, \
-                        yaflFloat  gdot)
+                        yaflFloat  gdot, yaflFloat * l)
 {
     yaflStatusEn status = YAFL_ST_OK;
 
@@ -445,6 +457,9 @@ static inline yaflStatusEn \
 
     /* Up, Dp = MWGSU(W, D)*/
     YAFL_TRY(status, yafl_math_mwgsu(nx, nx1, u, d, w, D));
+
+    /*Compute log likelihood*/
+    *l += nu * (nu / s) + YAFL_LOG(s);
 
     /* x += k * nu */
 #   define j nx1
@@ -501,7 +516,7 @@ yaflStatusEn yafl_ekf_joseph_update_scalar(yaflKalmanBaseSt * self, yaflInt i)
 #   define K h /*Don't need h any more, use it to store K*/
     YAFL_TRY(status, \
              _joseph_update_body(_NX, _X, _UP, _DP, f, v, K, _W, _Y[i], r, \
-                                 s, 1.0, 1.0));
+                                 s, 1.0, 1.0, _L));
 
     /*Update Q if needed!*/
     _Q_SCALAR_UPDATE(_QFF, K);
@@ -592,7 +607,7 @@ yaflStatusEn yafl_ekf_adaptive_bierman_update_scalar(yaflKalmanBaseSt * self, \
                                   ((yaflEKFAdaptiveSt *)self)->chi2));
 
     YAFL_TRY(status, \
-             _bierman_update_body(_NX, _X, _UP, _DP, f, v, r, nu, ac, 1.0));
+             _bierman_update_body(_NX, _X, _UP, _DP, f, v, r, nu, ac, 1.0, _L));
 
     /*Update Q if needed!*/
     _Q_SCALAR_UPDATE(_QFF, v);
@@ -641,7 +656,7 @@ yaflStatusEn \
 #   define K h /*Don't need h any more, use it to store K*/
     YAFL_TRY(status, \
              _joseph_update_body(_NX, _X, _UP, _DP, f, v, K, _W, nu, r, s, \
-                                 ac, 1.0));
+                                 ac, 1.0, _L));
 
     /*Update Q if needed!*/
     _Q_SCALAR_UPDATE(_QFF, K);
@@ -748,6 +763,9 @@ yaflStatusEn \
     /* Up, Dp = MWGSU(W, D)*/
     YAFL_TRY(status, yafl_math_mwgsu(nx, nx1, u, d, w, D));
 
+    /*Compute log likelihood*/
+    *self->l += nu * (nu / s) + YAFL_LOG(s);
+
     /* self.x += K * nu */
     YAFL_TRY(status, yafl_math_add_vxn(nx, _X, K, nu));
 #undef D /*Don't nee D any more*/
@@ -836,7 +854,7 @@ yaflStatusEn \
 
     YAFL_TRY(status, \
              _bierman_update_body(_NX, _X, _UP, _DP, f, v, r, nu, \
-                                  1.0, gdot));
+                                  1.0, gdot, _L));
 
     /*Update Q if needed!*/
     _Q_SCALAR_UPDATE(_QFF, v);
@@ -886,7 +904,7 @@ yaflStatusEn \
 #   define K h /*Don't need h any more, use it to store K*/
     YAFL_TRY(status, \
              _joseph_update_body(_NX, _X, _UP, _DP, f, v, K, _W, nu, r, s, \
-                                 1.0, gdot));
+                                 1.0, gdot, _L));
 
     /*Update Q if needed!*/
     _Q_SCALAR_UPDATE(_QFF, K);
@@ -932,7 +950,7 @@ yaflStatusEn \
                                   ((yaflEKFAdaptiveRobustSt *)self)->chi2));
 
     YAFL_TRY(status, _bierman_update_body(_NX, _X, _UP, _DP, f, v, r, nu, \
-                                          ac, gdot));
+                                          ac, gdot, _L));
 
     /*Update Q if needed!*/
     _Q_SCALAR_UPDATE(_QFF, v);
@@ -984,7 +1002,7 @@ yaflStatusEn \
 #   define K h /*Don't need h any more, use it to store K*/
     YAFL_TRY(status, \
              _joseph_update_body(_NX, _X, _UP, _DP, f, v, K, _W, nu, r, s, \
-                                 ac, gdot));
+                                 ac, gdot, _L));
 
     /*Update Q if needed!*/
     _Q_SCALAR_UPDATE(_QFF, K);
@@ -1027,6 +1045,8 @@ yaflStatusEn \
 
 #define _UUR  (_KALMAN_SELF->Ur)
 #define _UDR  (_KALMAN_SELF->Dr)
+
+#define _UL   (_KALMAN_SELF->l)
 
 #define _UNX  (_KALMAN_SELF->Nx)
 #define _UNZ  (_KALMAN_SELF->Nz)
@@ -1475,11 +1495,17 @@ yaflStatusEn yafl_ukf_base_update(yaflUKFBaseSt * self, yaflFloat * z, \
     YAFL_TRY(status, yafl_math_ruv(nz,      _UY, _UUR));
     YAFL_TRY(status, yafl_math_rum(nz, nx, _PZX, _UUR));
 
+    /*Start log likelihood computation*/
+    *_KALMAN_SELF->l = nz * YAFL_L2PI;
+
     /*Now we can do scalar updates*/
     for (i = 0; i < nz; i++)
     {
         YAFL_TRY(status, scalar_update(_KALMAN_SELF, i));
     }
+
+    /*Finalize log likelihood value*/
+    *_KALMAN_SELF->l *= -0.5;
 
     YAFL_TRY(status, _yafl_ukf_compute_residual(self, z));
     return status;
@@ -1527,7 +1553,7 @@ yaflStatusEn yafl_ukf_bierman_update_scalar(yaflKalmanBaseSt * self, yaflInt i)
 
     YAFL_TRY(status, \
              _bierman_update_body(nx, _X, _UP, _DP, f, v, _DR[i], _Y[i], \
-                                  1.0, 1.0));
+                                  1.0, 1.0, _UL));
 #   undef f
     return status;
 }
@@ -1565,7 +1591,7 @@ yaflStatusEn yafl_ukf_adaptive_bierman_update_scalar(yaflKalmanBaseSt * self, ya
                                   ((yaflUKFAdaptivedSt *)self)->chi2));
 
     YAFL_TRY(status, \
-             _bierman_update_body(nx, _X, _UP, _DP, f, v, r, _Y[i], ac, 1.0));
+             _bierman_update_body(nx, _X, _UP, _DP, f, v, r, _Y[i], ac, 1.0, _UL));
 #   undef f
     return status;
 }
@@ -1610,7 +1636,7 @@ yaflStatusEn yafl_ukf_robust_bierman_update_scalar(yaflKalmanBaseSt * self, \
 
     YAFL_TRY(status, \
              _bierman_update_body(nx, _X, _UP, _DP, f, v, r, nu, \
-                                  1.0, gdot));
+                                  1.0, gdot, _UL));
 #   undef f
     return status;
 }
@@ -1655,7 +1681,7 @@ yaflStatusEn \
                                   ((yaflUKFAdaptiveRobustSt *)self)->chi2));
 
     YAFL_TRY(status, \
-             _bierman_update_body(nx, _X, _UP, _DP, f, v, r, nu, ac, gdot));
+             _bierman_update_body(nx, _X, _UP, _DP, f, v, r, nu, ac, gdot, _UL));
 #   undef f
     return status;
 }
@@ -1791,6 +1817,9 @@ static inline yaflStatusEn yafl_ukf_update_epilogue(yaflUKFBaseSt * self, yaflFl
     /* Decorrelate measurements part 2*/
     YAFL_TRY(status, yafl_math_rum(nz, nx, _PZX, _UUS));
 
+    /*Start log likelihood computation*/
+    *_KALMAN_SELF->l = nz * YAFL_L2PI;
+
     /*Now we can do scalar updates*/
     for (i = 0; i < nz; i++)
     {
@@ -1813,7 +1842,13 @@ static inline yaflStatusEn yafl_ukf_update_epilogue(yaflUKFBaseSt * self, yaflFl
         Up, Dp = udu(P)
         */
         YAFL_TRY(status, yafl_math_udu_down(nx, _UUP, _UDP, 1.0 / ds[i], pzxi));
+
+        /*Compute log likelihood*/
+        *_KALMAN_SELF->l += y[i] * (y[i] / ds[i]) + YAFL_LOG(ds[i]);
     }
+
+    /*Finalize log likelihood value*/
+    *_KALMAN_SELF->l *= -0.5;
 
     YAFL_TRY(status, _yafl_ukf_compute_residual(self, z));
     return status;
@@ -2204,6 +2239,8 @@ const yaflUKFSigmaMethodsSt yafl_ukf_julier_spm =
 #undef _UUR
 #undef _UDR
 
+#undef _UL
+
 #undef _UNX
 #undef _UNZ
 
@@ -2237,6 +2274,8 @@ const yaflUKFSigmaMethodsSt yafl_ukf_julier_spm =
 
 #undef _UR
 #undef _DR
+
+#undef _L
 
 #undef _NX
 #undef _NZ
