@@ -28,7 +28,7 @@ where:
 * **EKF** means Extended Kalman Filter
 * **UKF** means Unscented Kalman Filter
 * **Basic** means basic algorithm
-* **Adaptive** means a **Kalman filter** with [**adaptive divergence correction**](./doc/AdaptiveCorrection.pdf). We use H-infinity filter to correct the divergence
+* **Adaptive** means a **Kalman filter** with [**adaptive divergence correction**](https://github.com/shkolnick-kun/yafl/blob/master/doc/AdaptiveCorrection.pdf). We use H-infinity filter to correct the divergence
 * **Robust**   means **Robustified Kalman filter**, see [**West1981**](#west_1981)
 
 For all **EKF** variants we have **Bierman** and **Joseph** updates.
