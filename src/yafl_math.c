@@ -17,6 +17,36 @@
 
 #include "yafl_math.h"
 
+/* We need some way of printing human readable statuses */
+char * yafl_fail_dsc(yaflStatusEn status)
+{
+    switch (status & 0xff0)
+    {
+#define _CASE_DSC(err) do { \
+    case err:               \
+    {                       \
+        return #err;        \
+    }                       \
+    } while (0)
+    _CASE_DSC(YAFL_ST_INV_ARG_1);
+    _CASE_DSC(YAFL_ST_INV_ARG_2);
+    _CASE_DSC(YAFL_ST_INV_ARG_3);
+    _CASE_DSC(YAFL_ST_INV_ARG_4);
+    _CASE_DSC(YAFL_ST_INV_ARG_5);
+    _CASE_DSC(YAFL_ST_INV_ARG_6);
+    _CASE_DSC(YAFL_ST_INV_ARG_7);
+    _CASE_DSC(YAFL_ST_INV_ARG_8);
+    _CASE_DSC(YAFL_ST_INV_ARG_9);
+    _CASE_DSC(YAFL_ST_INV_ARG_10);
+    _CASE_DSC(YAFL_ST_INV_ARG_11);
+    _CASE_DSC(YAFL_ST_INV_ARG_12);
+    default:
+    {
+        return "Internal error!!!";
+    }
+    }
+}
+
 #define _DO_VXN(name, op)                                                \
 yaflStatusEn name(yaflInt sz, yaflFloat *res, yaflFloat *v, yaflFloat n) \
 {                                                                        \

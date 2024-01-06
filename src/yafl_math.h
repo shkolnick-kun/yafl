@@ -35,9 +35,6 @@ do {                                                                       \
 
 #define YAFL_CHECK(cond, err) _YAFL_CHECK(cond, err, __FILE__, __func__, __LINE__)
 
-/*np.log(2. * np.pi)*/
-#define YAFL_L2PI (1.8378770664093453)
-
 typedef enum {
     /*Warning flag masks*/
     YAFL_ST_MSK_REGULARIZED  = 0x01,
@@ -79,6 +76,9 @@ typedef enum {
     YAFL_ST_INV_ARG_12   = 0x1b0
 } yaflStatusEn;
 
+/* We need some way of printing human readable statuses */
+char * yafl_fail_dsc(yaflStatusEn status);
+
 #define _YAFL_TRY(status, exp, file, func, line)                              \
 do {                                                                          \
     (status) |= (exp);                                                        \
@@ -86,8 +86,8 @@ do {                                                                          \
     {                                                                         \
         YAFL_DBG("YAFL:The expression (%s) gave an error in \n function: %s", \
                  #exp, func);                                                 \
-        YAFL_DBG("\n file: %s\n line: %d\n will return: %d\n",                \
-                 file, line, status);                                         \
+        YAFL_DBG("\n file: %s\n line: %d\n will return: %s\n",                \
+                 file, line, yafl_fail_dsc(status));                          \
         return status;                                                        \
     }                                                                         \
 } while (0)

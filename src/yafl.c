@@ -18,6 +18,9 @@
 
 #include "yafl.h"
 
+/*np.log(2. * np.pi)*/
+#define YAFL_L2PI (1.8378770664093453)
+
 #define _FX  (self->f)
 #define _HX  (self->h)
 #define _ZRF (self->zrf)
