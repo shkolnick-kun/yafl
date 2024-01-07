@@ -22,24 +22,25 @@ char * yafl_fail_dsc(yaflStatusEn status)
 {
     switch (status & 0xff0)
     {
-#define _CASE_DSC(err) do { \
-    case err:               \
-    {                       \
-        return #err;        \
-    }                       \
+#define CASE_DSC(err) do { \
+    case err:              \
+    {                      \
+        return #err;       \
+    }                      \
     } while (0)
-    _CASE_DSC(YAFL_ST_INV_ARG_1);
-    _CASE_DSC(YAFL_ST_INV_ARG_2);
-    _CASE_DSC(YAFL_ST_INV_ARG_3);
-    _CASE_DSC(YAFL_ST_INV_ARG_4);
-    _CASE_DSC(YAFL_ST_INV_ARG_5);
-    _CASE_DSC(YAFL_ST_INV_ARG_6);
-    _CASE_DSC(YAFL_ST_INV_ARG_7);
-    _CASE_DSC(YAFL_ST_INV_ARG_8);
-    _CASE_DSC(YAFL_ST_INV_ARG_9);
-    _CASE_DSC(YAFL_ST_INV_ARG_10);
-    _CASE_DSC(YAFL_ST_INV_ARG_11);
-    _CASE_DSC(YAFL_ST_INV_ARG_12);
+    CASE_DSC(YAFL_ST_INV_ARG_1);
+    CASE_DSC(YAFL_ST_INV_ARG_2);
+    CASE_DSC(YAFL_ST_INV_ARG_3);
+    CASE_DSC(YAFL_ST_INV_ARG_4);
+    CASE_DSC(YAFL_ST_INV_ARG_5);
+    CASE_DSC(YAFL_ST_INV_ARG_6);
+    CASE_DSC(YAFL_ST_INV_ARG_7);
+    CASE_DSC(YAFL_ST_INV_ARG_8);
+    CASE_DSC(YAFL_ST_INV_ARG_9);
+    CASE_DSC(YAFL_ST_INV_ARG_10);
+    CASE_DSC(YAFL_ST_INV_ARG_11);
+    CASE_DSC(YAFL_ST_INV_ARG_12);
+#undef CASE_DSC
     default:
     {
         return "Internal error!!!";
@@ -47,7 +48,7 @@ char * yafl_fail_dsc(yaflStatusEn status)
     }
 }
 
-#define _DO_VXN(name, op)                                                \
+#define YAFL_DO_VXN(name, op)                                            \
 yaflStatusEn name(yaflInt sz, yaflFloat *res, yaflFloat *v, yaflFloat n) \
 {                                                                        \
     yaflInt k;                                                           \
@@ -62,11 +63,11 @@ yaflStatusEn name(yaflInt sz, yaflFloat *res, yaflFloat *v, yaflFloat n) \
     return YAFL_ST_OK;                                                   \
 }
 
-_DO_VXN(yafl_math_set_vxn,  =)
-_DO_VXN(yafl_math_add_vxn, +=)
-_DO_VXN(yafl_math_sub_vxn, -=)
+YAFL_DO_VXN(yafl_math_set_vxn,  =)
+YAFL_DO_VXN(yafl_math_add_vxn, +=)
+YAFL_DO_VXN(yafl_math_sub_vxn, -=)
 
-#define _DO_VRN(name, op)                                                \
+#define YAFL_DO_VRN(name, op)                                            \
 yaflStatusEn name(yaflInt sz, yaflFloat *res, yaflFloat *v, yaflFloat n) \
 {                                                                        \
     yaflStatusEn status;                                                 \
@@ -100,11 +101,11 @@ yaflStatusEn name(yaflInt sz, yaflFloat *res, yaflFloat *v, yaflFloat n) \
     return status;                                                       \
 }
 
-_DO_VRN(yafl_math_set_vrn,  =)
-_DO_VRN(yafl_math_add_vrn, +=)
-_DO_VRN(yafl_math_sub_vrn, -=)
+YAFL_DO_VRN(yafl_math_set_vrn,  =)
+YAFL_DO_VRN(yafl_math_add_vrn, +=)
+YAFL_DO_VRN(yafl_math_sub_vrn, -=)
 
-#define _DO_VXV(name, op)                                                \
+#define YAFL_DO_VXV(name, op)                                            \
 yaflStatusEn name(yaflInt sz, yaflFloat *res, yaflFloat *a, yaflFloat *b)\
 {                                                                        \
     yaflInt k;                                                           \
@@ -120,11 +121,11 @@ yaflStatusEn name(yaflInt sz, yaflFloat *res, yaflFloat *a, yaflFloat *b)\
     return YAFL_ST_OK;                                                   \
 }
 
-_DO_VXV(yafl_math_set_vxv,  =)
-_DO_VXV(yafl_math_add_vxv, +=)
-_DO_VXV(yafl_math_sub_vxv, -=)
+YAFL_DO_VXV(yafl_math_set_vxv,  =)
+YAFL_DO_VXV(yafl_math_add_vxv, +=)
+YAFL_DO_VXV(yafl_math_sub_vxv, -=)
 
-#define _DO_VRV(name, op)                                                \
+#define YAFL_DO_VRV(name, op)                                            \
 yaflStatusEn name(yaflInt sz, yaflFloat *res, yaflFloat *a, yaflFloat *b)\
 {                                                                        \
     yaflInt k;                                                           \
@@ -140,9 +141,9 @@ yaflStatusEn name(yaflInt sz, yaflFloat *res, yaflFloat *a, yaflFloat *b)\
     return YAFL_ST_OK;                                                   \
 }
 
-_DO_VRV(yafl_math_set_vrv,  =)
-_DO_VRV(yafl_math_add_vrv, +=)
-_DO_VRV(yafl_math_sub_vrv, -=)
+YAFL_DO_VRV(yafl_math_set_vrv,  =)
+YAFL_DO_VRV(yafl_math_add_vrv, +=)
+YAFL_DO_VRV(yafl_math_sub_vrv, -=)
 
 yaflStatusEn yafl_math_vtv(yaflInt sz, yaflFloat *res, yaflFloat *a, yaflFloat *b)
 {
@@ -162,7 +163,7 @@ yaflStatusEn yafl_math_vtv(yaflInt sz, yaflFloat *res, yaflFloat *a, yaflFloat *
     return YAFL_ST_OK;
 }
 
-#define _DO_VVT(name, op)                                                             \
+#define YAFL_DO_VVT(name, op)                                                         \
 yaflStatusEn name(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloat *b) \
 {                                                                                     \
     yaflInt j;                                                                        \
@@ -188,11 +189,11 @@ yaflStatusEn name(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloa
     return YAFL_ST_OK;                                                                \
 }
 
-_DO_VVT(yafl_math_set_vvt,  =)
-_DO_VVT(yafl_math_add_vvt, +=)
-_DO_VVT(yafl_math_sub_vvt, -=)
+YAFL_DO_VVT(yafl_math_set_vvt,  =)
+YAFL_DO_VVT(yafl_math_add_vvt, +=)
+YAFL_DO_VVT(yafl_math_sub_vvt, -=)
 
-#define _DO_VVTXN(name, op)                                                                        \
+#define YAFL_DO_VVTXN(name, op)                                                                    \
 yaflStatusEn name(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloat *b, yaflFloat n) \
 {                                                                                                  \
     yaflInt j;                                                                                     \
@@ -218,11 +219,11 @@ yaflStatusEn name(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloa
     return YAFL_ST_OK;                                                                             \
 }
 
-_DO_VVTXN(yafl_math_set_vvtxn,  =)
-_DO_VVTXN(yafl_math_add_vvtxn, +=)
-_DO_VVTXN(yafl_math_sub_vvtxn, -=)
+YAFL_DO_VVTXN(yafl_math_set_vvtxn,  =)
+YAFL_DO_VVTXN(yafl_math_add_vvtxn, +=)
+YAFL_DO_VVTXN(yafl_math_sub_vvtxn, -=)
 
-#define _DO_MV(name, op1, op2)                                                        \
+#define YAFL_DO_MV(name, op1, op2)                                                    \
 yaflStatusEn name(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloat *b) \
 {                                                                                     \
     yaflInt j;                                                                        \
@@ -250,11 +251,11 @@ yaflStatusEn name(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloa
     return YAFL_ST_OK;                                                                \
 }
 
-_DO_MV(yafl_math_set_mv,  =, +=)
-_DO_MV(yafl_math_add_mv, +=, +=)
-_DO_MV(yafl_math_sub_mv, -=, -=)
+YAFL_DO_MV(yafl_math_set_mv,  =, +=)
+YAFL_DO_MV(yafl_math_add_mv, +=, +=)
+YAFL_DO_MV(yafl_math_sub_mv, -=, -=)
 
-#define _DO_VTM(name, op1, op2)                                                       \
+#define YAFL_DO_VTM(name, op1, op2)                                                   \
 yaflStatusEn name(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloat *b) \
 {                                                                                     \
     yaflInt j;                                                                        \
@@ -285,12 +286,12 @@ yaflStatusEn name(yaflInt nr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloa
     return YAFL_ST_OK;                                                                \
 }
 
-_DO_VTM(yafl_math_set_vtm,  =, +=)
-_DO_VTM(yafl_math_add_vtm, +=, +=)
-_DO_VTM(yafl_math_sub_vtm, -=, -=)
+YAFL_DO_VTM(yafl_math_set_vtm,  =, +=)
+YAFL_DO_VTM(yafl_math_add_vtm, +=, +=)
+YAFL_DO_VTM(yafl_math_sub_vtm, -=, -=)
 
 /*This is right as it is OMP friendly style*/
-#define _DO_MM(name, op1, op2)                                                                      \
+#define YAFL_DO_MM(name, op1, op2)                                                                  \
 yaflStatusEn name(yaflInt nr,  yaflInt ncr, yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloat *b) \
 {                                                                                                   \
     yaflInt i;                                                                                      \
@@ -331,11 +332,11 @@ yaflStatusEn name(yaflInt nr,  yaflInt ncr, yaflInt nc, yaflFloat *res, yaflFloa
     return YAFL_ST_OK;                                                                              \
 }
 
-_DO_MM(yafl_math_set_mm,  =, +=)
-_DO_MM(yafl_math_add_mm, +=, +=)
-_DO_MM(yafl_math_sub_mm, -=, -=)
+YAFL_DO_MM(yafl_math_set_mm,  =, +=)
+YAFL_DO_MM(yafl_math_add_mm, +=, +=)
+YAFL_DO_MM(yafl_math_sub_mm, -=, -=)
 
-#define _DO_VTU(name, op1, op2)                                           \
+#define YAFL_DO_VTU(name, op1, op2)                                       \
 yaflStatusEn name(yaflInt sz, yaflFloat *res, yaflFloat *a, yaflFloat *b) \
 {                                                                         \
     yaflInt j;                                                            \
@@ -365,11 +366,11 @@ yaflStatusEn name(yaflInt sz, yaflFloat *res, yaflFloat *a, yaflFloat *b) \
     return YAFL_ST_OK;                                                    \
 }
 
-_DO_VTU(yafl_math_set_vtu,  =, +=)
-_DO_VTU(yafl_math_add_vtu, +=, +=)
-_DO_VTU(yafl_math_sub_vtu, -=, -=)
+YAFL_DO_VTU(yafl_math_set_vtu,  =, +=)
+YAFL_DO_VTU(yafl_math_add_vtu, +=, +=)
+YAFL_DO_VTU(yafl_math_sub_vtu, -=, -=)
 
-#define _DO_UV(name, op1, op2)                                            \
+#define YAFL_DO_UV(name, op1, op2)                                        \
 yaflStatusEn name(yaflInt sz, yaflFloat *res, yaflFloat *a, yaflFloat *b) \
 {                                                                         \
     yaflInt j;                                                            \
@@ -398,12 +399,12 @@ yaflStatusEn name(yaflInt sz, yaflFloat *res, yaflFloat *a, yaflFloat *b) \
     return YAFL_ST_OK;                                                    \
 }
 
-_DO_UV(yafl_math_set_uv,  =, +=)
-_DO_UV(yafl_math_add_uv, +=, +=)
-_DO_UV(yafl_math_sub_uv, -=, -=)
+YAFL_DO_UV(yafl_math_set_uv,  =, +=)
+YAFL_DO_UV(yafl_math_add_uv, +=, +=)
+YAFL_DO_UV(yafl_math_sub_uv, -=, -=)
 
 /*This is right as it is OMP friendly style*/
-#define _DO_MU(name, op1, op2)                                                         \
+#define YAFL_DO_MU(name, op1, op2)                                                     \
 yaflStatusEn name(yaflInt nr,  yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFloat *b) \
 {                                                                                      \
     yaflInt i;                                                                         \
@@ -441,9 +442,9 @@ yaflStatusEn name(yaflInt nr,  yaflInt nc, yaflFloat *res, yaflFloat *a, yaflFlo
     return YAFL_ST_OK;                                                                 \
 }
 
-_DO_MU(yafl_math_set_mu,  =, +=)
-_DO_MU(yafl_math_add_mu, +=, +=)
-_DO_MU(yafl_math_sub_mu, -=, -=)
+YAFL_DO_MU(yafl_math_set_mu,  =, +=)
+YAFL_DO_MU(yafl_math_add_mu, +=, +=)
+YAFL_DO_MU(yafl_math_sub_mu, -=, -=)
 
 yaflStatusEn yafl_math_set_u(yaflInt sz, yaflFloat *res, yaflFloat *u)
 {
@@ -473,7 +474,7 @@ yaflStatusEn yafl_math_set_u(yaflInt sz, yaflFloat *res, yaflFloat *u)
     return YAFL_ST_OK;
 }
 
-#define _DO_U(name, op)                                     \
+#define YAFL_DO_U(name, op)                                 \
 yaflStatusEn name(yaflInt sz, yaflFloat *res, yaflFloat *u) \
 {                                                           \
     yaflInt i;                                              \
@@ -497,37 +498,37 @@ yaflStatusEn name(yaflInt sz, yaflFloat *res, yaflFloat *u) \
     return YAFL_ST_OK;                                      \
 }
 
-_DO_U(yafl_math_add_u, +=)
-_DO_U(yafl_math_sub_u, -=)
+YAFL_DO_U(yafl_math_add_u, +=)
+YAFL_DO_U(yafl_math_sub_u, -=)
 
-#define _DO_BM(name, op)                                                           \
+#define YAFL_DO_BM(name, op)                                                        \
 yaflStatusEn name(yaflInt nc, yaflFloat *res, yaflInt sr, yaflInt sc, yaflFloat *a) \
-{                                                                                  \
-    yaflInt j;                                                          \
-                                                                        \
-    YAFL_CHECK(res, YAFL_ST_INV_ARG_2);                                 \
-    YAFL_CHECK(a,   YAFL_ST_INV_ARG_4);                                 \
-                                                                        \
-    for (j = 0; j < sr; j++)                                            \
-    {                                                                   \
-        yaflInt k;                                                      \
-        yaflInt ncj;                                                    \
-        yaflInt scj;                                                    \
-                                                                        \
-        ncj = nc * j;                                                   \
-        scj = sc * j;                                                   \
-                                                                        \
-        for (k = 0; k < sc; k++)                                        \
-        {                                                               \
-            res[ncj + k] op a[scj + k];                                 \
-        }                                                               \
-    }                                                                   \
-    return YAFL_ST_OK;                                                  \
+{                                                                                   \
+    yaflInt j;                                                                      \
+                                                                                    \
+    YAFL_CHECK(res, YAFL_ST_INV_ARG_2);                                             \
+    YAFL_CHECK(a,   YAFL_ST_INV_ARG_4);                                             \
+                                                                                    \
+    for (j = 0; j < sr; j++)                                                        \
+    {                                                                               \
+        yaflInt k;                                                                  \
+        yaflInt ncj;                                                                \
+        yaflInt scj;                                                                \
+                                                                                    \
+        ncj = nc * j;                                                               \
+        scj = sc * j;                                                               \
+                                                                                    \
+        for (k = 0; k < sc; k++)                                                    \
+        {                                                                           \
+            res[ncj + k] op a[scj + k];                                             \
+        }                                                                           \
+    }                                                                               \
+    return YAFL_ST_OK;                                                              \
 }
 
-_DO_BM(yafl_math_bset_m,  =)
-_DO_BM(yafl_math_badd_m, +=)
-_DO_BM(yafl_math_bsub_m, -=)
+YAFL_DO_BM(yafl_math_bset_m,  =)
+YAFL_DO_BM(yafl_math_badd_m, +=)
+YAFL_DO_BM(yafl_math_bsub_m, -=)
 
 yaflStatusEn yafl_math_bset_u(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *u)
 {
@@ -557,7 +558,7 @@ yaflStatusEn yafl_math_bset_u(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat 
     return YAFL_ST_OK;
 }
 
-#define _DO_BU(name, op)                                                \
+#define YAFL_DO_BU(name, op)                                            \
 yaflStatusEn name(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *u) \
 {                                                                       \
     yaflInt i;                                                          \
@@ -581,8 +582,8 @@ yaflStatusEn name(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *u) \
     return YAFL_ST_OK;                                                  \
 }
 
-_DO_BU(yafl_math_badd_u, +=)
-_DO_BU(yafl_math_bsub_u, -=)
+YAFL_DO_BU(yafl_math_badd_u, +=)
+YAFL_DO_BU(yafl_math_bsub_u, -=)
 
 yaflStatusEn yafl_math_bset_ut(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *u)
 {
@@ -613,7 +614,7 @@ yaflStatusEn yafl_math_bset_ut(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat
     return YAFL_ST_OK;
 }
 
-#define _DO_BUT(name, op)                                               \
+#define YAFL_DO_BUT(name, op)                                           \
 yaflStatusEn name(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *u) \
 {                                                                       \
     yaflInt i;                                                          \
@@ -638,10 +639,10 @@ yaflStatusEn name(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *u) \
     return YAFL_ST_OK;                                                  \
 }
 
-_DO_BUT(yafl_math_badd_ut, +=)
-_DO_BUT(yafl_math_bsub_ut, -=)
+YAFL_DO_BUT(yafl_math_badd_ut, +=)
+YAFL_DO_BUT(yafl_math_bsub_ut, -=)
 
-#define _DO_BV(name, op)                                                \
+#define YAFL_DO_BV(name, op)                                            \
 yaflStatusEn name(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *v) \
 {                                                                       \
     yaflInt i;                                                          \
@@ -656,11 +657,11 @@ yaflStatusEn name(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *v) \
     return YAFL_ST_OK;                                                  \
 }
 
-_DO_BV(yafl_math_bset_v,  =)
-_DO_BV(yafl_math_badd_v, +=)
-_DO_BV(yafl_math_bsub_v, -=)
+YAFL_DO_BV(yafl_math_bset_v,  =)
+YAFL_DO_BV(yafl_math_badd_v, +=)
+YAFL_DO_BV(yafl_math_bsub_v, -=)
 
-#define _DO_BVVT(name, op)                                                            \
+#define YAFL_DO_BVVT(name, op)                                                        \
 yaflStatusEn name(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *a, yaflFloat *b) \
 {                                                                                     \
     yaflInt j;                                                                        \
@@ -686,11 +687,11 @@ yaflStatusEn name(yaflInt nc, yaflFloat *res, yaflInt sz, yaflFloat *a, yaflFloa
     return YAFL_ST_OK;                                                                \
 }
 
-_DO_BVVT(yafl_math_bset_vvt,  =)
-_DO_BVVT(yafl_math_badd_vvt, +=)
-_DO_BVVT(yafl_math_bsub_vvt, -=)
+YAFL_DO_BVVT(yafl_math_bset_vvt,  =)
+YAFL_DO_BVVT(yafl_math_badd_vvt, +=)
+YAFL_DO_BVVT(yafl_math_bsub_vvt, -=)
 
-#define _DO_BMU(name, op1, op2)                                                                    \
+#define YAFL_DO_BMU(name, op1, op2)                                                                \
 yaflStatusEn name(yaflInt rnc, yaflFloat *res, yaflInt nr, yaflInt nc, yaflFloat *a, yaflFloat *b) \
 {                                                                                                  \
     yaflInt i;                                                                                     \
@@ -731,11 +732,11 @@ yaflStatusEn name(yaflInt rnc, yaflFloat *res, yaflInt nr, yaflInt nc, yaflFloat
     return YAFL_ST_OK;                                                                             \
 }
 
-_DO_BMU(yafl_math_bset_mu,  =, +=)
-_DO_BMU(yafl_math_badd_mu, +=, +=)
-_DO_BMU(yafl_math_bsub_mu, -=, -=)
+YAFL_DO_BMU(yafl_math_bset_mu,  =, +=)
+YAFL_DO_BMU(yafl_math_badd_mu, +=, +=)
+YAFL_DO_BMU(yafl_math_bsub_mu, -=, -=)
 
-#define _DO_BBU(name, op1, op2)                                                                                 \
+#define YAFL_DO_BBU(name, op1, op2)                                                                             \
 yaflStatusEn name(yaflInt rnc, yaflFloat *res, yaflInt nr, yaflInt nc, yaflInt anc, yaflFloat *a, yaflFloat *b) \
 {                                                                                                               \
     yaflInt i;                                                                                                  \
@@ -777,9 +778,9 @@ yaflStatusEn name(yaflInt rnc, yaflFloat *res, yaflInt nr, yaflInt nc, yaflInt a
     return YAFL_ST_OK;                                                                                          \
 }
 
-_DO_BBU(yafl_math_bset_bu,  =, +=)
-_DO_BBU(yafl_math_badd_bu, +=, +=)
-_DO_BBU(yafl_math_bsub_bu, -=, -=)
+YAFL_DO_BBU(yafl_math_bset_bu,  =, +=)
+YAFL_DO_BBU(yafl_math_badd_bu, +=, +=)
+YAFL_DO_BBU(yafl_math_bsub_bu, -=, -=)
 
 yaflStatusEn yafl_math_ruv(yaflInt sz, yaflFloat *res, yaflFloat *u)
 {
