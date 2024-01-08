@@ -313,7 +313,7 @@ Here is the bit field list:
 
 The execution of the YAFL code is stoped on the first error, so only one error may appear during YAFL function call.
 We think that errors are actually unlikely to happen so every error check in our code is wrapped in `YAFL_UNLIKELY` macro.
-If this macro doesn't mean **never** and if some **printf-like** function oe macro is used in `YAFL_LOG` macro, then you can get something like **stacktrace** in your console og log file if error happens.
+If this macro doesn't mean **never** and if some **printf-like** function oe macro is used in `YAFL_DBG` macro, then you can get something like **stacktrace** in your console og log file if error happens.
 
 On the other hand a single call to some YAFL function may yield many warning bits.
 To disthiguish between warinings and errors `YAFL_ST_ERR_THR` is used, e.g.:
