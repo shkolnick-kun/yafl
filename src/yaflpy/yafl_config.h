@@ -53,9 +53,4 @@ typedef int32_t yaflInt;
 #   define YAFL_UNLIKELY(x) (x)
 #endif
 
-/* WARNING!!!
-Fast UKF SSR updates may give dramatically incorrect results in case of adaptive Bierman filter
-*/
-//#define YAFL_USE_FAST_UKF
-
 #endif // YAFL_CONFIG_H

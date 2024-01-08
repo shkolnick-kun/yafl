@@ -9,5 +9,11 @@
 		<Project filename="ada_rob_joseph/hdf5_test.cbp" />
 		<Project filename="rob_bierman/hdf5_test.cbp" />
 		<Project filename="rob_joseph/hdf5_test.cbp" />
+		<Project filename="ada_ukf/hdf5_test.cbp" />
+		<Project filename="ada_ukf_bierman/hdf5_test.cbp" />
+		<Project filename="ada_rob_ukf_bierman/hdf5_test.cbp" />
+		<Project filename="rob_ukf_bierman/hdf5_test.cbp" />
+		<Project filename="ukf/hdf5_test.cbp" />
+		<Project filename="ukf_bierman/hdf5_test.cbp" />
 	</Workspace>
 </CodeBlocks_workspace_file>
