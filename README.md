@@ -64,45 +64,49 @@ To use the library you need to:
 ```C
 /*yafl_config.h*/
 
+/*yafl_config.h*/
+
 #ifndef YAFL_CONFIG_H
 #define YAFL_CONFIG_H
 
 #include <math.h>
 #include <stdint.h>
-#include <stdio.h>
 
-#define YAFL_DBG(...) fprintf(stderr, __VA_ARGS__)
+#ifdef DEBUG
+    /*
+    In this example we will use standard output.
+    You can actually use any printf implementation you want.
+    */
+#   include <stdio.h>
+#   define YAFL_DBG(...) fprintf(stderr, __VA_ARGS__)
 
-typedef int32_t yaflInt;
+    /*
+    Using branch speculation may save some clocks...
+    */
+#   ifdef __GNUC__
+#       define YAFL_UNLIKELY(x) __builtin_expect((x), 0)
+#   else /*__GNUC__*/
+#       define YAFL_UNLIKELY(x) (x)
+#   endif/*__GNUC__*/
+#else /*DEBUG*/
+#   define YAFL_DBG(...) /*Do nothing here*/
+    /*
+    Here we have "Never" actually, but you can use some of above definitions if you want.
+    */
+#   define YAFL_UNLIKELY(x) (0)
+#endif/*DEBUG*/
 
-#ifndef YAFL_USE_64_BIT
-#   define YAFL_USE_64_BIT (0)
-#endif/*YAFL_USE_64_BIT*/
+#define YAFL_EPS  (1.0e-6)
+#define YAFL_SQRT sqrtf
+#define YAFL_ABS  fabsf
+#define YAFL_EXP  expf
+#define YAFL_LOG  logf
 
-#if YAFL_USE_64_BIT
-    typedef double  yaflFloat;
-#   define YAFL_EPS  (1.0e-15)
-#   define YAFL_SQRT sqrt
-#   define YAFL_ABS  fabs
-#   define YAFL_ABS  fabs
-#   define YAFL_EXP  exp
-#   define YAFL_LOG  log
-#else/*YAFL_USE_64_BIT*/
-    typedef float  yaflFloat;
-#   define YAFL_EPS  (1.0e-6)
-#   define YAFL_SQRT sqrtf
-#   define YAFL_ABS  fabsf
-#   define YAFL_EXP  expf
-#   define YAFL_LOG  logf
-#endif/*YAFL_USE_64_BIT*/
 
-#ifdef __GNUC__
-#   define YAFL_UNLIKELY(x) __builtin_expect((x), 0)
-#else
-#   define YAFL_UNLIKELY(x) (x)
-#endif
+typedef float   yaflFloat;
+typedef int32_t   yaflInt;
 
-#endif // YAFL_CONFIG_H
+#endif/*YAFL_CONFIG_H*/
 
 ```
 * read the [C-Manual](./doc/C-Manual.md) for usage details,
