@@ -28,13 +28,13 @@ where:
 * **EKF** means Extended Kalman Filter
 * **UKF** means Unscented Kalman Filter
 * **Basic** means basic algorithm
-* **Adaptive** means a **Kalman filter** with [**adaptive divergence correction**](./doc/AdaptiveCorrection.pdf). We use H-infinity filter to correct the divergence
+* **Adaptive** means a **Kalman filter** with [**adaptive divergence correction**](https://github.com/shkolnick-kun/yafl/blob/master/doc/AdaptiveCorrection.pdf). We use H-infinity filter to correct the divergence
 * **Robust**   means **Robustified Kalman filter**, see [**West1981**](#west_1981)
 
 For all **EKF** variants we have **Bierman** and **Joseph** updates.
 For sequential UD-factorized **UKF** only **Bierman** updates have been implemented.
 
-And yes, we [**can actually**](./doc/UsingEKFTricksWithSPKF.pdf) use **EKF** tricks with **UKF**!
+And yes, we [**can actually**](https://github.com/shkolnick-kun/yafl/blob/master/doc/UsingEKFTricksWithSPKF.pdf) use **EKF** tricks with **UKF**!
 
 ## Notes on process and measurement noice covariance adjustments
 We used [this paper](https://arxiv.org/pdf/1702.00884.pdf) to implement optional Q and R adaptive adjustments.
@@ -55,10 +55,10 @@ To use the library you need to:
 * go to our [Releases page](https://github.com/shkolnick-kun/yafl/releases),
 * download and unpack the latest release source code archive,
 * add the folowing files to you C/C++ project:
-  * [src/yafl_math.c](./src/yafl_math.c)
-  * [src/yafl_math.h](./src/yafl_math.h)
-  * [src/yafl.c](./src/yafl.c)
-  * [src/yafl.h](./src/yafl.h)
+  * [src/yafl_math.c](https://github.com/shkolnick-kun/yafl/blob/master/src/yafl_math.c)
+  * [src/yafl_math.h](https://github.com/shkolnick-kun/yafl/blob/master/src/yafl_math.h)
+  * [src/yafl.c](https://github.com/shkolnick-kun/yafl/blob/master/src/yafl.c)
+  * [src/yafl.h](https://github.com/shkolnick-kun/yafl/blob/master/src/yafl.h)
 * write yafl_config.h file and add it to you project. For Cortex-M4F or similar the file may look ike this:
 
 ```C
@@ -109,7 +109,7 @@ typedef int32_t   yaflInt;
 #endif/*YAFL_CONFIG_H*/
 
 ```
-* read the [C-Manual](./doc/C-Manual.md) for usage details,
+* read the [C-Manual](https://github.com/shkolnick-kun/yafl/blob/master/doc/C-Manual.md) for usage details,
 * write some usefull code which use our library in you project.
 
 
@@ -125,7 +125,7 @@ To use the extension you need to:
 # are needed at this point
 pip install path_to/yaflpy-\<latest version\>.tar.gz
 ```
-* read the [Python-Manual](./doc/Python-Manual.md) for usage details.
+* read the [Python-Manual](https://github.com/shkolnick-kun/yafl/blob/master/doc/Python-Manual.md) for usage details.
 * import the extension:
 ```Python
 import yaflpy
