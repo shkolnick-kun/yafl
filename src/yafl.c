@@ -128,7 +128,7 @@ static inline yaflStatusEn \
     yaflStatusEn status = YAFL_ST_OK;
     yaflInt      nxz = nx + nz;
 
-    YAFL_CHECK(nx > 0     YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(nx > 0,     YAFL_ST_INV_ARG_1);
     YAFL_CHECK(nz > 0,     YAFL_ST_INV_ARG_2);
 
     YAFL_CHECK(rff >  0.0, YAFL_ST_INV_ARG_3);
