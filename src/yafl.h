@@ -107,9 +107,9 @@ struct _yaflKalmanBaseSt {
     .Ur  = _mem.Ur,                                                      \
     .Dr  = _mem.Dr,                                                      \
                                                                          \
-    .rff = _rff,                                                         \
-                                                                         \
     .l   = &_mem.l,                                                      \
+                                                                         \
+    .rff = _rff,                                                         \
                                                                          \
     .Nx  = _nx,                                                          \
     .Nz  = _nz                                                           \
