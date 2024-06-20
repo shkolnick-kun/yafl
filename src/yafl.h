@@ -141,8 +141,6 @@ typedef struct _yaflEKFBaseSt yaflEKFBaseSt;
 struct _yaflEKFBaseSt {
     yaflKalmanBaseSt base; /*Base type*/
 
-    yaflKalmanUpdateCBP qcb; /*Q update Call Back*/
-
     yaflKalmanFuncP jf; /*Jacobian of a state transition function*/
     yaflKalmanFuncP jh; /*Jacobian of a measurement function*/
 

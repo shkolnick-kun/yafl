@@ -46,8 +46,6 @@
 /*=============================================================================
                                   Base UDEKF
 =============================================================================*/
-#define _qcb (((yaflEKFBaseSt *)self)->qcb)
-
 #define _jfx (((yaflEKFBaseSt *)self)->jf)
 #define _jhx (((yaflEKFBaseSt *)self)->jh)
 
@@ -370,11 +368,6 @@ do {                                                                   \
         YAFL_CHECK(_uq, YAFL_ST_INV_ARG_1);                            \
         YAFL_CHECK(_dq, YAFL_ST_INV_ARG_1);                            \
         YAFL_TRY(status_q, yafl_math_udu_up(_nx, _uq, _dq, qff, knu)); \
-    }                                                                  \
-                                                                       \
-    if (_qcb)                                                          \
-    {                                                                  \
-        _qcb(self);                                                    \
     }                                                                  \
 } while (0)
 
@@ -1033,7 +1026,6 @@ yaflStatusEn \
 ------------------------------------------------------------------------------*/
 #undef _jfx
 #undef _jhx
-#undef _qcb
 
 #undef _hy
 #undef _w
