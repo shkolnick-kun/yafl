@@ -34,6 +34,8 @@ typedef yaflStatusEn (* yaflKalmanResFuncP)(yaflKalmanBaseSt *, yaflFloat *, \
 
 typedef yaflStatusEn (* yaflKalmanScalarUpdateP)(yaflKalmanBaseSt *, yaflInt);
 
+typedef yaflStatusEn (* yaflKalmanUpdateCBP)(yaflKalmanBaseSt *);
+
 /*
 Function pointer for robust versions of filters.
 
@@ -50,7 +52,8 @@ typedef yaflFloat (* yaflKalmanRobFuncP)(yaflKalmanBaseSt *, yaflFloat);
 struct _yaflKalmanBaseSt {
     yaflKalmanFuncP f;       /*A state transition function*/
     yaflKalmanFuncP h;       /*A measurement function*/
-    yaflKalmanResFuncP zrf;  /*Measurement residual function function*/
+    yaflKalmanResFuncP  zrf; /*Measurement residual function function*/
+    yaflKalmanUpdateCBP rcb; /*R update Call Back*/
 
     yaflFloat * x;  /*State vector*/
     yaflFloat * y;  /*Innovation vector*/
@@ -137,6 +140,8 @@ typedef struct _yaflEKFBaseSt yaflEKFBaseSt;
 
 struct _yaflEKFBaseSt {
     yaflKalmanBaseSt base; /*Base type*/
+
+    yaflKalmanUpdateCBP qcb; /*Q update Call Back*/
 
     yaflKalmanFuncP jf; /*Jacobian of a state transition function*/
     yaflKalmanFuncP jh; /*Jacobian of a measurement function*/

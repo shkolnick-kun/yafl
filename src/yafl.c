@@ -24,6 +24,7 @@
 #define _fx  (self->f)
 #define _hx  (self->h)
 #define _zrf (self->zrf)
+#define _rcb (self->rcb)
 
 #define _x   (self->x)
 #define _y   (self->y)
@@ -45,6 +46,8 @@
 /*=============================================================================
                                   Base UDEKF
 =============================================================================*/
+#define _qcb (((yaflEKFBaseSt *)self)->qcb)
+
 #define _jfx (((yaflEKFBaseSt *)self)->jf)
 #define _jhx (((yaflEKFBaseSt *)self)->jh)
 
@@ -239,6 +242,11 @@ yaflStatusEn yafl_ekf_base_update(yaflKalmanBaseSt * self, yaflFloat * z, yaflKa
                  _yafl_r_update(_nx, _nz, self->rff, _dp, _ur, _dr, _w, _d, _y));
         /*Updated R*/
     }
+    /*R update call back*/
+    if (_rcb)
+    {
+        _rcb(self);
+    }
     /*Now _y can be used for innovation!*/
 
     /*Compute innovation*/
@@ -362,6 +370,11 @@ do {                                                                   \
         YAFL_CHECK(_uq, YAFL_ST_INV_ARG_1);                            \
         YAFL_CHECK(_dq, YAFL_ST_INV_ARG_1);                            \
         YAFL_TRY(status_q, yafl_math_udu_up(_nx, _uq, _dq, qff, knu)); \
+    }                                                                  \
+                                                                       \
+    if (_qcb)                                                          \
+    {                                                                  \
+        _qcb(self);                                                    \
     }                                                                  \
 } while (0)
 
@@ -1020,6 +1033,7 @@ yaflStatusEn \
 ------------------------------------------------------------------------------*/
 #undef _jfx
 #undef _jhx
+#undef _qcb
 
 #undef _hy
 #undef _w
@@ -1034,6 +1048,7 @@ yaflStatusEn \
 #define _ufx  (_kalman_self->f)
 #define _uhx  (_kalman_self->h)
 #define _uzrf (_kalman_self->zrf)
+#define _urcb (_kalman_self->rcb)
 
 #define _ux   (_kalman_self->x)
 #define _uy   (_kalman_self->y)
@@ -1482,6 +1497,12 @@ yaflStatusEn yafl_ukf_base_update(yaflUKFBaseSt * self, yaflFloat * z, \
         /*Updated R, now _uy may be spoiled*/
     }
 
+    /*R update call back*/
+    if (_urcb)
+    {
+        _urcb(_kalman_self);
+    }
+
     /*Compute H*/
     for (i = 0; i < nz; i++)
     {
@@ -1769,6 +1790,12 @@ static inline yaflStatusEn _yafl_ukf_compute_ms_zp_s(yaflUKFBaseSt * self)
         /* R += rff * Pzz*/
         YAFL_TRY(r_status, _unscented_update(self, nz, ur, dr, _zp, \
                                              np, sigmas_z, _sz, _uzrf, rff));
+
+        /*R update call back*/
+        if (_urcb)
+        {
+            _urcb(_kalman_self);
+        }
 
         /*Compute Us, Ds*/
         memcpy((void *)_uus, (void *)ur, (nz * (nz - 1)) / 2 * sizeof(yaflFloat));
@@ -2223,9 +2250,11 @@ const yaflUKFSigmaMethodsSt yafl_ukf_julier_spm =
 =============================================================================*/
 #undef _kalman_self
 
+
 #undef _ufx
 #undef _uhx
 #undef _uzrf
+#undef _urcb
 
 #undef _ux
 #undef _uy
@@ -2277,6 +2306,7 @@ const yaflUKFSigmaMethodsSt yafl_ukf_julier_spm =
 #undef _fx
 #undef _hx
 #undef _zrf
+#undef _rcb
 
 #undef _x
 #undef _y
