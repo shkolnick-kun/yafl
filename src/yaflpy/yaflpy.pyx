@@ -192,12 +192,15 @@ cdef extern from "yafl.c":
     ctypedef yaflStatusEn (* yaflKalmanScalarUpdateP)(yaflKalmanBaseSt *, \
                                                       yaflInt)
 
+    ctypedef yaflStatusEn (* yaflKalmanUpdateCBP)(yaflKalmanBaseSt *)
+
     ctypedef yaflFloat (* yaflKalmanRobFuncP)(yaflKalmanBaseSt *, yaflFloat)
 
     ctypedef struct _yaflKalmanBaseSt:
-        yaflKalmanFuncP f      #
-        yaflKalmanFuncP h      #
-        yaflKalmanResFuncP zrf #
+        yaflKalmanFuncP f       #
+        yaflKalmanFuncP h       #
+        yaflKalmanResFuncP  zrf #
+        yaflKalmanUpdateCBP rcb #
 
         yaflFloat * x    #
         yaflFloat * y    #
@@ -2293,13 +2296,15 @@ cdef class yaflKalmanBase:
     cdef dict      _fx_args
     cdef object    _fx
 
+    cdef object    _rcb
+
     cdef dict      _hx_args
     cdef object    _hx
 
     cdef object    _residual_z
 
     def __init__(self, int dim_x, int dim_z, yaflFloat dt, \
-                 fx, hx, residual_z = None):
+                 fx, hx, residual_z = None, rcb = None):
 
         #Store dimensions
         self.c_self.base.base.Nx = dim_x
@@ -2318,10 +2323,14 @@ cdef class yaflKalmanBase:
         self._fx_args = {}
         self._hx_args = {}
 
-        if not callable(fx):
-            raise ValueError('fx must be callable!')
-        self.c_self.base.base.f = <yaflKalmanFuncP>yafl_py_kalman_fx
-        self._fx = fx
+        if fx:
+            if not callable(fx):
+                raise ValueError('fx must be callable!')
+            self.c_self.base.base.f = <yaflKalmanFuncP>yafl_py_kalman_fx
+            self._fx = fx
+        else:
+            self.c_self.base.base.f = <yaflKalmanFuncP>0
+            self._fx = None
 
         if not callable(hx):
             raise ValueError('hx must be callable!')
@@ -2336,6 +2345,15 @@ cdef class yaflKalmanBase:
         else:
             self.c_self.base.base.zrf = <yaflKalmanResFuncP>0
             self._residual_z = None
+
+        if rcb:
+            if not callable(rcb):
+                raise ValueError('rcb must be callable!')
+            self.c_self.base.base.rcb = <yaflKalmanUpdateCBP>yafl_py_kalman_rcb
+            self._rcb = rcb
+        else:
+            self.c_self.base.base.rcb = <yaflKalmanUpdateCBP>0
+            self._rcb = None
 
         # Allocate memories and setup the rest of c_self
         self._z  = np.zeros((dim_z,), dtype=NP_DTYPE)
@@ -2630,6 +2648,30 @@ cdef yaflStatusEn yafl_py_kalman_zrf(yaflPyKalmanBaseSt * self, yaflFloat * res,
         _pivot = np.asarray(<yaflFloat[:nz]> pivot) #
 
         _res[:] = residual_z(_sigma, _pivot)
+
+        return YAFL_ST_OK
+
+    except Exception as e:
+        print(tb.format_exc())
+        return YAFL_ST_INV_ARG_1
+
+#------------------------------------------------------------------------------
+cdef yaflStatusEn yafl_py_kalman_rcb(yaflPyKalmanBaseSt * self):
+    try:
+        if not isinstance(<object>(self.py_self), yaflKalmanBase):
+            raise ValueError('Invalid py_self type (must be subclass of yaflKalmanBase)!')
+
+        py_self = <yaflKalmanBase>(self.py_self)
+
+        rcb = py_self._rcb
+        if not callable(rcb):
+            raise ValueError('residual_z must be callable!')
+
+        hx_args = py_self._hx_args
+        if not isinstance(hx_args, dict):
+            raise ValueError('Invalid hx_args type (must be dict)!')
+
+        rcb(**hx_args)
 
         return YAFL_ST_OK
 

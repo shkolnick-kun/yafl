@@ -1267,10 +1267,7 @@ yaflStatusEn yafl_ukf_base_predict(yaflUKFBaseSt * self)
     nx = _unx;
     YAFL_CHECK(nx > 0, YAFL_ST_INV_ARG_1);
 
-
     /*Compute process sigmas*/
-    YAFL_CHECK(_ufx, YAFL_ST_INV_ARG_1);
-
     if (_ufx)
     {
         for (i = 0; i < np; i++)
@@ -1299,8 +1296,9 @@ static inline yaflStatusEn _yafl_ukf_compute_sigmas_z_and_zp(yaflUKFBaseSt * sel
     yaflUKFSigmaSt * sp_info; /*Sigma point generator info*/
 
     YAFL_CHECK(self,      YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(_zp,       YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(_sigmas_x, YAFL_ST_INV_ARG_1);
     YAFL_CHECK(_sigmas_z, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(_zp,       YAFL_ST_INV_ARG_1);
     YAFL_CHECK(_wm,       YAFL_ST_INV_ARG_1);
 
     nx = _unx;
@@ -1314,6 +1312,8 @@ static inline yaflStatusEn _yafl_ukf_compute_sigmas_z_and_zp(yaflUKFBaseSt * sel
 
     np = sp_info->np;
     YAFL_CHECK(np > 1, YAFL_ST_INV_ARG_1);
+
+    YAFL_CHECK(_uhx, YAFL_ST_INV_ARG_1);
 
     for (i = 0; i < np; i++)
     {
@@ -1435,8 +1435,6 @@ yaflStatusEn yafl_ukf_base_update(yaflUKFBaseSt * self, yaflFloat * z, \
     YAFL_CHECK(nz, YAFL_ST_INV_ARG_1);
 
     YAFL_CHECK(_pzx, YAFL_ST_INV_ARG_1);
-
-    YAFL_CHECK(_sigmas_x, YAFL_ST_INV_ARG_1);
 
     sp_info = self->sp_info;
     YAFL_CHECK(sp_info, YAFL_ST_INV_ARG_1);
