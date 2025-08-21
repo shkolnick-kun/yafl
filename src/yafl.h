@@ -34,7 +34,10 @@ typedef yaflStatusEn (* yaflKalmanResFuncP)(yaflKalmanBaseSt *, yaflFloat *, \
 
 typedef yaflStatusEn (* yaflKalmanScalarUpdateP)(yaflKalmanBaseSt *, yaflInt);
 
+/*Callback*/
 typedef yaflStatusEn (* yaflKalmanUpdateCBP)(yaflKalmanBaseSt *);
+
+typedef yaflStatusEn (* yaflKalmanUpdateCBP2)(yaflKalmanBaseSt *, yaflFloat *);
 
 /*
 Function pointer for robust versions of filters.
@@ -704,5 +707,119 @@ typedef struct _yaflUKFJulierSt {
 
 /*---------------------------------------------------------------------------*/
 extern const yaflUKFSigmaMethodsSt yafl_ukf_julier_spm;
+
+/*=============================================================================
+                       Interacting Multiple Model
+=============================================================================*/
+/*Filter bank item*/
+typedef struct _yaflFilterBankItemSt {
+    yaflKalmanBaseSt   * filter;
+    yaflKalmanUpdateCBP  predict;
+    yaflKalmanUpdateCBP2 update;
+    /*Scratchpad memory for mixed updates*/
+    yaflFloat          * Us;
+    yaflFloat          * Ds;
+    yaflFloat          * Xs;
+} yaflFilterBankItemSt;
+
+/*---------------------------------------------------------------------------*/
+/*Internal usape*/
+
+/*
+Per filter scratchpad memory.
+We don't need this stuff between predict(kf) and update(kf, z) calls.
+*/
+#define _YAFL_IMM_EKF_US(ekf) (((yaflEKFBaseSt *)(ekf))->W)
+#define _YAFL_IMM_EKF_DS(ekf) (((yaflEKFBaseSt *)(ekf))->D)
+#define _YAFL_IMM_EKF_XS(ekf) (((yaflEKFBaseSt *)(ekf))->H)
+
+#define _YAFL_IMM_UKF_US(ukf) (((yaflUKFBaseSt *)(ukf))->sigmas_x)
+#define _YAFL_IMM_UKF_DS(ukf) (((yaflUKFBaseSt *)(ukf))->Sx)
+#define _YAFL_IMM_UKF_XS(ukf) (((yaflUKFBaseSt *)(ukf))->Pzx)
+
+#define _YAFL_IMM_ITEM_INITIALIZER(kf, pre, upd, us, ds, xs) \
+{                                           \
+    .filter  = (yaflKalmanBaseSt    )(kf),  \
+    .predict = (yaflKalmanUpdateCBP )(pre), \
+    .update  = (yaflKalmanUpdateCBP2)(upd), \
+    .Us      = (us),                        \
+    .Ds      = (ds),                        \
+    .Xs      = (xs)                         \
+}
+
+/*---------------------------------------------------------------------------*/
+/*External usage*/
+#define YAFL_IMM_EKF_ITEM_INITIALIZER(kf, pre, upd) \
+    _YAFL_IMM_ITEM_INITIALIZER(kf, pre, upd,        \
+                              _YAFL_IMM_EKF_US(kf), \
+                              _YAFL_IMM_EKF_DS(kf), \
+                              _YAFL_IMM_EKF_XS(kf)  \
+                              )
+
+#define YAFL_IMM_UKF_ITEM_INITIALIZER(kf, pre, upd) \
+    _YAFL_IMM_ITEM_INITIALIZER(kf, pre, upd,        \
+                              _YAFL_IMM_UKF_US(kf), \
+                              _YAFL_IMM_UKF_DS(kf), \
+                              _YAFL_IMM_UKF_XS(kf)  \
+                              )
+
+/*---------------------------------------------------------------------------*/
+/*                         IMM control block stuff                           */
+/*---------------------------------------------------------------------------*/
+typedef struct _yaflIMMCBSt {
+    yaflFilterBankItemSt * bank;
+    /*Markov chain parameters*/
+    yaflFloat           * mu;
+    yaflFloat           * M;
+    /*Mixed state*/
+    yaflFloat           * Up;
+    yaflFloat           * Dp;
+    yaflFloat           * x;
+    /*Scratchpad memory*/
+    yaflFloat           * cbar;
+    yaflFloat           * omega;
+    yaflFloat           * y;
+    yaflFloat           * W;
+    yaflFloat           * D;
+    /*Number of filters in the bank*/
+    yaflInt               Nb;
+} yaflIMMCBSt;
+
+/*Check IMM before run*/
+yaflStatusEn yafl_imm_post_init(yaflIMMCBSt * self);
+
+yaflStatusEn yafl_imm_predict(yaflIMMCBSt * self);
+
+yaflStatusEn yafl_imm_update(yaflIMMCBSt * self, yaflFloat * z);
+
+/*---------------------------------------------------------------------------*/
+#define YAFL_IMM_INITIALIZER(_bank, _nb, mem) \
+{                                             \
+    .bank = _bank,                            \
+    .mu    = mem.mu,                          \
+    .M     = mem.M,                           \
+    .Up    = mem.Up,                          \
+    .Dp    = mem.Dp,                          \
+    .x     = mem.x,                           \
+    .cbar  = mem.cbar,                        \
+    .omega = mem.omega,                       \
+    .y     = mem.y,                           \
+    .W     = mem.W,                           \
+    .D     = mem.D,                           \
+    .Nb    = _nb                              \
+}
+
+/*---------------------------------------------------------------------------*/
+#define YAFL_IMM_MEMORY_MIXIN(nb, nx)  \
+    yaflFloat mu[nb];                  \
+    yaflFloat M[nb * nb];              \
+    yaflFloat Up[((nx - 1) * nx) / 2]; \
+    yaflFloat Dp[nx];                  \
+    yaflFloat x[nx];                   \
+    yaflFloat cbar[nb];                \
+    yaflFloat omega[nb * nb];          \
+    yaflFloat y[nx];                   \
+    yaflFloat D[nx];                   \
+    yaflFloat W[nx * nx]
 
 #endif // YAFL_H

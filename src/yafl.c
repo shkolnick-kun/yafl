@@ -2314,3 +2314,275 @@ const yaflUKFSigmaMethodsSt yafl_ukf_julier_spm =
 
 #undef _nx
 #undef _nz
+
+yaflStatusEn yafl_imm_post_init(yaflIMMCBSt * self)
+{
+    yaflInt i;
+    yaflInt nb;
+    yaflInt nx;
+    yaflInt nz;
+
+    YAFL_CHECK(self,       YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->bank, YAFL_ST_INV_ARG_1);
+
+    nb = self->Nb;
+    YAFL_CHECK(nb > 1,     YAFL_ST_INV_ARG_1);
+
+    YAFL_CHECK(self->cbar, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->mu,   YAFL_ST_INV_ARG_1);
+
+    for (i=0; i<nb; i++)
+    {
+        /*Bank item*/
+        yaflFilterBankItemSt * bi = self->bank + i;
+
+        YAFL_CHECK(bi,          YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bi->filter,  YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bi->predict, YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bi->update,  YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bi->Us,      YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bi->Ds,      YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bi->Xs,      YAFL_ST_INV_ARG_1);
+
+        if (!i)
+        {
+            nx = bi->filter->Nx;
+            nz = bi->filter->Nz;
+        }
+
+        YAFL_CHECK((bi->filter->Nx == nx), YAFL_ST_INV_ARG_1);
+        YAFL_CHECK((bi->filter->Nz == nz), YAFL_ST_INV_ARG_1);
+
+        self->cbar[i] = self->mu[i];
+    }
+
+    return YAFL_ST_OK;
+}
+
+yaflStatusEn yafl_imm_predict(yaflIMMCBSt * self)
+{
+    yaflStatusEn status = YAFL_ST_OK;
+    yaflFilterBankItemSt * bi;
+    yaflInt i;
+    yaflInt j;
+    yaflInt nb;
+    yaflInt nx;
+    yaflInt szu;
+    yaflInt szx;
+    yaflFloat s;
+
+
+    YAFL_CHECK(self,       YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->bank, YAFL_ST_INV_ARG_1);
+
+    nb = self->Nb;
+    YAFL_CHECK(nb > 1,     YAFL_ST_INV_ARG_1);
+
+    YAFL_CHECK(self->bank, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->bank, YAFL_ST_INV_ARG_1);
+
+    YAFL_CHECK(self->Up,   YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->Dp,   YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->x,    YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->y,    YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->cbar, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->mu,   YAFL_ST_INV_ARG_1);
+
+    for (i = 0; i < nb; i++)
+    {
+        bi = self->bank + i;
+        YAFL_CHECK(bi,          YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bi->Us,      YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bi->Ds,      YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bi->Xs,      YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bi->predict, YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bi->filter,  YAFL_ST_INV_ARG_1);
+
+        if (YAFL_UNLIKELY(!i))
+        {
+            nx  = bi->filter->Nx;
+            szx = nx * sizeof(yaflFloat);
+            szu = (((nx - 1) * nx) / 2) * sizeof(yaflFloat);
+        }
+
+        /*Copy states from scratch memory before predict*/
+        memcpy((void *)(bi->filter->Up), (void *)(bi->Us), szu);
+        memcpy((void *)(bi->filter->Dp), (void *)(bi->Ds), szx);
+        memcpy((void *)(bi->filter->x),  (void *)(bi->Xs), szx);
+
+        /*Now we can predict*/
+        YAFL_TRY(status, bi->predict(bi->filter));
+
+        /*Calculate mixed state*/
+        if (YAFL_UNLIKELY(!i))
+        {
+            /*x = fi.x * mu[i]*/
+            YAFL_TRY(status, yafl_math_set_vxn(nx, self->x, bi->filter->x, self->mu[i]));
+        }
+        else
+        {
+            /*x += fi.x * mu[i]*/
+            YAFL_TRY(status, yafl_math_add_vxn(nx, self->x, bi->filter->x, self->mu[i]));
+        }
+    }
+
+    /*Calculate mixed P*/
+    s = 0;
+    for (i = 0; i < nb; i++)
+    {
+        bi = self->bank + i;
+        /*y = fi.x - x*/
+        for (j = 0; j < nx; j++)
+        {
+            self->y[j] = bi->filter->x[j] - self->x[j];
+        }
+
+        if (YAFL_UNLIKELY(!i))
+        {
+            /*P = mu[i] * fi.P*/
+            memcpy((void *)(self->Up), (void *)(bi->filter->Up), szu);
+            YAFL_TRY(status, yafl_math_set_vxn(nx, self->Dp, bi->filter->Dp, self->mu[i]));
+        }
+        else
+        {
+            /*P += mu[i] * fi.P*/
+            YAFL_TRY(status, yafl_math_set_u  (nx, self->W, bi->filter->Up));
+            YAFL_TRY(status, yafl_math_set_vxn(nx, self->D, bi->filter->Dp, self->mu[i]));
+            YAFL_TRY(status, yafl_math_mwgsu(nx, nx, self->Up, self->Dp, self->W, self->D));
+        }
+
+        /*P += mu[i] * outer(y.T, y)*/
+        YAFL_TRY(status, yafl_math_udu_up(nx, self->Up, self->Dp, self->mu[i], self->y));
+
+        /*Start mu update using filters log likelyhoods*/
+        self->mu[i] = self->cbar[i] * YAFL_EXP(*bi->filter->l);
+        s += self->mu[i];
+    }
+
+    /*Finalize mu update (normalize)*/
+    for (i = 0; i < nb; i++)
+    {
+        self->mu[i] /= s;
+    }
+
+    return status;
+}
+
+yaflStatusEn yafl_imm_update(yaflIMMCBSt * self, yaflFloat * z)
+{
+    yaflStatusEn status = YAFL_ST_OK;
+    yaflFilterBankItemSt * bi;
+    yaflFilterBankItemSt * bj;
+    yaflInt i;
+    yaflInt j;
+    yaflInt k;
+    yaflInt nb;
+    yaflInt nx;
+    yaflInt szu;
+
+    YAFL_CHECK(self,       YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->bank, YAFL_ST_INV_ARG_1);
+
+    nb = self->Nb;
+    YAFL_CHECK(nb > 1,     YAFL_ST_INV_ARG_1);
+
+    YAFL_CHECK(self->bank, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->bank, YAFL_ST_INV_ARG_1);
+
+    YAFL_CHECK(self->Up,   YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->Dp,   YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->x,    YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->y,     YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->cbar,  YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->mu,    YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->M,     YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->omega, YAFL_ST_INV_ARG_1);
+
+    YAFL_CHECK(z,          YAFL_ST_INV_ARG_2);
+
+    /*Update mode probabilities*/
+    YAFL_TRY(status, yafl_math_set_vtm(nb, nb, self->cbar, self->mu, self->M));
+    for (i = 0; i < nb; i++)
+    {
+        yaflInt nbi = nb * i;
+        for (j = 0; j < nb; j++)
+        {
+            self->omega[nbi + j] = self->M[nbi + j] * self->mu[i] / self->mu[j];
+        }
+    }
+
+    /*Check and update filters*/
+    for (i = 0; i < nb; i++)
+    {
+        bi = self->bank + i;
+        YAFL_CHECK(bi,          YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bi->Us,      YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bi->Ds,      YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bi->Xs,      YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bi->update,  YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bi->filter,  YAFL_ST_INV_ARG_1);
+
+        if (YAFL_UNLIKELY(!i))
+        {
+            nx  = bi->filter->Nx;
+            szu = (((nx - 1) * nx) / 2) * sizeof(yaflFloat);
+        }
+
+        YAFL_TRY(status, bi->update(bi->filter, z));
+    }
+
+    for (i = 0; i < nb; i++)
+    {
+        yaflInt nbj;
+
+        bi = self->bank + i;
+        for (j = 0; j < nb; j++)
+        {
+            nbj = nb * j;
+            bj = self->bank + j;
+
+            if (YAFL_UNLIKELY(!j))
+            {
+                /* XSi = Xj * omega[j,i] */
+                YAFL_TRY(status, yafl_math_set_vxn(nx, bi->Xs, bj->filter->x, self->omega[nbj + i]));
+            }
+            else
+            {
+                /* XSi += Xj * omega[j,i] */
+                YAFL_TRY(status, yafl_math_add_vxn(nx, bi->Xs, bj->filter->x, self->omega[nbj + i]));
+            }
+        }
+
+        for (j = 0; j < nb; j++)
+        {
+            nbj = nb * j;
+            bj = self->bank + j;
+
+            for (k = 0; k < nb; k++)
+            {
+                self->y[k] = bj->filter->x[k] - bi->Xs[k];
+            }
+
+            if (YAFL_UNLIKELY(!j))
+            {
+                /*PSi = omega[j, i] * Pj*/
+                memcpy((void *)(bi->Us), (void *)(bj->filter->Up), szu);
+                YAFL_TRY(status, yafl_math_set_vxn(nx, bi->Ds, bi->filter->Dp, self->omega[nbj + i]));
+            }
+            else
+            {
+                /*PSi += omega[j, i] * Pj*/
+                YAFL_TRY(status, yafl_math_set_u  (nx, self->W, bj->filter->Up));
+                YAFL_TRY(status, yafl_math_set_vxn(nx, self->D, bj->filter->Dp, self->omega[nbj + i]));
+                YAFL_TRY(status, yafl_math_mwgsu(nx, nx, bi->Us, bi->Ds, self->W, self->D));
+            }
+
+            /*PSi += omega[j, i] * outer(y.T, y)*/
+            YAFL_TRY(status, yafl_math_udu_up(nx, bi->Us, bi->Ds, self->omega[nbj + i], self->y));
+        }
+    }
+
+    return status;
+}
+
+
