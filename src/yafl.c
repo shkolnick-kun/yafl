@@ -2319,8 +2319,8 @@ yaflStatusEn yafl_imm_post_init(yaflIMMCBSt * self)
 {
     yaflInt i;
     yaflInt nb;
-    yaflInt nx;
-    yaflInt nz;
+    yaflInt nx = 0;
+    yaflInt nz = 0;
 
     YAFL_CHECK(self,       YAFL_ST_INV_ARG_1);
     YAFL_CHECK(self->bank, YAFL_ST_INV_ARG_1);
@@ -2344,7 +2344,7 @@ yaflStatusEn yafl_imm_post_init(yaflIMMCBSt * self)
         YAFL_CHECK(bi->Ds,      YAFL_ST_INV_ARG_1);
         YAFL_CHECK(bi->Xs,      YAFL_ST_INV_ARG_1);
 
-        if (!i)
+        if (YAFL_UNLIKELY(0 == i))
         {
             nx = bi->filter->Nx;
             nz = bi->filter->Nz;
@@ -2353,7 +2353,7 @@ yaflStatusEn yafl_imm_post_init(yaflIMMCBSt * self)
         YAFL_CHECK((bi->filter->Nx == nx), YAFL_ST_INV_ARG_1);
         YAFL_CHECK((bi->filter->Nz == nz), YAFL_ST_INV_ARG_1);
 
-        self->cbar[i] = self->mu[i];
+        //self->cbar[i] = self->mu[i];
     }
 
     return YAFL_ST_OK;
@@ -2369,9 +2369,9 @@ yaflStatusEn yafl_imm_predict(yaflIMMCBSt * self)
     yaflInt k;
     yaflInt nb;
     yaflInt nbj;
-    yaflInt nx;
-    yaflInt szu;
-    yaflInt szx;
+    yaflInt nx  = 0;
+    yaflInt szu = 0;
+    yaflInt szx = 0;
 
     YAFL_CHECK(self,       YAFL_ST_INV_ARG_1);
     YAFL_CHECK(self->bank, YAFL_ST_INV_ARG_1);
@@ -2415,7 +2415,7 @@ yaflStatusEn yafl_imm_predict(yaflIMMCBSt * self)
         YAFL_CHECK(bi->filter->Up, YAFL_ST_INV_ARG_1);
         YAFL_CHECK(bi->filter->Dp, YAFL_ST_INV_ARG_1);
 
-        if (YAFL_UNLIKELY(!i))
+        if (YAFL_UNLIKELY(0 == i))
         {
             nx  = bi->filter->Nx;
             szx = nx * sizeof(yaflFloat);
@@ -2425,7 +2425,7 @@ yaflStatusEn yafl_imm_predict(yaflIMMCBSt * self)
         for (j = 0; j < nb; j++)
         {
 
-            if (YAFL_UNLIKELY(!j))
+            if (YAFL_UNLIKELY(0 == j))
             {
                 /* XS[i] = f[j].x * omega[j,i] */
                 YAFL_TRY(status, yafl_math_set_vxn(nx, bi->Xs, (self->bank + j)->filter->x, self->omega[nb * j + i]));
@@ -2447,7 +2447,7 @@ yaflStatusEn yafl_imm_predict(yaflIMMCBSt * self)
                 self->y[k] = bj->filter->x[k] - bi->Xs[k];
             }
 
-            if (YAFL_UNLIKELY(!j))
+            if (YAFL_UNLIKELY(0 == j))
             {
                 /*PS[i] = omega[j, i] * f[j].P*/
                 memcpy((void *)(bi->Us), (void *)(bj->filter->Up), szu);
@@ -2488,12 +2488,13 @@ yaflStatusEn yafl_imm_update(yaflIMMCBSt * self, yaflFloat * z)
     yaflStatusEn status = YAFL_ST_OK;
     yaflFilterBankItemSt * bi;
 
+    yaflFloat s;
+
     yaflInt i;
     yaflInt j;
     yaflInt nb;
-    yaflInt nx;
-    yaflInt szu;
-    yaflFloat s;
+    yaflInt nx  = 0;
+    yaflInt szu = 0;
 
     YAFL_CHECK(self,       YAFL_ST_INV_ARG_1);
     YAFL_CHECK(self->bank, YAFL_ST_INV_ARG_1);
@@ -2542,7 +2543,7 @@ yaflStatusEn yafl_imm_update(yaflIMMCBSt * self, yaflFloat * z)
     {
         bi = self->bank + i;
 
-        if (YAFL_UNLIKELY(!i))
+        if (YAFL_UNLIKELY(0 == i))
         {
             nx  = bi->filter->Nx;
             szu = (((nx - 1) * nx) / 2) * sizeof(yaflFloat);
@@ -2554,7 +2555,7 @@ yaflStatusEn yafl_imm_update(yaflIMMCBSt * self, yaflFloat * z)
             self->y[j] = bi->filter->x[j] - self->x[j];
         }
 
-        if (YAFL_UNLIKELY(!i))
+        if (YAFL_UNLIKELY(0 == i))
         {
             /*x = f[i].x * mu[i]*/
             YAFL_TRY(status, yafl_math_set_vxn(nx, self->x, bi->filter->x, self->mu[i]));
@@ -2569,7 +2570,7 @@ yaflStatusEn yafl_imm_update(yaflIMMCBSt * self, yaflFloat * z)
             YAFL_TRY(status, yafl_math_add_vxn(nx, self->x, bi->filter->x, self->mu[i]));
 
             /*P += mu[i] * f[i].P*/
-            YAFL_TRY(status, yafl_math_set_u  (nx, self->W, bi->filter->Up));
+            YAFL_TRY(status, yafl_math_set_u(nx, self->W, bi->filter->Up));
             YAFL_TRY(status, yafl_math_set_vxn(nx, self->D, bi->filter->Dp, self->mu[i]));
             YAFL_TRY(status, yafl_math_mwgsu(nx, nx, self->Up, self->Dp, self->W, self->D));
         }

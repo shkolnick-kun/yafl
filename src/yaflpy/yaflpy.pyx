@@ -21,6 +21,7 @@
 #cython: language_level=3
 #distutils: language=c
 from libc cimport stdint
+from libc.stdlib cimport malloc, free
 
 #------------------------------------------------------------------------------
 IF YAFLPY_USE_64_BIT:
@@ -193,6 +194,8 @@ cdef extern from "yafl.c":
                                                       yaflInt)
 
     ctypedef yaflStatusEn (* yaflKalmanUpdateCBP)(yaflKalmanBaseSt *)
+    ctypedef yaflStatusEn (* yaflKalmanUpdateCBP2)(yaflKalmanBaseSt *, \
+                                                   yaflFloat *)
 
     ctypedef yaflFloat (* yaflKalmanRobFuncP)(yaflKalmanBaseSt *, yaflFloat)
 
@@ -426,6 +429,63 @@ cdef extern from "yafl.c":
         yaflFloat kappa
 
     cdef const yaflUKFSigmaMethodsSt yafl_ukf_julier_spm
+
+    #==========================================================================
+    #                  Interructing multiple model
+    #==========================================================================
+    ctypedef struct yaflFilterBankItemSt:
+        yaflKalmanBaseSt   * filter
+        yaflKalmanUpdateCBP  predict
+        yaflKalmanUpdateCBP2 update
+        yaflFloat          * Us
+        yaflFloat          * Ds
+        yaflFloat          * Xs
+
+    ctypedef struct yaflIMMCBSt:
+        yaflFilterBankItemSt * bank
+        yaflFloat            * mu
+        yaflFloat            * M
+        yaflFloat            * Up
+        yaflFloat            * Dp
+        yaflFloat            * x
+        yaflFloat            * cbar
+        yaflFloat            * omega
+        yaflFloat            * y
+        yaflFloat            * W
+        yaflFloat            * D
+        yaflInt                Nb
+
+    cdef yaflStatusEn yafl_imm_post_init(yaflIMMCBSt * self)
+
+    cdef yaflStatusEn yafl_imm_predict(yaflIMMCBSt * self)
+
+    cdef yaflStatusEn yafl_imm_update(yaflIMMCBSt * self, yaflFloat * z)
+
+cdef extern from "immconst.c":
+    # EKF function pointers
+    cdef const yaflKalmanUpdateCBP  imm_yafl_ekf_base_predict
+
+    cdef const yaflKalmanUpdateCBP2 imm_yafl_ekf_bierman_update
+    cdef const yaflKalmanUpdateCBP2 imm_yafl_ekf_joseph_update
+    cdef const yaflKalmanUpdateCBP2 imm_yafl_ekf_adaptive_bierman_update
+    cdef const yaflKalmanUpdateCBP2 imm_yafl_ekf_adaptive_joseph_update
+    cdef const yaflKalmanUpdateCBP2 imm_yafl_ekf_robust_bierman_update
+    cdef const yaflKalmanUpdateCBP2 imm_yafl_ekf_robust_joseph_update
+    cdef const yaflKalmanUpdateCBP2 imm_yafl_ekf_adaptive_robust_bierman_update
+    cdef const yaflKalmanUpdateCBP2 imm_yafl_ekf_adaptive_robust_joseph_update
+
+    #==========================================================================
+    # EKF function pointers
+    cdef const yaflKalmanUpdateCBP  imm_yafl_ukf_base_predict
+
+    # Bierman variants
+    cdef const yaflKalmanUpdateCBP2 imm_yafl_ukf_bierman_update
+    cdef const yaflKalmanUpdateCBP2 imm_yafl_ukf_adaptive_bierman_update
+    cdef const yaflKalmanUpdateCBP2 imm_yafl_ukf_robust_bierman_update
+    cdef const yaflKalmanUpdateCBP2 imm_yafl_ukf_adaptive_robust_bierman_update
+    # Full variants
+    cdef const yaflKalmanUpdateCBP2 imm_yafl_ukf_update
+    cdef const yaflKalmanUpdateCBP2 imm_yafl_ukf_adaptive_update
 
 #==============================================================================
 #Extension API
@@ -2392,6 +2452,10 @@ cdef class yaflKalmanBase:
         self.c_self.base.base.Dr = &self.v_Dr[0]
 
     #==========================================================================
+    cdef yaflPyKalmanBaseUn * cbase(self):
+        return &self.c_self.base
+
+    #==========================================================================
     #Decorators
     @property
     def x(self):
@@ -3691,3 +3755,274 @@ cdef class JulierSigmaPoints(yaflSigmaBase):
     @kappa.setter
     def kappa(self, value):
         raise AttributeError('JulierSigmaPoints does not support this!')
+
+#==============================================================================
+cdef class IMMEstimator:
+    #
+    cdef yaflIMMCBSt c_self
+
+    #Memoryviews
+    cdef yaflFloat [::1]    v_mu
+    cdef yaflFloat [:, ::1] v_M
+    cdef yaflFloat [::1]    v_Up
+    cdef yaflFloat [::1]    v_Dp
+    cdef yaflFloat [::1]    v_x
+    cdef yaflFloat [::1]    v_cbar
+    cdef yaflFloat [:, ::1] v_omega
+    cdef yaflFloat [::1]    v_y
+    cdef yaflFloat [:, ::1] v_W
+    cdef yaflFloat [::1]    v_D
+
+    cdef np.ndarray  _mu
+    cdef np.ndarray  _M
+    cdef np.ndarray  _Up
+    cdef np.ndarray  _Dp
+    cdef np.ndarray  _x
+    cdef np.ndarray  _cbar
+    cdef np.ndarray  _omega
+    cdef np.ndarray  _y
+    cdef np.ndarray  _W
+    cdef np.ndarray  _D
+
+    cdef yaflFloat [::1] v_z
+    cdef yaflFloat [::1] _z
+
+    cdef yaflFloat _dt
+    cdef list      _filters
+
+    #==========================================================================
+    def __cinit__(self, filters, mu, M, yaflFloat dt):
+        assert isinstance(filters, list)
+        assert len(list) > 1
+
+        cdef yaflPyKalmanBaseUn * base
+
+        self.c_self.bank = <yaflFilterBankItemSt *>malloc(sizeof(yaflFilterBankItemSt) * len(filters))
+
+        for i,f in enumerate(filters):
+            if isinstance(f, Bierman):
+                base = (<yaflKalmanBase>f).cbase()
+                self.c_self.bank[i].predict = imm_yafl_ekf_base_predict
+                self.c_self.bank[i].update  = imm_yafl_ekf_bierman_update
+                self.c_self.bank[i].Us      = base.ekf.W
+                self.c_self.bank[i].Ds      = base.ekf.D
+                self.c_self.bank[i].Xs      = base.ekf.H
+
+            elif isinstance(f, Joseph):
+                base = (<yaflKalmanBase>f).cbase()
+                self.c_self.bank[i].predict = imm_yafl_ekf_base_predict
+                self.c_self.bank[i].update  = imm_yafl_ekf_joseph_update
+                self.c_self.bank[i].Us      = base.ekf.W
+                self.c_self.bank[i].Ds      = base.ekf.D
+                self.c_self.bank[i].Xs      = base.ekf.H
+
+            elif isinstance(f, AdaptiveBierman):
+                base = (<yaflKalmanBase>f).cbase()
+                self.c_self.bank[i].predict = imm_yafl_ekf_base_predict
+                self.c_self.bank[i].update  = imm_yafl_ekf_adaptive_bierman_update
+                self.c_self.bank[i].Us      = base.ekf.W
+                self.c_self.bank[i].Ds      = base.ekf.D
+                self.c_self.bank[i].Xs      = base.ekf.H
+
+            elif isinstance(f, AdaptiveJoseph):
+                base = (<yaflKalmanBase>f).cbase()
+                self.c_self.bank[i].predict = imm_yafl_ekf_base_predict
+                self.c_self.bank[i].update  = imm_yafl_ekf_adaptive_joseph_update
+                self.c_self.bank[i].Us      = base.ekf.W
+                self.c_self.bank[i].Ds      = base.ekf.D
+                self.c_self.bank[i].Xs      = base.ekf.H
+
+            elif isinstance(f, RobustBierman):
+                base = (<yaflKalmanBase>f).cbase()
+                self.c_self.bank[i].predict = imm_yafl_ekf_base_predict
+                self.c_self.bank[i].update  = imm_yafl_ekf_robust_bierman_update
+                self.c_self.bank[i].Us      = base.ekf.W
+                self.c_self.bank[i].Ds      = base.ekf.D
+                self.c_self.bank[i].Xs      = base.ekf.H
+
+            elif isinstance(f, RobustJoseph):
+                base = (<yaflKalmanBase>f).cbase()
+                self.c_self.bank[i].predict = imm_yafl_ekf_base_predict
+                self.c_self.bank[i].update  = imm_yafl_ekf_robust_joseph_update
+                self.c_self.bank[i].Us      = base.ekf.W
+                self.c_self.bank[i].Ds      = base.ekf.D
+                self.c_self.bank[i].Xs      = base.ekf.H
+
+            elif isinstance(f, AdaptiveRobustBierman):
+                base = (<yaflKalmanBase>f).cbase()
+                self.c_self.bank[i].predict = imm_yafl_ekf_base_predict
+                self.c_self.bank[i].update  = imm_yafl_ekf_adaptive_robust_bierman_update
+                self.c_self.bank[i].Us      = base.ekf.W
+                self.c_self.bank[i].Ds      = base.ekf.D
+                self.c_self.bank[i].Xs      = base.ekf.H
+
+            elif isinstance(f, AdaptiveRobustJoseph):
+                base = (<yaflKalmanBase>f).cbase()
+                self.c_self.bank[i].predict = imm_yafl_ekf_base_predict
+                self.c_self.bank[i].update  = imm_yafl_ekf_adaptive_robust_joseph_update
+                self.c_self.bank[i].Us      = base.ekf.W
+                self.c_self.bank[i].Ds      = base.ekf.D
+                self.c_self.bank[i].Xs      = base.ekf.H
+
+            elif isinstance(f, UnscentedBierman):
+                base = (<yaflKalmanBase>f).cbase()
+                self.c_self.bank[i].predict = imm_yafl_ukf_base_predict
+                self.c_self.bank[i].update  = imm_yafl_ukf_bierman_update
+                self.c_self.bank[i].Us      = base.ukf.sigmas_x
+                self.c_self.bank[i].Ds      = base.ukf.Sx
+                self.c_self.bank[i].Xs      = base.ukf.Pzx
+
+            elif isinstance(f, UnscentedAdaptiveBierman):
+                base = (<yaflKalmanBase>f).cbase()
+                self.c_self.bank[i].predict = imm_yafl_ukf_base_predict
+                self.c_self.bank[i].update  = imm_yafl_ukf_adaptive_bierman_update
+                self.c_self.bank[i].Us      = base.ukf.sigmas_x
+                self.c_self.bank[i].Ds      = base.ukf.Sx
+                self.c_self.bank[i].Xs      = base.ukf.Pzx
+
+            elif isinstance(f, UnscentedRobustBierman):
+                base = (<yaflKalmanBase>f).cbase()
+                self.c_self.bank[i].predict = imm_yafl_ukf_base_predict
+                self.c_self.bank[i].update  = imm_yafl_ukf_robust_bierman_update
+                self.c_self.bank[i].Us      = base.ukf.sigmas_x
+                self.c_self.bank[i].Ds      = base.ukf.Sx
+                self.c_self.bank[i].Xs      = base.ukf.Pzx
+
+            elif isinstance(f, UnscentedAdaptiveRobustBierman):
+                base = (<yaflKalmanBase>f).cbase()
+                self.c_self.bank[i].predict = imm_yafl_ukf_base_predict
+                self.c_self.bank[i].update  = imm_yafl_ukf_adaptive_robust_bierman_update
+                self.c_self.bank[i].Us      = base.ukf.sigmas_x
+                self.c_self.bank[i].Ds      = base.ukf.Sx
+                self.c_self.bank[i].Xs      = base.ukf.Pzx
+
+            elif isinstance(f, Unscented):
+                base = (<yaflKalmanBase>f).cbase()
+                self.c_self.bank[i].predict = imm_yafl_ukf_base_predict
+                self.c_self.bank[i].update  = imm_yafl_ukf_update
+                self.c_self.bank[i].Us      = base.ukf.sigmas_x
+                self.c_self.bank[i].Ds      = base.ukf.Sx
+                self.c_self.bank[i].Xs      = base.ukf.Pzx
+
+            elif isinstance(f, UnscentedAdaptive):
+                base = (<yaflKalmanBase>f).cbase()
+                self.c_self.bank[i].predict = imm_yafl_ukf_base_predict
+                self.c_self.bank[i].update  = imm_yafl_ukf_adaptive_update
+                self.c_self.bank[i].Us      = base.ukf.sigmas_x
+                self.c_self.bank[i].Ds      = base.ukf.Sx
+                self.c_self.bank[i].Xs      = base.ukf.Pzx
+
+            else:
+                raise ValueError('List filters must contain only yaflpy filters')
+
+            self.c_self.bank[i].filter = &(<yaflKalmanBase>f).cbase().base
+
+        self.c_self.Nb = len(filters)
+
+    #==========================================================================
+    def __init__(self, filters, mu, M, yaflFloat dt):
+
+        nx = filters[0].c_self.base.base.Nx
+        nz = filters[0].c_self.base.base.Nz
+        #hx = filters[0]._hx
+
+        for f in filters:
+            assert f.c_self.base.base.Nx == nx
+            assert f.c_self.base.base.Nz == nz
+            #assert f._hx                 == hx
+
+        self._filters = filters
+
+        assert isinstance(mu, np.ndarray)
+        assert NP_DTYPE == mu.dtype
+        assert 1 == len(mu.shape)
+
+        assert isinstance(M, np.ndarray)
+        assert NP_DTYPE == M.dtype
+        assert 2 == len(M.shape)
+
+        assert mu.shape[0] == self.c_self.Nb
+        assert M.shape[0]  == self.c_self.Nb
+        assert M.shape[1]  == self.c_self.Nb
+
+        self._mu  = mu.copy()
+        self.v_mu = self._mu
+        self.c_self.mu = &self.v_mu[0]
+
+        self._M  = M.copy()
+        self.v_M = self._M
+        self.c_self.M = &self.v_M[0, 0]
+
+        self._Up  = filters[0].Up.copy()
+        self.v_Up = self._Up
+        self.c_self.Up = &self.v_Up[0]
+
+        self._Dp  = filters[0].Dp.copy()
+        self.v_Dp = self._Dp
+        self.c_self.Dp = &self.v_Dp[0]
+
+        self._x  = filters[0].x.copy()
+        self.v_x = self._x
+        self.c_self.x = &self.v_x[0]
+
+        self._cbar  = mu.copy()
+        self.v_cbar = self._cbar
+        self.c_self.cbar = &self.v_cbar[0]
+
+        self._omega  = M.copy()
+        self.v_omega = self._omega
+        self.c_self.omega = &self.v_omega[0, 0]
+
+        self._y  = filters[0].x.copy()
+        self.v_y = self._y
+        self.c_self.y = &self.v_y[0]
+
+        self._W  = np.zeros((nx,nx), dtype=NP_DTYPE)
+        self.v_W = self._W
+        self.c_self.W = &self.v_W[0, 0]
+
+        self._D  = filters[0].Dp.copy()
+        self.v_D = self._D
+        self.c_self.D = &self.v_D[0]
+
+        assert YAFL_ST_OK == yafl_imm_post_init(&self.c_self)
+
+        self._dt = dt
+
+    #==========================================================================
+    def __dealloc__(self):
+        free(self.c_self.bank)
+
+    #==========================================================================
+    def predict(self, dt=None, **fx_args):
+        old_dt = self._dt
+
+        if dt:
+            if np.isnan(dt):
+                raise ValueError('Invalid dt value (nan)!')
+            self._dt = <yaflFloat>dt
+
+        for f in self._filters:
+            f._fx_args = fx_args
+            f._dt = self._dt
+
+        res = yafl_imm_predict(&self.c_self)
+        if res > YAFL_ST_ERR_THR:
+            raise ValueError('Bad return value on yaflKalmanBase.predict!')
+
+        self._dt = old_dt
+        return res
+
+    #==========================================================================
+    def update(self, z, **hx_args):
+
+        self._z[:] = z
+
+        for f in self._filters:
+            f._hx_args = hx_args
+
+        res = yafl_imm_update(&self.c_self, &self.v_z[0])
+        if res > YAFL_ST_ERR_THR:
+            raise ValueError('Bad return value on yaflKalmanBase.update!')
+
+        return res

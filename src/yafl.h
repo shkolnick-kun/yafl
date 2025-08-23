@@ -769,18 +769,18 @@ We don't need this stuff between predict(kf) and update(kf, z) calls.
 typedef struct _yaflIMMCBSt {
     yaflFilterBankItemSt * bank;
     /*Markov chain parameters*/
-    yaflFloat           * mu;
-    yaflFloat           * M;
+    yaflFloat            * mu;
+    yaflFloat            * M;
     /*Mixed state*/
-    yaflFloat           * Up;
-    yaflFloat           * Dp;
-    yaflFloat           * x;
+    yaflFloat            * Up;
+    yaflFloat            * Dp;
+    yaflFloat            * x;
     /*Scratchpad memory*/
-    yaflFloat           * cbar;
-    yaflFloat           * omega;
-    yaflFloat           * y;
-    yaflFloat           * W;
-    yaflFloat           * D;
+    yaflFloat            * cbar;
+    yaflFloat            * omega;
+    yaflFloat            * y;
+    yaflFloat            * W;
+    yaflFloat            * D;
     /*Number of filters in the bank*/
     yaflInt               Nb;
 } yaflIMMCBSt;
