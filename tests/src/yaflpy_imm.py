@@ -62,9 +62,9 @@ def _jhx(x, **hx_args):
 
 
 _dt = 0.01
-STD = 0.1
+STD = 0.01
 
-N = 1000
+N = 100
 time  = []
 clean = []
 noisy = []
@@ -100,7 +100,7 @@ plt.show()
 
 kf = KF(3, 1, _dt, _cv, _jcv, _hx, _jhx)
 kf.Dp *= .0001
-kf.Dq *= .0000001
+kf.Dq *= .00000001
 kf.Dr = STD*STD
 kf.x[0] = 0.
 kf.x[1] = 0.
@@ -117,7 +117,7 @@ plt.show()
 
 cv = KF(3, 1, _dt, _cv, _jcv, _hx, _jhx)
 cv.Dp *= .0001
-cv.Dq *= .00001
+cv.Dq *= .00000001
 cv.Dr = STD*STD
 cv.x[0] = 0.
 cv.x[1] = 0.
@@ -125,7 +125,7 @@ cv.x[2] = 0.
 
 ca = KF(3, 1, _dt, _ca, _jca, _hx, _jhx)
 ca.Dp *= .0001
-ca.Dq *= .00001
+ca.Dq *= .00000001
 ca.Dr = STD*STD
 ca.x[0] = 0.
 ca.x[1] = 0.

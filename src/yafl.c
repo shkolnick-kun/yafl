@@ -2322,27 +2322,37 @@ yaflStatusEn yafl_imm_post_init(yaflIMMCBSt * self)
     yaflInt nx = 0;
     yaflInt nz = 0;
 
-    YAFL_CHECK(self,       YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(self->bank, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self,        YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->bank,  YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->mu,    YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->M,     YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->Up,    YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->Dp,    YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->x,     YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->cbar,  YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->omega, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->y,     YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->W,     YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->D,     YAFL_ST_INV_ARG_1);
 
     nb = self->Nb;
     YAFL_CHECK(nb > 1,     YAFL_ST_INV_ARG_1);
-
-    YAFL_CHECK(self->cbar, YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(self->mu,   YAFL_ST_INV_ARG_1);
 
     for (i=0; i<nb; i++)
     {
         /*Bank item*/
         yaflFilterBankItemSt * bi = self->bank + i;
 
-        YAFL_CHECK(bi,          YAFL_ST_INV_ARG_1);
-        YAFL_CHECK(bi->filter,  YAFL_ST_INV_ARG_1);
-        YAFL_CHECK(bi->predict, YAFL_ST_INV_ARG_1);
-        YAFL_CHECK(bi->update,  YAFL_ST_INV_ARG_1);
-        YAFL_CHECK(bi->Us,      YAFL_ST_INV_ARG_1);
-        YAFL_CHECK(bi->Ds,      YAFL_ST_INV_ARG_1);
-        YAFL_CHECK(bi->Xs,      YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bi,              YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bi->filter,      YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bi->filter->x,   YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bi->filter->Up,  YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bi->filter->Dp,  YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bi->predict,     YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bi->update,      YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bi->Us,          YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bi->Ds,          YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bi->Xs,          YAFL_ST_INV_ARG_1);
 
         if (YAFL_UNLIKELY(0 == i))
         {
@@ -2352,8 +2362,6 @@ yaflStatusEn yafl_imm_post_init(yaflIMMCBSt * self)
 
         YAFL_CHECK((bi->filter->Nx == nx), YAFL_ST_INV_ARG_1);
         YAFL_CHECK((bi->filter->Nz == nz), YAFL_ST_INV_ARG_1);
-
-        //self->cbar[i] = self->mu[i];
     }
 
     return YAFL_ST_OK;
@@ -2369,33 +2377,41 @@ yaflStatusEn yafl_imm_predict(yaflIMMCBSt * self)
     yaflInt k;
     yaflInt nb;
     yaflInt nbj;
-    yaflInt nx  = 0;
-    yaflInt szu = 0;
-    yaflInt szx = 0;
+    yaflInt nu;
+    yaflInt nx;
+    yaflInt szu;
+    yaflInt szx;
 
-    YAFL_CHECK(self,       YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(self->bank, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self,               YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->bank,         YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->bank->filter, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->omega,        YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->y,            YAFL_ST_INV_ARG_1);
 
     nb = self->Nb;
     YAFL_CHECK(nb > 1,     YAFL_ST_INV_ARG_1);
 
-    YAFL_CHECK(self->bank, YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(self->bank, YAFL_ST_INV_ARG_1);
-
-    YAFL_CHECK(self->Up,   YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(self->Dp,   YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(self->x,    YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(self->y,     YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(self->cbar,  YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(self->mu,    YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(self->M,     YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(self->omega, YAFL_ST_INV_ARG_1);
+    nx = self->bank->filter->Nx;
+    nu = (((nx - 1) * nx) / 2);
+    szx = nx * sizeof(yaflFloat);
+    szu = nu * sizeof(yaflFloat);
 
     /*Calculate mixing probabilities*/
     YAFL_TRY(status, yafl_math_set_vtm(nb, nb, self->cbar, self->mu, self->M));
     for (j = 0; j < nb; j++)
     {
         yaflInt nbj = nb * j;
+        bj = self->bank + j;
+
+        YAFL_CHECK(bj,             YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bj->filter,     YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bj->filter->Up, YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bj->filter->Dp, YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bj->filter->x,  YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bj->Us,         YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bj->Ds,         YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bj->Xs,         YAFL_ST_INV_ARG_1);
+
         for (i = 0; i < nb; i++)
         {
             self->omega[nbj + i] = self->M[nbj + i] * self->mu[j] / self->cbar[i];
@@ -2406,55 +2422,34 @@ yaflStatusEn yafl_imm_predict(yaflIMMCBSt * self)
     for (i = 0; i < nb; i++)
     {
         bi = self->bank + i;
-        YAFL_CHECK(bi,             YAFL_ST_INV_ARG_1);
-        YAFL_CHECK(bi->Us,         YAFL_ST_INV_ARG_1);
-        YAFL_CHECK(bi->Ds,         YAFL_ST_INV_ARG_1);
-        YAFL_CHECK(bi->Xs,         YAFL_ST_INV_ARG_1);
-        YAFL_CHECK(bi->filter,     YAFL_ST_INV_ARG_1);
-        YAFL_CHECK(bi->filter->x,  YAFL_ST_INV_ARG_1);
-        YAFL_CHECK(bi->filter->Up, YAFL_ST_INV_ARG_1);
-        YAFL_CHECK(bi->filter->Dp, YAFL_ST_INV_ARG_1);
 
-        if (YAFL_UNLIKELY(0 == i))
+        /*Zero mixed states and covariances*/
+        for (j = 0; j < nu; j++)
         {
-            nx  = bi->filter->Nx;
-            szx = nx * sizeof(yaflFloat);
-            szu = (((nx - 1) * nx) / 2) * sizeof(yaflFloat);
+            bi->Us[j] = 0.0;
+        }
+        for (j = 0; j < nx; j++)
+        {
+            bi->Ds[j] = 0.0;
+            bi->Xs[j] = 0.0;
         }
 
+        /*Mixed state*/
         for (j = 0; j < nb; j++)
         {
-
-            if (YAFL_UNLIKELY(0 == j))
-            {
-                /* XS[i] = f[j].x * omega[j,i] */
-                YAFL_TRY(status, yafl_math_set_vxn(nx, bi->Xs, (self->bank + j)->filter->x, self->omega[nb * j + i]));
-            }
-            else
-            {
-                /* XS[i] += f[j].x * omega[j,i] */
-                YAFL_TRY(status, yafl_math_add_vxn(nx, bi->Xs, (self->bank + j)->filter->x, self->omega[nb * j + i]));
-            }
+            YAFL_TRY(status, yafl_math_add_vxn(nx, bi->Xs, self->bank[j].filter->x, self->omega[nb * j + i]));
         }
 
+        /*Mixed covariance*/
         for (j = 0; j < nb; j++)
         {
             nbj = nb * j;
             bj = self->bank + j;
 
-            if (YAFL_UNLIKELY(0 == j))
-            {
-                /*PS[i] = omega[j, i] * f[j].P*/
-                memcpy((void *)(bi->Us), (void *)(bj->filter->Up), szu);
-                YAFL_TRY(status, yafl_math_set_vxn(nx, bi->Ds, bj->filter->Dp, self->omega[nbj + i]));
-            }
-            else
-            {
-                /*PS[i] += omega[j, i] * f[j].P*/
-                YAFL_TRY(status, yafl_math_set_u  (nx, self->W, bj->filter->Up));
-                YAFL_TRY(status, yafl_math_set_vxn(nx, self->D, bj->filter->Dp, self->omega[nbj + i]));
-                YAFL_TRY(status, yafl_math_mwgsu(nx, nx, bi->Us, bi->Ds, self->W, self->D));
-            }
+            /*PS[i] += omega[j, i] * f[j].P*/
+            YAFL_TRY(status, yafl_math_set_u  (nx, self->W, bj->filter->Up));
+            YAFL_TRY(status, yafl_math_set_vxn(nx, self->D, bj->filter->Dp, self->omega[nbj + i]));
+            YAFL_TRY(status, yafl_math_mwgsu(nx, nx, bi->Us, bi->Ds, self->W, self->D));
 
             /*y = f[j].x - XS[i]*/
             for (k = 0; k < nx; k++)
@@ -2470,7 +2465,6 @@ yaflStatusEn yafl_imm_predict(yaflIMMCBSt * self)
     for (i = 0; i < nb; i++)
     {
         bi = self->bank + i;
-        YAFL_CHECK(bi->predict, YAFL_ST_INV_ARG_1);
 
         /*Copy states from scratch memory before predict*/
         memcpy((void *)(bi->filter->Up), (void *)(bi->Us), szu);
@@ -2494,33 +2488,42 @@ yaflStatusEn yafl_imm_update(yaflIMMCBSt * self, yaflFloat * z)
     yaflInt i;
     yaflInt j;
     yaflInt nb;
-    yaflInt nx  = 0;
+    yaflInt nu;
+    yaflInt nx;
 
-    YAFL_CHECK(self,       YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(self->bank, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self,               YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->bank,         YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->bank->filter, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->Up,           YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->Dp,           YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->x,            YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->y,            YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->cbar,         YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->mu,           YAFL_ST_INV_ARG_1);
 
     nb = self->Nb;
     YAFL_CHECK(nb > 1,     YAFL_ST_INV_ARG_1);
 
-    YAFL_CHECK(self->bank, YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(self->bank, YAFL_ST_INV_ARG_1);
-
-    YAFL_CHECK(self->Up,   YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(self->Dp,   YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(self->x,    YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(self->y,    YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(self->cbar, YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(self->mu,   YAFL_ST_INV_ARG_1);
-
     YAFL_CHECK(z,          YAFL_ST_INV_ARG_2);
+
+    nx = self->bank->filter->Nx;
+    nu = (((nx - 1) * nx) / 2);
 
     /*Check and update filters*/
     for (i = 0; i < nb; i++)
     {
         bi = self->bank + i;
-        YAFL_CHECK(bi,          YAFL_ST_INV_ARG_1);
-        YAFL_CHECK(bi->update,  YAFL_ST_INV_ARG_1);
-        YAFL_CHECK(bi->filter,  YAFL_ST_INV_ARG_1);
+
+        YAFL_CHECK(bi,             YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bi->update,     YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bi->filter,     YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bi->filter->Up, YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bi->filter->Dp, YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bi->filter->x,  YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bi->filter->l,  YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bi->Us,         YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bi->Ds,         YAFL_ST_INV_ARG_1);
+        YAFL_CHECK(bi->Xs,         YAFL_ST_INV_ARG_1);
 
         YAFL_TRY(status, bi->update(bi->filter, z));
     }
@@ -2530,7 +2533,7 @@ yaflStatusEn yafl_imm_update(yaflIMMCBSt * self, yaflFloat * z)
     for (i = 0; i < nb; i++)
     {
         /*Start mu update using filters log likelihoods*/
-        self->mu[i] = self->cbar[i] * YAFL_EXP(*(self->bank + i)->filter->l);
+        self->mu[i] = self->cbar[i] * YAFL_EXP(*self->bank[i].filter->l);
         s += self->mu[i];
     }
     for (i = 0; i < nb; i++)
@@ -2538,23 +2541,22 @@ yaflStatusEn yafl_imm_update(yaflIMMCBSt * self, yaflFloat * z)
         self->mu[i] /= s;
     }
 
+    /*Zero state and covariance*/
+    for (i = 0; i < nu; i++)
+    {
+        self->Up[i] = 0.0;
+    }
+    for (i = 0; i < nx; i++)
+    {
+        self->Dp[i] = 0.0;
+        self->x[i]  = 0.0;
+    }
+
     /*Calculate updated state*/
     for (i = 0; i < nb; i++)
     {
-        bi = self->bank + i;
-
-        if (YAFL_UNLIKELY(0 == i))
-        {
-            nx  = bi->filter->Nx;
-            /*x = f[i].x * mu[i]*/
-            YAFL_TRY(status, yafl_math_set_vxn(nx, self->x, bi->filter->x, self->mu[i]));
-        }
-        else
-        {
-            /*x += f[i].x * mu[i]*/
-            YAFL_TRY(status, yafl_math_add_vxn(nx, self->x, bi->filter->x, self->mu[i]));
-        }
-
+        /*x += f[i].x * mu[i]*/
+        YAFL_TRY(status, yafl_math_add_vxn(nx, self->x, self->bank[i].filter->x, self->mu[i]));
     }
 
     /*Calculate updated covariance*/
@@ -2562,21 +2564,10 @@ yaflStatusEn yafl_imm_update(yaflIMMCBSt * self, yaflFloat * z)
     {
         bi = self->bank + i;
 
-        if (YAFL_UNLIKELY(0 == i))
-        {
-            /*P = mu[i] * f[i].P*/
-            yaflInt szu = (((nx - 1) * nx) / 2) * sizeof(yaflFloat);
-
-            memcpy((void *)(self->Up), (void *)(bi->filter->Up), szu);
-            YAFL_TRY(status, yafl_math_set_vxn(nx, self->Dp, bi->filter->Dp, self->mu[i]));
-        }
-        else
-        {
-            /*P += mu[i] * f[i].P*/
-            YAFL_TRY(status, yafl_math_set_u(nx, self->W, bi->filter->Up));
-            YAFL_TRY(status, yafl_math_set_vxn(nx, self->D, bi->filter->Dp, self->mu[i]));
-            YAFL_TRY(status, yafl_math_mwgsu(nx, nx, self->Up, self->Dp, self->W, self->D));
-        }
+        /*P += mu[i] * f[i].P*/
+        YAFL_TRY(status, yafl_math_set_u  (nx, self->W, bi->filter->Up));
+        YAFL_TRY(status, yafl_math_set_vxn(nx, self->D, bi->filter->Dp, self->mu[i]));
+        YAFL_TRY(status, yafl_math_mwgsu(nx, nx, self->Up, self->Dp, self->W, self->D));
 
         /*y = f[i].x - x*/
         for (j = 0; j < nx; j++)
