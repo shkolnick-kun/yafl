@@ -3785,7 +3785,6 @@ cdef class IMMEstimator:
     cdef np.ndarray  _D
 
     cdef yaflFloat [::1] v_z
-    cdef yaflFloat [::1] _z
 
     cdef yaflFloat _dt
     cdef list      _filters
@@ -3793,7 +3792,7 @@ cdef class IMMEstimator:
     #==========================================================================
     def __cinit__(self, filters, mu, M, yaflFloat dt):
         assert isinstance(filters, list)
-        assert len(list) > 1
+        assert len(filters) > 1
 
         cdef yaflPyKalmanBaseUn * base
 
@@ -3921,14 +3920,17 @@ cdef class IMMEstimator:
 
     #==========================================================================
     def __init__(self, filters, mu, M, yaflFloat dt):
+        
+        cdef yaflPyKalmanBaseUn * base = (<yaflKalmanBase>filters[0]).cbase()
 
-        nx = filters[0].c_self.base.base.Nx
-        nz = filters[0].c_self.base.base.Nz
+        nx = base.base.Nx
+        nz = base.base.Nz
         #hx = filters[0]._hx
 
         for f in filters:
-            assert f.c_self.base.base.Nx == nx
-            assert f.c_self.base.base.Nz == nz
+            base = (<yaflKalmanBase>f).cbase()
+            assert base.base.Nx == nx
+            assert base.base.Nz == nz
             #assert f._hx                 == hx
 
         self._filters = filters
@@ -3988,6 +3990,7 @@ cdef class IMMEstimator:
         assert YAFL_ST_OK == yafl_imm_post_init(&self.c_self)
 
         self._dt = dt
+        
 
     #==========================================================================
     def __dealloc__(self):
@@ -4016,7 +4019,7 @@ cdef class IMMEstimator:
     #==========================================================================
     def update(self, z, **hx_args):
 
-        self._z[:] = z
+        self.v_z = z
 
         for f in self._filters:
             f._hx_args = hx_args
@@ -4026,3 +4029,50 @@ cdef class IMMEstimator:
             raise ValueError('Bad return value on yaflKalmanBase.update!')
 
         return res
+    
+    #==========================================================================
+    #Decorators
+    @property
+    def mu(self):
+        return self._mu
+
+    @mu.setter
+    def mu(self, value):
+        raise AttributeError('IMMEstimator does not support this!')
+    #--------------------------------------------------------------------------
+    @property
+    def x(self):
+        return self._x
+
+    @x.setter
+    def x(self, value):
+        self._x[:] = value
+    #--------------------------------------------------------------------------
+    @property
+    def Up(self):
+        return self._Up
+
+    @Up.setter
+    def Up(self, value):
+        self._Up[:] = value
+    #--------------------------------------------------------------------------
+    @property
+    def Dp(self):
+        return self._Dp
+
+    @Dp.setter
+    def Dp(self, value):
+        self._Dp[:] = value
+    #--------------------------------------------------------------------------
+    @property
+    def P(self):
+        #
+        if len(self._x) > 1:
+            _,u = _set_u(self._Up)
+            return u.dot(np.diag(self._Dp).dot(u.T))
+        #
+        return self._Dp.copy().reshape((1,1))
+
+    @P.setter
+    def P(self, value):
+        raise AttributeError('IMMEstimator does not support this!')

@@ -2393,12 +2393,12 @@ yaflStatusEn yafl_imm_predict(yaflIMMCBSt * self)
 
     /*Calculate mixing probabilities*/
     YAFL_TRY(status, yafl_math_set_vtm(nb, nb, self->cbar, self->mu, self->M));
-    for (i = 0; i < nb; i++)
+    for (j = 0; j < nb; j++)
     {
-        yaflInt nbi = nb * i;
-        for (j = 0; j < nb; j++)
+        yaflInt nbj = nb * j;
+        for (i = 0; i < nb; i++)
         {
-            self->omega[nbi + j] = self->M[nbi + j] * self->mu[i] / self->cbar[j];
+            self->omega[nbj + i] = self->M[nbj + i] * self->mu[j] / self->cbar[i];
         }
     }
 
@@ -2451,7 +2451,7 @@ yaflStatusEn yafl_imm_predict(yaflIMMCBSt * self)
             {
                 /*PS[i] = omega[j, i] * f[j].P*/
                 memcpy((void *)(bi->Us), (void *)(bj->filter->Up), szu);
-                YAFL_TRY(status, yafl_math_set_vxn(nx, bi->Ds, bi->filter->Dp, self->omega[nbj + i]));
+                YAFL_TRY(status, yafl_math_set_vxn(nx, bi->Ds, bj->filter->Dp, self->omega[nbj + i]));
             }
             else
             {
@@ -2494,7 +2494,6 @@ yaflStatusEn yafl_imm_update(yaflIMMCBSt * self, yaflFloat * z)
     yaflInt j;
     yaflInt nb;
     yaflInt nx  = 0;
-    yaflInt szu = 0;
 
     YAFL_CHECK(self,       YAFL_ST_INV_ARG_1);
     YAFL_CHECK(self->bank, YAFL_ST_INV_ARG_1);
@@ -2538,7 +2537,7 @@ yaflStatusEn yafl_imm_update(yaflIMMCBSt * self, yaflFloat * z)
         self->mu[i] /= s;
     }
 
-    /*Calculate updated state and covariance*/
+    /*Calculate updated state*/
     for (i = 0; i < nb; i++)
     {
         bi = self->bank + i;
@@ -2546,33 +2545,42 @@ yaflStatusEn yafl_imm_update(yaflIMMCBSt * self, yaflFloat * z)
         if (YAFL_UNLIKELY(0 == i))
         {
             nx  = bi->filter->Nx;
-            szu = (((nx - 1) * nx) / 2) * sizeof(yaflFloat);
+            /*x = f[i].x * mu[i]*/
+            YAFL_TRY(status, yafl_math_set_vxn(nx, self->x, bi->filter->x, self->mu[i]));
+        }
+        else
+        {
+            /*x += f[i].x * mu[i]*/
+            YAFL_TRY(status, yafl_math_add_vxn(nx, self->x, bi->filter->x, self->mu[i]));
+        }
+
+    }
+
+    /*Calculate updated covariance*/
+    for (i = 0; i < nb; i++)
+    {
+        bi = self->bank + i;
+
+        if (YAFL_UNLIKELY(0 == i))
+        {
+            /*P = mu[i] * f[i].P*/
+            yaflInt szu = (((nx - 1) * nx) / 2) * sizeof(yaflFloat);
+
+            memcpy((void *)(self->Up), (void *)(bi->filter->Up), szu);
+            YAFL_TRY(status, yafl_math_set_vxn(nx, self->Dp, bi->filter->Dp, self->mu[i]));
+        }
+        else
+        {
+            /*P += mu[i] * f[i].P*/
+            YAFL_TRY(status, yafl_math_set_u(nx, self->W, bi->filter->Up));
+            YAFL_TRY(status, yafl_math_set_vxn(nx, self->D, bi->filter->Dp, self->mu[i]));
+            YAFL_TRY(status, yafl_math_mwgsu(nx, nx, self->Up, self->Dp, self->W, self->D));
         }
 
         /*y = f[i].x - x*/
         for (j = 0; j < nx; j++)
         {
             self->y[j] = bi->filter->x[j] - self->x[j];
-        }
-
-        if (YAFL_UNLIKELY(0 == i))
-        {
-            /*x = f[i].x * mu[i]*/
-            YAFL_TRY(status, yafl_math_set_vxn(nx, self->x, bi->filter->x, self->mu[i]));
-
-            /*P = mu[i] * f[i].P*/
-            memcpy((void *)(self->Up), (void *)(bi->filter->Up), szu);
-            YAFL_TRY(status, yafl_math_set_vxn(nx, self->Dp, bi->filter->Dp, self->mu[i]));
-        }
-        else
-        {
-            /*x += f[i].x * mu[i]*/
-            YAFL_TRY(status, yafl_math_add_vxn(nx, self->x, bi->filter->x, self->mu[i]));
-
-            /*P += mu[i] * f[i].P*/
-            YAFL_TRY(status, yafl_math_set_u(nx, self->W, bi->filter->Up));
-            YAFL_TRY(status, yafl_math_set_vxn(nx, self->D, bi->filter->Dp, self->mu[i]));
-            YAFL_TRY(status, yafl_math_mwgsu(nx, nx, self->Up, self->Dp, self->W, self->D));
         }
 
         /*P += mu[i] * outer(y.T, y)*/
