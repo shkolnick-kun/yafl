@@ -3798,7 +3798,9 @@ cdef class IMMEstimator:
 
         self.c_self.bank = <yaflFilterBankItemSt *>malloc(sizeof(yaflFilterBankItemSt) * len(filters))
 
+        print('Cinit:')
         for i,f in enumerate(filters):
+            print(f)
             if isinstance(f, Bierman):
                 base = (<yaflKalmanBase>f).cbase()
                 self.c_self.bank[i].predict = imm_yafl_ekf_base_predict
@@ -3925,13 +3927,15 @@ cdef class IMMEstimator:
 
         nx = base.base.Nx
         nz = base.base.Nz
-        #hx = filters[0]._hx
+        hx = (<yaflKalmanBase>filters[0])._hx
 
+        print('Init:')
         for f in filters:
+            print(f)
             base = (<yaflKalmanBase>f).cbase()
             assert base.base.Nx == nx
             assert base.base.Nz == nz
-            #assert f._hx                 == hx
+            assert (<yaflKalmanBase>f)._hx == hx
 
         self._filters = filters
 
@@ -4038,6 +4042,46 @@ cdef class IMMEstimator:
 
     @mu.setter
     def mu(self, value):
+        raise AttributeError('IMMEstimator does not support this!')
+    #--------------------------------------------------------------------------
+    @property
+    def M(self):
+        return self._M
+
+    @M.setter
+    def M(self, value):
+        raise AttributeError('IMMEstimator does not support this!')
+    #--------------------------------------------------------------------------
+    @property
+    def omega(self):
+        return self._omega
+
+    @omega.setter
+    def omega(self, value):
+        raise AttributeError('IMMEstimator does not support this!')
+    #--------------------------------------------------------------------------
+    @property
+    def cbar(self):
+        return self._cbar
+
+    @cbar.setter
+    def cbar(self, value):
+        raise AttributeError('IMMEstimator does not support this!')
+    #--------------------------------------------------------------------------
+    @property
+    def W(self):
+        return self._W
+
+    @W.setter
+    def W(self, value):
+        raise AttributeError('IMMEstimator does not support this!')
+    #--------------------------------------------------------------------------
+    @property
+    def D(self):
+        return self._D
+
+    @D.setter
+    def D(self, value):
         raise AttributeError('IMMEstimator does not support this!')
     #--------------------------------------------------------------------------
     @property

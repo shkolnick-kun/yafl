@@ -62,9 +62,9 @@ def _jhx(x, **hx_args):
 
 
 _dt = 0.01
-STD = 0.01
+STD = 0.001
 
-N = 1000
+N = 10000
 time  = []
 clean = []
 noisy = []
@@ -117,7 +117,7 @@ plt.show()
 
 cv = KF(3, 1, _dt, _cv, _jcv, _hx, _jhx)
 cv.Dp *= .0001
-cv.Dq *= .0001
+cv.Dq *= .0000001
 cv.Dr = STD*STD
 cv.x[0] = 0.
 cv.x[1] = 0.
@@ -125,7 +125,7 @@ cv.x[2] = 0.
 
 ca = KF(3, 1, _dt, _ca, _jca, _hx, _jhx)
 ca.Dp *= .0001
-ca.Dq *= .0001
+ca.Dq *= .0000001
 ca.Dr = STD*STD
 ca.x[0] = 0.
 ca.x[1] = 0.
@@ -135,7 +135,7 @@ mu = np.array([0.5, 0.5])
 M  = np.array([[0.95, 0.05],
                [0.05, 0.95]])
 
-imm = IMMEstimator([cv, ca], mu, M, _dt)
+imm = IMMEstimator([ca, cv], mu, M, _dt)
 
 out = []
 mu  = []

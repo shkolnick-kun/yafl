@@ -2442,11 +2442,6 @@ yaflStatusEn yafl_imm_predict(yaflIMMCBSt * self)
             nbj = nb * j;
             bj = self->bank + j;
 
-            for (k = 0; k < nb; k++)
-            {
-                self->y[k] = bj->filter->x[k] - bi->Xs[k];
-            }
-
             if (YAFL_UNLIKELY(0 == j))
             {
                 /*PS[i] = omega[j, i] * f[j].P*/
@@ -2459,6 +2454,12 @@ yaflStatusEn yafl_imm_predict(yaflIMMCBSt * self)
                 YAFL_TRY(status, yafl_math_set_u  (nx, self->W, bj->filter->Up));
                 YAFL_TRY(status, yafl_math_set_vxn(nx, self->D, bj->filter->Dp, self->omega[nbj + i]));
                 YAFL_TRY(status, yafl_math_mwgsu(nx, nx, bi->Us, bi->Ds, self->W, self->D));
+            }
+
+            /*y = f[j].x - XS[i]*/
+            for (k = 0; k < nb; k++)
+            {
+                self->y[k] = bj->filter->x[k] - bi->Xs[k];
             }
 
             /*PS[i] += omega[j, i] * outer(y.T, y)*/
