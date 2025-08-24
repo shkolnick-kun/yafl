@@ -20,7 +20,7 @@ import numpy as np
 import pyximport
 import scipy.stats
 import sys
-import time
+#import time
 
 from yaflpy import Bierman as KF
 from yaflpy import IMMEstimator
@@ -62,9 +62,9 @@ def _jhx(x, **hx_args):
 
 
 _dt = 0.01
-STD = 0.001
+STD = 0.1
 
-N = 10000
+N = 1000
 time  = []
 clean = []
 noisy = []
@@ -117,7 +117,7 @@ plt.show()
 
 cv = KF(3, 1, _dt, _cv, _jcv, _hx, _jhx)
 cv.Dp *= .0001
-cv.Dq *= .0000001
+cv.Dq *= .00001
 cv.Dr = STD*STD
 cv.x[0] = 0.
 cv.x[1] = 0.
@@ -125,7 +125,7 @@ cv.x[2] = 0.
 
 ca = KF(3, 1, _dt, _ca, _jca, _hx, _jhx)
 ca.Dp *= .0001
-ca.Dq *= .0000001
+ca.Dq *= .00001
 ca.Dr = STD*STD
 ca.x[0] = 0.
 ca.x[1] = 0.
@@ -139,8 +139,10 @@ imm = IMMEstimator([ca, cv], mu, M, _dt)
 
 out = []
 mu  = []
-cvl  = []
-cal  = []
+cvl = []
+cal = []
+cvx = []
+cax = []
 
 
 for i,z in enumerate(clean):
@@ -150,12 +152,30 @@ for i,z in enumerate(clean):
      mu.append(imm.mu.copy())
      cvl.append(cv.l)
      cal.append(ca.l)
+     cvx.append(cv.x.copy())
+     cax.append(ca.x.copy())
 
 plt.plot(time, out, time, clean)
 plt.show()
 
-plt.plot(mu)
+plt.plot(time, mu)
 plt.show()
+
+plt.plot(time, cvl)
+plt.show()
+
+plt.plot(time, cal)
+plt.show()
+
+plt.plot(time, cvx)
+plt.show()
+
+plt.plot(time, cax)
+plt.show()
+
+plt.plot(time, [cvx[i] - cax[i] for i in range(len(cvx))])
+plt.show()
+
 
 # plt.plot(t, noisy - kf_out)
 # plt.show()

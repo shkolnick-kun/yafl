@@ -2457,7 +2457,7 @@ yaflStatusEn yafl_imm_predict(yaflIMMCBSt * self)
             }
 
             /*y = f[j].x - XS[i]*/
-            for (k = 0; k < nb; k++)
+            for (k = 0; k < nx; k++)
             {
                 self->y[k] = bj->filter->x[k] - bi->Xs[k];
             }
