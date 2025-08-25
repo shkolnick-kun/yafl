@@ -20,7 +20,6 @@ import numpy as np
 import pyximport
 import scipy.stats
 import sys
-#import time
 
 from yaflpy import Bierman as KF
 from yaflpy import IMMEstimator
@@ -62,16 +61,25 @@ def _jhx(x, **hx_args):
 
 
 _dt = 0.1
-STD = 100.
+STD = 1.
 
-N = 1000
+N = 100
 time  = []
 clean = []
 noisy = []
 
-#CA
+#CV
 t = 0.
-tgt = np.array([0., 0., 0.1])
+tgt = np.array([-0., 0., 0.])
+for i in range(N):
+    time.append(t)
+    clean.append(tgt[0])
+    noisy.append(tgt[0] + np.random.normal(scale=STD, size=1))
+    t += _dt
+    tgt = _ca(tgt, _dt)
+
+#CV
+tgt[2] = 0.1
 for i in range(N):
     time.append(t)
     clean.append(tgt[0])
@@ -87,7 +95,33 @@ for i in range(N):
     t += _dt
     tgt = _ca(tgt, _dt)
 #CA
-tgt[2] = -0.1
+tgt[2] = -0.2
+for i in range(N):
+    time.append(t)
+    clean.append(tgt[0])
+    noisy.append(tgt[0] + np.random.normal(scale=STD, size=1))
+    t += _dt
+    tgt = _ca(tgt, _dt)
+
+#CV
+tgt[2] = 0.
+for i in range(N):
+    time.append(t)
+    clean.append(tgt[0])
+    noisy.append(tgt[0] + np.random.normal(scale=STD, size=1))
+    t += _dt
+    tgt = _ca(tgt, _dt)
+
+#CA
+tgt[2] = 0.1
+for i in range(N):
+    time.append(t)
+    clean.append(tgt[0])
+    noisy.append(tgt[0] + np.random.normal(scale=STD, size=1))
+    t += _dt
+    tgt = _ca(tgt, _dt)
+
+tgt[2] = 0.
 for i in range(N):
     time.append(t)
     clean.append(tgt[0])
@@ -98,9 +132,9 @@ for i in range(N):
 plt.plot(time, noisy, time, clean)
 plt.show()
 
-kf = KF(3, 1, _dt, _cv, _jcv, _hx, _jhx)
-kf.Dp *= .0001
-kf.Dq *= .0000001
+kf = KF(3, 1, _dt, _ca, _jca, _hx, _jhx)
+kf.Dp *= .1
+kf.Dq *= .000001
 kf.Dr = STD*STD
 kf.x[0] = 0.
 kf.x[1] = 0.
@@ -108,11 +142,7 @@ kf.x[2] = 0.
 
 out = []
 for i,z in enumerate(clean):
-     #print('p: ')
-     #print(kf.P)
      kf.predict()
-     #print('u: ')
-     #print(kf.P)
      kf.update(z)
      out.append(kf.x[0])    
 
@@ -123,16 +153,16 @@ def _zrf(a,b):
     return a - b
 
 cv = KF(3, 1, _dt, _cv, _jcv, _hx, _jhx, residual_z=_zrf)
-cv.Dp *= .0001
-cv.Dq *= .0000001
+cv.Dp *= .1
+cv.Dq *= .000001
 cv.Dr = STD*STD
 cv.x[0] = 0.
 cv.x[1] = 0.
 cv.x[2] = 0.
 
 ca = KF(3, 1, _dt, _ca, _jca, _hx, _jhx, residual_z=_zrf)
-ca.Dp *= .0001
-ca.Dq *= .0000001
+ca.Dp *= .1
+ca.Dq *= .000001
 ca.Dr = STD*STD
 ca.x[0] = 0.
 ca.x[1] = 0.
@@ -143,9 +173,6 @@ M  = np.array([[0.95, 0.05],
                [0.05, 0.95]])
 
 imm = IMMEstimator([ca, cv], mu, M, _dt)
-
-print(cv)
-print(ca)
 
 out = []
 mu  = []

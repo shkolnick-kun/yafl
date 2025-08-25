@@ -2517,6 +2517,7 @@ yaflStatusEn yafl_imm_update(yaflIMMCBSt * self, yaflFloat * z)
     YAFL_CHECK(self->y,            YAFL_ST_INV_ARG_1);
     YAFL_CHECK(self->cbar,         YAFL_ST_INV_ARG_1);
     YAFL_CHECK(self->mu,           YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(self->D,            YAFL_ST_INV_ARG_1);
 
     nb = self->Nb;
     YAFL_CHECK(nb > 1,     YAFL_ST_INV_ARG_1);
@@ -2529,11 +2530,11 @@ yaflStatusEn yafl_imm_update(yaflIMMCBSt * self, yaflFloat * z)
     szx = nx * sizeof(yaflFloat);
     szu = nu * sizeof(yaflFloat);
 
-    /*Check and update filters*/
+    s = 0;
     for (i = 0; i < nb; i++)
     {
         bi = self->bank + i;
-
+        /*Check filters*/
         YAFL_CHECK(bi,             YAFL_ST_INV_ARG_1);
         YAFL_CHECK(bi->update,     YAFL_ST_INV_ARG_1);
         YAFL_CHECK(bi->filter,     YAFL_ST_INV_ARG_1);
@@ -2545,13 +2546,9 @@ yaflStatusEn yafl_imm_update(yaflIMMCBSt * self, yaflFloat * z)
         YAFL_CHECK(bi->Ds,         YAFL_ST_INV_ARG_1);
         YAFL_CHECK(bi->Xs,         YAFL_ST_INV_ARG_1);
 
+        /*Update filters*/
         YAFL_TRY(status, bi->update(bi->filter, z));
-    }
 
-    /*Calculate mode probabilities*/
-    s = 0;
-    for (i = 0; i < nb; i++)
-    {
         /*Start mu update using filters log likelihoods*/
         yaflFloat li = YAFL_EXP(*self->bank[i].filter->l);
         if (li < YAFL_EPS)
@@ -2563,6 +2560,7 @@ yaflStatusEn yafl_imm_update(yaflIMMCBSt * self, yaflFloat * z)
         self->mu[i] = self->cbar[i] * li;
         s += self->mu[i];
     }
+    /*Finalize mode probabilities*/
     for (i = 0; i < nb; i++)
     {
         self->mu[i] /= s;
@@ -2585,7 +2583,6 @@ yaflStatusEn yafl_imm_update(yaflIMMCBSt * self, yaflFloat * z)
     for (i = 0; i < nb; i++)
     {
         bi = self->bank + i;
-
 
         if (YAFL_UNLIKELY(0 == i))
         {
