@@ -62,9 +62,9 @@ def _jhx(x, **hx_args):
 
 
 _dt = 0.1
-STD = 10.
+STD = 100.
 
-N = 5
+N = 1000
 time  = []
 clean = []
 noisy = []
@@ -142,7 +142,7 @@ mu = np.array([0.5, 0.5])
 M  = np.array([[0.95, 0.05],
                [0.05, 0.95]])
 
-imm = IMMEstimator([cv, ca], mu, M, _dt)
+imm = IMMEstimator([ca, cv], mu, M, _dt)
 
 print(cv)
 print(ca)
@@ -156,13 +156,7 @@ cax = []
 
 
 for i,z in enumerate(clean):
-     #print('p: ')
-     #print(cv.P)
-     #print(ca.P)
      imm.predict()
-     #print('u: ')
-     #print(cv.P)
-     #print(ca.P)
      imm.update(np.array([z]))
      out.append(imm.x[0])
      mu.append(imm.mu.copy())
@@ -182,35 +176,5 @@ plt.show()
 
 plt.plot(time, cal)
 plt.show()
-
-plt.plot(time, cvx)
-plt.show()
-
-plt.plot(time, cax)
-plt.show()
-
-plt.plot(time, [cvx[i] - cax[i] for i in range(len(cvx))])
-plt.show()
-
-
-# plt.plot(t, noisy - kf_out)
-# plt.show()
-
-# plt.plot(t, clean - kf_out)
-# plt.show()
-
-# plt.plot(clean[:,0], clean[:,1], kf_out[:,0], kf_out[:,1])
-# plt.show()
-
-# plt.plot(noisy[:,0], noisy[:,1], kf_out[:,0], kf_out[:,1])
-# plt.show()
-
-# plt.plot(t, noisy[:,1], t, kf_out[:,1], t, clean[:,1])
-# plt.show()
-
-# plt.plot(t, noisy[:,0], t, kf_out[:,0], t, clean[:,0])
-# plt.show()
-
-
 
 print('Done!')

@@ -820,6 +820,6 @@ yaflStatusEn yafl_imm_update(yaflIMMCBSt * self, yaflFloat * z);
     yaflFloat omega[nb * nb];          \
     yaflFloat y[nx];                   \
     yaflFloat D[nx];                   \
-    yaflFloat W[nx * nx]
+    yaflFloat W[2 *nx * nx]
 
 #endif // YAFL_H

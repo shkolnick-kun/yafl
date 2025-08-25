@@ -2626,8 +2626,6 @@ cdef yaflStatusEn yafl_py_kalman_fx(yaflPyKalmanBaseSt * self, \
             raise ValueError('Invalid py_self type (must be subclass of yaflKalmanBase)!')
 
         py_self = <yaflKalmanBase>(self.py_self)
-        
-        #print(py_self, py_self._fx)
 
         fx = py_self._fx
         if not callable(fx):
@@ -2664,8 +2662,6 @@ cdef yaflStatusEn yafl_py_kalman_hx(yaflPyKalmanBaseSt * self, \
             raise ValueError('Invalid py_self type (must be subclass of yaflKalmanBase)!')
 
         py_self = <yaflKalmanBase>(self.py_self)
-        
-        #print(py_self, py_self._hx, py_self._fx)
 
         hx = py_self._hx
         if not callable(hx):
@@ -2714,8 +2710,6 @@ cdef yaflStatusEn yafl_py_kalman_zrf(yaflPyKalmanBaseSt * self, yaflFloat * res,
         _res   = np.asarray(<yaflFloat[:nz]> res)   #
         _sigma = np.asarray(<yaflFloat[:nz]> sigma) #
         _pivot = np.asarray(<yaflFloat[:nz]> pivot) #
-        
-        #print('zrf: ', py_self, _pivot,  _sigma, np.asarray(<yaflFloat[:self.base.base.Nx]>self.base.base.x))
 
         _res[:] = residual_z(_sigma, _pivot)
 
@@ -3805,9 +3799,7 @@ cdef class IMMEstimator:
 
         self.c_self.bank = <yaflFilterBankItemSt *>malloc(sizeof(yaflFilterBankItemSt) * len(filters))
 
-        print('Cinit:')
         for i,f in enumerate(filters):
-            print(f)
             if isinstance(f, Bierman):
                 base = (<yaflKalmanBase>f).cbase()
                 self.c_self.bank[i].predict = imm_yafl_ekf_base_predict
@@ -3936,9 +3928,7 @@ cdef class IMMEstimator:
         nz = base.base.Nz
         hx = (<yaflKalmanBase>filters[0])._hx
 
-        print('Init: ', nx, ', ', nz)
         for f in filters:
-            print(f)
             base = (<yaflKalmanBase>f).cbase()
             assert base.base.Nx == nx
             assert base.base.Nz == nz
@@ -3990,11 +3980,11 @@ cdef class IMMEstimator:
         self.v_y = self._y
         self.c_self.y = &self.v_y[0]
 
-        self._W  = np.zeros((nx,nx), dtype=NP_DTYPE)
+        self._W  = np.zeros((2 * nx, nx), dtype=NP_DTYPE)
         self.v_W = self._W
         self.c_self.W = &self.v_W[0, 0]
 
-        self._D  = np.zeros_like(filters[0].Dp)
+        self._D  = np.zeros((2 * nx,), dtype=NP_DTYPE)
         self.v_D = self._D
         self.c_self.D = &self.v_D[0]
 
