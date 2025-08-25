@@ -388,3 +388,4 @@ TODO: add doc with derivation!
 */
 yaflStatusEn yafl_math_udu_down(yaflInt sz, yaflFloat *res_u, yaflFloat *res_d, yaflFloat alpha, yaflFloat *v);
 #endif // YAFL_MATH_H
+

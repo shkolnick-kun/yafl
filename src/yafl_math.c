@@ -1068,3 +1068,4 @@ yaflStatusEn yafl_math_udu_down(yaflInt sz, yaflFloat *res_u, yaflFloat *res_d, 
     }
     return status;
 }
+

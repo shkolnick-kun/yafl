@@ -823,3 +823,4 @@ yaflStatusEn yafl_imm_update(yaflIMMCBSt * self, yaflFloat * z);
     yaflFloat W[2 *nx * nx]
 
 #endif // YAFL_H
+

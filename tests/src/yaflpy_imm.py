@@ -17,9 +17,6 @@
 """
 import matplotlib.pyplot as plt
 import numpy as np
-import pyximport
-import scipy.stats
-import sys
 
 from yaflpy import Bierman as KF
 from yaflpy import IMMEstimator
