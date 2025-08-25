@@ -61,10 +61,10 @@ def _jhx(x, **hx_args):
     return H
 
 
-_dt = 0.01
-STD = 0.01
+_dt = 0.1
+STD = 10.
 
-N = 100
+N = 5
 time  = []
 clean = []
 noisy = []
@@ -100,7 +100,7 @@ plt.show()
 
 kf = KF(3, 1, _dt, _cv, _jcv, _hx, _jhx)
 kf.Dp *= .0001
-kf.Dq *= .00000001
+kf.Dq *= .0000001
 kf.Dr = STD*STD
 kf.x[0] = 0.
 kf.x[1] = 0.
@@ -108,24 +108,31 @@ kf.x[2] = 0.
 
 out = []
 for i,z in enumerate(clean):
+     #print('p: ')
+     #print(kf.P)
      kf.predict()
+     #print('u: ')
+     #print(kf.P)
      kf.update(z)
      out.append(kf.x[0])    
 
 plt.plot(time, out, time, clean)
 plt.show()
 
-cv = KF(3, 1, _dt, _cv, _jcv, _hx, _jhx)
+def _zrf(a,b):
+    return a - b
+
+cv = KF(3, 1, _dt, _cv, _jcv, _hx, _jhx, residual_z=_zrf)
 cv.Dp *= .0001
-cv.Dq *= .00000001
+cv.Dq *= .0000001
 cv.Dr = STD*STD
 cv.x[0] = 0.
 cv.x[1] = 0.
 cv.x[2] = 0.
 
-ca = KF(3, 1, _dt, _ca, _jca, _hx, _jhx)
+ca = KF(3, 1, _dt, _ca, _jca, _hx, _jhx, residual_z=_zrf)
 ca.Dp *= .0001
-ca.Dq *= .00000001
+ca.Dq *= .0000001
 ca.Dr = STD*STD
 ca.x[0] = 0.
 ca.x[1] = 0.
@@ -135,7 +142,10 @@ mu = np.array([0.5, 0.5])
 M  = np.array([[0.95, 0.05],
                [0.05, 0.95]])
 
-imm = IMMEstimator([ca, cv], mu, M, _dt)
+imm = IMMEstimator([cv, ca], mu, M, _dt)
+
+print(cv)
+print(ca)
 
 out = []
 mu  = []
@@ -146,7 +156,13 @@ cax = []
 
 
 for i,z in enumerate(clean):
+     #print('p: ')
+     #print(cv.P)
+     #print(ca.P)
      imm.predict()
+     #print('u: ')
+     #print(cv.P)
+     #print(ca.P)
      imm.update(np.array([z]))
      out.append(imm.x[0])
      mu.append(imm.mu.copy())

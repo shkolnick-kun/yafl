@@ -2396,8 +2396,27 @@ yaflStatusEn yafl_imm_predict(yaflIMMCBSt * self)
     szx = nx * sizeof(yaflFloat);
     szu = nu * sizeof(yaflFloat);
 
+    printf("===============================================================\n");
+
     /*Calculate mixing probabilities*/
+    printf("mu = [");
+    for (j = 0; j < nb; j++)
+    {
+        printf("%f ", self->mu[j]);
+    }
+    printf("]\n");
+
+
     YAFL_TRY(status, yafl_math_set_vtm(nb, nb, self->cbar, self->mu, self->M));
+
+    printf("cbar = [ ");
+    for (j = 0; j < nb; j++)
+    {
+        printf("%f ", self->cbar[j]);
+    }
+    printf("]\n");
+
+    printf("omega = [\n");
     for (j = 0; j < nb; j++)
     {
         yaflInt nbj = nb * j;
@@ -2415,33 +2434,89 @@ yaflStatusEn yafl_imm_predict(yaflIMMCBSt * self)
         for (i = 0; i < nb; i++)
         {
             self->omega[nbj + i] = self->M[nbj + i] * self->mu[j] / self->cbar[i];
+            printf("%f ", self->omega[nbj + i]);
         }
+        printf("\n");
     }
+    printf("]\n");
+
+    printf("===============================================================\n");
 
     /*Calculate mixed states and covariances*/
     for (i = 0; i < nb; i++)
     {
         bi = self->bank + i;
-
-        /*Zero mixed states and covariances*/
-        for (j = 0; j < nu; j++)
-        {
-            bi->Us[j] = 0.0;
-        }
-        for (j = 0; j < nx; j++)
-        {
-            bi->Ds[j] = 0.0;
-            bi->Xs[j] = 0.0;
-        }
-
         /*Mixed state*/
-        for (j = 0; j < nb; j++)
+        /*XS[i] = omega[0, i] * f[0].x*/
+        YAFL_TRY(status, yafl_math_set_vxn(nx, bi->Xs, self->bank[0].filter->x, self->omega[i]));
+
+        for (j = 1; j < nb; j++)
         {
+            /*XS[i] += omega[j, i] * f[j].x*/
             YAFL_TRY(status, yafl_math_add_vxn(nx, bi->Xs, self->bank[j].filter->x, self->omega[nb * j + i]));
         }
 
         /*Mixed covariance*/
-        for (j = 0; j < nb; j++)
+        /*PS[i] = omega[0, i] * f[0].P*/
+        memcpy((void *)(bi->Us), (void *)(self->bank[0].filter->Up), szu);
+        YAFL_TRY(status, yafl_math_set_vxn(nx, bi->Ds, self->bank[0].filter->Dp, self->omega[i]));
+
+        printf("------------------------------------------------------------\n");
+        printf("omega[0, %d] = %f\n", (int)i, self->omega[i]);
+        printf("Xs[%d] = [ ", (int)i);
+        for (k = 0; k < nx; k++)
+        {
+            printf("%f ", bi->Xs[j]);
+        }
+        printf("]\n");
+
+        printf("Ds[%d] = [ ", (int)i);
+        for (k = 0; k < nx; k++)
+        {
+            printf("%f ", bi->Ds[j]);
+        }
+        printf("]\n");
+
+        printf("Us[%d] = [ ", (int)i);
+        for (k = 0; k < nu; k++)
+        {
+            printf("%f ", bi->Us[j]);
+        }
+        printf("]\n");
+
+        /*y = f[j].x - XS[i]*/
+        for (k = 0; k < nx; k++)
+        {
+            self->y[k] = self->bank[0].filter->x[k] - bi->Xs[k];
+        }
+
+        /*PS[i] += omega[0, i] * outer(y.T, y)*/
+        YAFL_TRY(status, yafl_math_udu_up(nx, bi->Us, bi->Ds, self->omega[i], self->y));
+
+        printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n");
+        printf("omega[0, %d] = %f\n", (int)i, self->omega[i]);
+        printf("Xs[%d] = [ ", (int)i);
+        for (k = 0; k < nx; k++)
+        {
+            printf("%f ", bi->Xs[j]);
+        }
+        printf("]\n");
+
+        printf("Ds[%d] = [ ", (int)i);
+        for (k = 0; k < nx; k++)
+        {
+            printf("%f ", bi->Ds[j]);
+        }
+        printf("]\n");
+
+        printf("Us[%d] = [ ", (int)i);
+        for (k = 0; k < nu; k++)
+        {
+            printf("%f ", bi->Us[j]);
+        }
+        printf("]\n");
+
+        for (j = 1; j < nb; j++)
         {
             nbj = nb * j;
             bj = self->bank + j;
@@ -2457,15 +2532,105 @@ yaflStatusEn yafl_imm_predict(yaflIMMCBSt * self)
                 self->y[k] = bj->filter->x[k] - bi->Xs[k];
             }
 
+            printf("--------------------------------------------------------\n");
+            printf("omega[%d, %d] = %f\n", (int)j, (int)i, self->omega[nbj + i]);
+            printf("Xs[%d] = [ ", (int)i);
+            for (k = 0; k < nx; k++)
+            {
+                printf("%f ", bi->Xs[j]);
+            }
+            printf("]\n");
+
+            printf("Ds[%d] = [ ", (int)i);
+            for (k = 0; k < nx; k++)
+            {
+                printf("%f ", bi->Ds[j]);
+            }
+            printf("]\n");
+
+            printf("Us[%d] = [ ", (int)i);
+            for (k = 0; k < nu; k++)
+            {
+                printf("%f ", bi->Us[j]);
+            }
+            printf("]\n");
+
             /*PS[i] += omega[j, i] * outer(y.T, y)*/
             YAFL_TRY(status, yafl_math_udu_up(nx, bi->Us, bi->Ds, self->omega[nbj + i], self->y));
+
+            printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n");
+            printf("omega[%d, %d] = %f\n", (int)j, (int)i, self->omega[nbj + i]);
+            printf("Xs[%d] = [ ", (int)i);
+            for (k = 0; k < nx; k++)
+            {
+                printf("%f ", bi->Xs[j]);
+            }
+            printf("]\n");
+
+            printf("Ds[%d] = [ ", (int)i);
+            for (k = 0; k < nx; k++)
+            {
+                printf("%f ", bi->Ds[j]);
+            }
+            printf("]\n");
+
+            printf("Us[%d] = [ ", (int)i);
+            for (k = 0; k < nu; k++)
+            {
+                printf("%f ", bi->Us[j]);
+            }
+            printf("]\n");
         }
     }
+
+    printf("===============================================================\n");
 
     for (i = 0; i < nb; i++)
     {
         bi = self->bank + i;
 
+        printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n");
+        printf("Xs[%d] = [ ", (int)i);
+        for (k = 0; k < nx; k++)
+        {
+            printf("%f ", bi->Xs[j]);
+        }
+        printf("]\n");
+
+        printf("Ds[%d] = [ ", (int)i);
+        for (k = 0; k < nx; k++)
+        {
+            printf("%f ", bi->Ds[j]);
+        }
+        printf("]\n");
+
+        printf("Us[%d] = [ ", (int)i);
+        for (k = 0; k < nu; k++)
+        {
+            printf("%f ", bi->Us[j]);
+        }
+        printf("]\n");
+        printf("-----------------------------------------------------------\n");
+        printf("x[%d] = [ ", (int)i);
+        for (k = 0; k < nx; k++)
+        {
+            printf("%f ", bi->filter->x[j]);
+        }
+        printf("]\n");
+
+        printf("Dp[%d] = [ ", (int)i);
+        for (k = 0; k < nx; k++)
+        {
+            printf("%f ", bi->filter->Dp[j]);
+        }
+        printf("]\n");
+
+        printf("Up[%d] = [ ", (int)i);
+        for (k = 0; k < nu; k++)
+        {
+            printf("%f ", bi->filter->Up[j]);
+        }
+        printf("]\n");
         /*Copy states from scratch memory before predict*/
         memcpy((void *)(bi->filter->Up), (void *)(bi->Us), szu);
         memcpy((void *)(bi->filter->Dp), (void *)(bi->Ds), szx);
@@ -2473,6 +2638,28 @@ yaflStatusEn yafl_imm_predict(yaflIMMCBSt * self)
 
         /*Now we can predict*/
         YAFL_TRY(status, bi->predict(bi->filter));
+
+        printf("-----------------------------------------------------------\n");
+        printf("x[%d] = [ ", (int)i);
+        for (k = 0; k < nx; k++)
+        {
+            printf("%f ", bi->filter->x[j]);
+        }
+        printf("]\n");
+
+        printf("Dp[%d] = [ ", (int)i);
+        for (k = 0; k < nx; k++)
+        {
+            printf("%f ", bi->filter->Dp[j]);
+        }
+        printf("]\n");
+
+        printf("Up[%d] = [ ", (int)i);
+        for (k = 0; k < nu; k++)
+        {
+            printf("%f ", bi->filter->Up[j]);
+        }
+        printf("]\n");
     }
 
     return status;
@@ -2533,7 +2720,13 @@ yaflStatusEn yafl_imm_update(yaflIMMCBSt * self, yaflFloat * z)
     for (i = 0; i < nb; i++)
     {
         /*Start mu update using filters log likelihoods*/
-        self->mu[i] = self->cbar[i] * YAFL_EXP(*self->bank[i].filter->l);
+        yaflFloat li = YAFL_EXP(*self->bank[i].filter->l);
+        if (li < YAFL_EPS)
+        {
+            li = YAFL_EPS;
+        }
+
+        self->mu[i] = self->cbar[i] * li;
         s += self->mu[i];
     }
     for (i = 0; i < nb; i++)

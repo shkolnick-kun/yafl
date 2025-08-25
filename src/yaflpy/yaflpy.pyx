@@ -2626,6 +2626,8 @@ cdef yaflStatusEn yafl_py_kalman_fx(yaflPyKalmanBaseSt * self, \
             raise ValueError('Invalid py_self type (must be subclass of yaflKalmanBase)!')
 
         py_self = <yaflKalmanBase>(self.py_self)
+        
+        #print(py_self, py_self._fx)
 
         fx = py_self._fx
         if not callable(fx):
@@ -2662,6 +2664,8 @@ cdef yaflStatusEn yafl_py_kalman_hx(yaflPyKalmanBaseSt * self, \
             raise ValueError('Invalid py_self type (must be subclass of yaflKalmanBase)!')
 
         py_self = <yaflKalmanBase>(self.py_self)
+        
+        #print(py_self, py_self._hx, py_self._fx)
 
         hx = py_self._hx
         if not callable(hx):
@@ -2710,6 +2714,8 @@ cdef yaflStatusEn yafl_py_kalman_zrf(yaflPyKalmanBaseSt * self, yaflFloat * res,
         _res   = np.asarray(<yaflFloat[:nz]> res)   #
         _sigma = np.asarray(<yaflFloat[:nz]> sigma) #
         _pivot = np.asarray(<yaflFloat[:nz]> pivot) #
+        
+        #print('zrf: ', py_self, _pivot,  _sigma, np.asarray(<yaflFloat[:self.base.base.Nx]>self.base.base.x))
 
         _res[:] = residual_z(_sigma, _pivot)
 
@@ -3784,6 +3790,7 @@ cdef class IMMEstimator:
     cdef np.ndarray  _W
     cdef np.ndarray  _D
 
+    cdef np.ndarray       _z
     cdef yaflFloat [::1] v_z
 
     cdef yaflFloat _dt
@@ -3929,7 +3936,7 @@ cdef class IMMEstimator:
         nz = base.base.Nz
         hx = (<yaflKalmanBase>filters[0])._hx
 
-        print('Init:')
+        print('Init: ', nx, ', ', nz)
         for f in filters:
             print(f)
             base = (<yaflKalmanBase>f).cbase()
@@ -3959,27 +3966,27 @@ cdef class IMMEstimator:
         self.v_M = self._M
         self.c_self.M = &self.v_M[0, 0]
 
-        self._Up  = filters[0].Up.copy()
+        self._Up  = np.zeros_like(filters[0].Up)
         self.v_Up = self._Up
         self.c_self.Up = &self.v_Up[0]
 
-        self._Dp  = filters[0].Dp.copy()
+        self._Dp  = np.zeros_like(filters[0].Dp)
         self.v_Dp = self._Dp
         self.c_self.Dp = &self.v_Dp[0]
 
-        self._x  = filters[0].x.copy()
+        self._x  = np.zeros_like(filters[0].x)
         self.v_x = self._x
         self.c_self.x = &self.v_x[0]
 
-        self._cbar  = mu.copy()
+        self._cbar  = np.zeros_like(mu)
         self.v_cbar = self._cbar
         self.c_self.cbar = &self.v_cbar[0]
 
-        self._omega  = M.copy()
+        self._omega  = np.zeros_like(M)
         self.v_omega = self._omega
         self.c_self.omega = &self.v_omega[0, 0]
 
-        self._y  = filters[0].x.copy()
+        self._y  = np.zeros_like(filters[0].x)
         self.v_y = self._y
         self.c_self.y = &self.v_y[0]
 
@@ -3987,11 +3994,14 @@ cdef class IMMEstimator:
         self.v_W = self._W
         self.c_self.W = &self.v_W[0, 0]
 
-        self._D  = filters[0].Dp.copy()
+        self._D  = np.zeros_like(filters[0].Dp)
         self.v_D = self._D
         self.c_self.D = &self.v_D[0]
 
         assert YAFL_ST_OK == yafl_imm_post_init(&self.c_self)
+        
+        self._z  = np.zeros((nz,), dtype=NP_DTYPE)
+        self.v_z = self._z
 
         self._dt = dt
         
@@ -4015,7 +4025,7 @@ cdef class IMMEstimator:
 
         res = yafl_imm_predict(&self.c_self)
         if res > YAFL_ST_ERR_THR:
-            raise ValueError('Bad return value on yaflKalmanBase.predict!')
+            raise ValueError('Bad return value on IMMEstimator.predict!')
 
         self._dt = old_dt
         return res
@@ -4023,14 +4033,14 @@ cdef class IMMEstimator:
     #==========================================================================
     def update(self, z, **hx_args):
 
-        self.v_z = z
+        self._z[:] = z
 
         for f in self._filters:
             f._hx_args = hx_args
 
         res = yafl_imm_update(&self.c_self, &self.v_z[0])
         if res > YAFL_ST_ERR_THR:
-            raise ValueError('Bad return value on yaflKalmanBase.update!')
+            raise ValueError('Bad return value on IMMEstimator.update!')
 
         return res
     
