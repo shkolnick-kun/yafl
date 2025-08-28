@@ -17,6 +17,20 @@
 """
 import matplotlib.pyplot as plt
 import numpy as np
+import time
+
+"""
+import pyximport
+import sys
+
+sys.path.insert(0,'../../src/yaflpy')
+
+pyximport.install(
+    build_dir='../projects/obj',
+    pyimport=True,
+    reload_support=True
+    )
+"""
 
 from yaflpy import Bierman as KF
 from yaflpy import IMMEstimator

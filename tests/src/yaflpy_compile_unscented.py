@@ -17,25 +17,21 @@
 """
 import matplotlib.pyplot as plt
 import numpy as np
-import pyximport
-import scipy.stats
-import sys
 import time
 
 """
+import pyximport
+import sys
+
 sys.path.insert(0,'../../src/yaflpy')
 
 pyximport.install(
     build_dir='../projects/obj',
     pyimport=True,
-    reload_support=True,
-    language_level=3,
-    setup_args={
-        'include_dirs' : [np.get_include(), '../../src', '../../src/yaflpy'],
-        'define_macros':[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")]
-        }
+    reload_support=True
     )
 """
+
 #from yaflpy import MerweSigmaPoints as SP
 from yaflpy import JulierSigmaPoints as SP
 

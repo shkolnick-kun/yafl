@@ -19,23 +19,15 @@ If you don't want to install the extension then you can do this:
 import numpy as np
 import pyximport
 import os
-import scipy.stats
 import sys
 
 # Write the rigth path here!
-SRC_PATH = 'path_to_yafl/src'
-EXT_PATH = os.path.join(SRC_PATH, 'yaflpy')
+SRC_PATH = 'path_to_yafl'
+EXT_PATH = os.path.join(os.path.join(SRC_PATH, 'src'), 'yaflpy')
 
 sys.path.insert(0, EXT_PATH)
 
-pyximport.install(
-    pyimport=True,
-    reload_support=True,
-    language_level=3,
-    setup_args={
-        'include_dirs': [np.get_include(), SRC_PATH, EXT_PATH],
-        }
-    )
+pyximport.install(pyimport=True, reload_support=True)
 
 #Now we are ready to import yaflpy
 import yaflpy

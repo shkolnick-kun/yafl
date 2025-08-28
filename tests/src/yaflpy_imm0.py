@@ -17,10 +17,6 @@
 """
 import matplotlib.pyplot as plt
 import numpy as np
-import pyximport
-import scipy.stats
-import sys
-#import time
 
 from filterpy.kalman import ExtendedKalmanFilter as KF
 
@@ -215,8 +211,8 @@ for i,z in enumerate(clean):
      mu.append(imm.mu.copy())
      cvl.append(cv.log_likelihood)
      cal.append(ca.log_likelihood)
-     ##cvx.append(cv.x.copy())
-     ##cax.append(ca.x.copy())
+     cvx.append(cv.x.copy())
+     cax.append(ca.x.copy())
 
 plt.plot(time, out, time, clean)
 plt.show()
@@ -229,26 +225,5 @@ plt.show()
 
 plt.plot(time, cal)
 plt.show()
-
-
-# plt.plot(t, noisy - kf_out)
-# plt.show()
-
-# plt.plot(t, clean - kf_out)
-# plt.show()
-
-# plt.plot(clean[:,0], clean[:,1], kf_out[:,0], kf_out[:,1])
-# plt.show()
-
-# plt.plot(noisy[:,0], noisy[:,1], kf_out[:,0], kf_out[:,1])
-# plt.show()
-
-# plt.plot(t, noisy[:,1], t, kf_out[:,1], t, clean[:,1])
-# plt.show()
-
-# plt.plot(t, noisy[:,0], t, kf_out[:,0], t, clean[:,0])
-# plt.show()
-
-
 
 print('Done!')
