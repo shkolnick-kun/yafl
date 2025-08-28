@@ -554,7 +554,7 @@ for i in range(N):
     t += _dt
     tgt = _ca(tgt, _dt)
 
-#CV
+#CA
 tgt[2] = 0.1
 for i in range(N):
     time.append(t)
