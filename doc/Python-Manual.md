@@ -293,9 +293,9 @@ The generator class is:
 class MerweSigmaPoints(dim_x, alpha, beta, kappa=0.0, **kwargs)
 ```
 This class is a wrapper around `yaflUKFMerweSt`. It extends `yaflSigmaBase` and adds the following attributes:
- * `alpha` is a scaling parameter that determines the width of the sigma point spread.
- * `beta`  is used to account for prior knowledge about the distribution of the mean.
- * `kappa` is a secondary scaling parameter usually set to 0 or 3-dim_x.
+* `alpha` is a scaling parameter that determines the width of the sigma point spread.
+* `beta`  is used to account for prior knowledge about the distribution of the mean.
+* `kappa` is a secondary scaling parameter usually set to 0 or 3-dim_x.
 
 #### Julier sigma points generator
 The generator class is:
@@ -303,7 +303,7 @@ The generator class is:
 class JulierSigmaPoints(dim_x, kappa=0.0, **kwargs)
 ```
 This class is a wrapper around `yaflUKFJulierSt`. It extends `yaflSigmaBase` and adds the following attributes:
- * `kappa` is a secondary scaling parameter usually set to `0` or `3-dim_x`.
+* `kappa` is a secondary scaling parameter usually set to `0` or `3-dim_x`.
 
 #### Filter base class
 The base class for all **UKF** variants is
@@ -437,6 +437,189 @@ where:
 This class extends `yaflpy.Unscented` by implementation of `_update` method and by addition of `chi2` attribute.
 
 THe usage is similar to `yaflpy.UnscentedBierman`.
+
+### Interracting multiple models estimator
+
+The class is:
+```Python
+class yaflpy.IMMEstimator(filters, mu, M, dt)
+```
+where:
+* `filters :list` is a list of `yaflpy` filters. Supported filter classes are:
+  * `yaflpy.Bierman`
+  * `yaflpy.Joseph`
+  * `yaflpy.AdaptiveBierman`
+  * `yaflpy.AdaptiveJoseph`
+  * `yaflpy.RobustBierman`
+  * `yaflpy.RobustJoseph`
+  * `yaflpy.AdaptiveRobustBierman`
+  * `yaflpy.AdaptiveRobustJoseph`
+  * `yaflpy.UnscentedBierman`
+  * `yaflpy.UnscentedAdaptiveBierman`
+  * `yaflpy.UnscentedRobustBierman`
+  * `yaflpy.UnscentedAdaptiveRobustBierman`
+  * `yaflpy.Unscented`
+  * `yaflpy.UnscentedAdaptive`
+* `mu :np.array((len(filters),))` mode probability: `mu[i]` is the probability that filter `i` is the correct one.
+* `M :np.array((len(filters), len(filters)))` is Markov chain transition matrix. `M[i,j]` is the probability of switching from filter `j` to filter `i`.
+* `dt :float` is timestep between measurements is seconds.
+
+The example is:
+```Python
+###############################################################################
+# Import yaflpy classes
+
+from yaflpy import Bierman as KF
+from yaflpy import IMMEstimator
+
+###############################################################################
+# Define constants
+_dt = 0.1
+STD = 1.
+
+###############################################################################
+# Define filters
+def _ca(x, dt, **fx_args):
+    x = x.copy()
+    x[0] += (x[1] + 0.5 * x[2] * dt) * dt
+    x[1] += x[2] * dt
+    return x    
+
+def _jca(x, dt, **fx_args):
+    F = np.array([
+        [1., dt, dt*dt*0.5],
+        [0., 1.,    dt    ],
+        [0., 0.,    1.    ],
+        ])
+    return F
+
+def _cv(x, dt, **fx_args):
+    x = x.copy()
+    x[0] += x[1] * dt
+    return x    
+
+def _jcv(x, dt, **fx_args):
+    F = np.array([
+        [1., dt, 0.],
+        [0., 1., 0.],
+        [0., 0., 1.],
+        ])
+    return F
+
+def _hx(x, **hx_args):
+    return np.array([x[0]])
+
+def _jhx(x, **hx_args):
+    H = np.array([[1., 0., 0.]])
+    return H
+
+cv = KF(3, 1, _dt, _cv, _jcv, _hx, _jhx, residual_z=_zrf)
+cv.Dp *= .1
+cv.Dq *= .000001
+cv.Dr = STD*STD
+cv.x[0] = 0.
+cv.x[1] = 0.
+cv.x[2] = 0.
+
+ca = KF(3, 1, _dt, _ca, _jca, _hx, _jhx, residual_z=_zrf)
+ca.Dp *= .1
+ca.Dq *= .000001
+ca.Dr = STD*STD
+ca.x[0] = 0.
+ca.x[1] = 0.
+ca.x[2] = 0.
+
+###############################################################################
+# Define IMM estimator
+mu = np.array([0.5, 0.5])
+M  = np.array([[0.95, 0.05],
+               [0.05, 0.95]])
+
+imm = IMMEstimator([ca, cv], mu, M, _dt)
+
+###############################################################################
+#Generate test data
+N = 100
+time  = []
+clean = []
+noisy = []
+
+#CV
+t = 0.
+tgt = np.array([-0., 0., 0.])
+for i in range(N):
+    time.append(t)
+    clean.append(tgt[0])
+    noisy.append(tgt[0] + np.random.normal(scale=STD, size=1))
+    t += _dt
+    tgt = _ca(tgt, _dt)
+
+#CV
+tgt[2] = 0.1
+for i in range(N):
+    time.append(t)
+    clean.append(tgt[0])
+    noisy.append(tgt[0] + np.random.normal(scale=STD, size=1))
+    t += _dt
+    tgt = _ca(tgt, _dt)
+#CV
+tgt[2] = 0.
+for i in range(N):
+    time.append(t)
+    clean.append(tgt[0])
+    noisy.append(tgt[0] + np.random.normal(scale=STD, size=1))
+    t += _dt
+    tgt = _ca(tgt, _dt)
+#CA
+tgt[2] = -0.2
+for i in range(N):
+    time.append(t)
+    clean.append(tgt[0])
+    noisy.append(tgt[0] + np.random.normal(scale=STD, size=1))
+    t += _dt
+    tgt = _ca(tgt, _dt)
+
+#CV
+tgt[2] = 0.
+for i in range(N):
+    time.append(t)
+    clean.append(tgt[0])
+    noisy.append(tgt[0] + np.random.normal(scale=STD, size=1))
+    t += _dt
+    tgt = _ca(tgt, _dt)
+
+#CA
+tgt[2] = 0.1
+for i in range(N):
+    time.append(t)
+    clean.append(tgt[0])
+    noisy.append(tgt[0] + np.random.normal(scale=STD, size=1))
+    t += _dt
+    tgt = _ca(tgt, _dt)
+
+tgt[2] = 0.
+for i in range(N):
+    time.append(t)
+    clean.append(tgt[0])
+    noisy.append(tgt[0] + np.random.normal(scale=STD, size=1))
+    t += _dt
+    tgt = _ca(tgt, _dt)
+
+###############################################################################
+#Process test data
+
+out = []
+ps  = []
+mus = []
+
+for i,z in enumerate(clean):
+     imm.predict()             #dt and **fx_args are supported
+     imm.update(np.array([z])) #**hx_args are supported
+
+     out.append(imm.x.copy())
+     ps.append(imm.P.copy())
+     mus.append(imm.mu.copy())
+```
 
 ## Good luck \%usename\%
 
