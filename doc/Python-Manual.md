@@ -513,7 +513,7 @@ def _jhx(x, **hx_args):
     H = np.array([[1., 0., 0.]])
     return H
 
-cv = KF(3, 1, _dt, _cv, _jcv, _hx, _jhx, residual_z=_zrf)
+cv = KF(3, 1, _dt, _cv, _jcv, _hx, _jhx)
 cv.Dp *= .1
 cv.Dq *= .000001
 cv.Dr = STD*STD
@@ -521,7 +521,7 @@ cv.x[0] = 0.
 cv.x[1] = 0.
 cv.x[2] = 0.
 
-ca = KF(3, 1, _dt, _ca, _jca, _hx, _jhx, residual_z=_zrf)
+ca = KF(3, 1, _dt, _ca, _jca, _hx, _jhx)
 ca.Dp *= .1
 ca.Dq *= .000001
 ca.Dr = STD*STD
