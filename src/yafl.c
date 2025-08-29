@@ -2525,7 +2525,7 @@ yaflStatusEn yafl_imm_update(yaflIMMCBSt * self, yaflFloat * z)
     YAFL_CHECK(z,          YAFL_ST_INV_ARG_2);
 
     nx = self->bank->filter->Nx;
-    nx2 = nx + 2;
+    nx2 = nx * 2;
     nu = (((nx - 1) * nx) / 2);
     szx = nx * sizeof(yaflFloat);
     szu = nu * sizeof(yaflFloat);
@@ -2603,7 +2603,7 @@ yaflStatusEn yafl_imm_update(yaflIMMCBSt * self, yaflFloat * z)
             YAFL_TRY(status, yafl_math_set_vxn(nx, self->D + nx, bi->filter->Dp, self->mu[i]));
 
             /*P += mu[i] * f[i].P*/
-            YAFL_TRY(status, yafl_math_mwgsu(nx, nx, self->Up, self->Dp, self->W, self->D));
+            YAFL_TRY(status, yafl_math_mwgsu(nx, nx2, self->Up, self->Dp, self->W, self->D));
         }
 
         /*y = f[i].x - x*/
