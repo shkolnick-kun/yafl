@@ -132,6 +132,7 @@ for i in range(N):
     t += _dt
     tgt = _ca(tgt, _dt)
 
+#CV
 tgt[2] = 0.
 for i in range(N):
     time.append(t)
@@ -152,7 +153,7 @@ kf.x[1] = 0.
 kf.x[2] = 0.
 
 out = []
-for i,z in enumerate(clean):
+for i,z in enumerate(noisy):
      kf.predict()
      kf.update(z)
      out.append(kf.x[0])    
@@ -193,7 +194,7 @@ cvx = []
 cax = []
 
 
-for i,z in enumerate(clean):
+for i,z in enumerate(noisy):
      imm.predict(_dt)
      imm.update(np.array([z]))
      out.append(imm.x[0])
