@@ -15,5 +15,6 @@
 		<Project filename="rob_ukf_bierman/hdf5_test.cbp" />
 		<Project filename="ukf/hdf5_test.cbp" />
 		<Project filename="ukf_bierman/hdf5_test.cbp" />
+		<Project filename="imm/hdf5_test.cbp" />
 	</Workspace>
 </CodeBlocks_workspace_file>

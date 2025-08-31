@@ -729,17 +729,17 @@ typedef struct _yaflFilterBankItemSt {
 Per filter scratchpad memory.
 We don't need this stuff between predict(kf) and update(kf, z) calls.
 */
-#define _YAFL_IMM_EKF_US(ekf) (((yaflEKFBaseSt *)(ekf))->W)
-#define _YAFL_IMM_EKF_DS(ekf) (((yaflEKFBaseSt *)(ekf))->D)
-#define _YAFL_IMM_EKF_XS(ekf) (((yaflEKFBaseSt *)(ekf))->H)
+#define _YAFL_IMM_EKF_US(ekf_mem) (ekf_mem.W.x)
+#define _YAFL_IMM_EKF_DS(ekf_mem) (ekf_mem.D.x)
+#define _YAFL_IMM_EKF_XS(ekf_mem) (ekf_mem.H)
 
-#define _YAFL_IMM_UKF_US(ukf) (((yaflUKFBaseSt *)(ukf))->sigmas_x)
-#define _YAFL_IMM_UKF_DS(ukf) (((yaflUKFBaseSt *)(ukf))->Sx)
-#define _YAFL_IMM_UKF_XS(ukf) (((yaflUKFBaseSt *)(ukf))->Pzx)
+#define _YAFL_IMM_UKF_US(ukf_mem) (ukf_mem.pool.sigmas.x)
+#define _YAFL_IMM_UKF_DS(ukf_mem) (ukf_mem.Sx)
+#define _YAFL_IMM_UKF_XS(ukf_mem) (ukf_mem.Pzx)
 
 #define _YAFL_IMM_ITEM_INITIALIZER(kf, pre, upd, us, ds, xs) \
 {                                           \
-    .filter  = (yaflKalmanBaseSt    )(kf),  \
+    .filter  = (yaflKalmanBaseSt   *)(kf),  \
     .predict = (yaflKalmanUpdateCBP )(pre), \
     .update  = (yaflKalmanUpdateCBP2)(upd), \
     .Us      = (us),                        \
@@ -749,18 +749,18 @@ We don't need this stuff between predict(kf) and update(kf, z) calls.
 
 /*---------------------------------------------------------------------------*/
 /*External usage*/
-#define YAFL_IMM_EKF_ITEM_INITIALIZER(kf, pre, upd) \
+#define YAFL_IMM_EKF_ITEM_INITIALIZER(kf, mem, pre, upd) \
     _YAFL_IMM_ITEM_INITIALIZER(kf, pre, upd,        \
-                              _YAFL_IMM_EKF_US(kf), \
-                              _YAFL_IMM_EKF_DS(kf), \
-                              _YAFL_IMM_EKF_XS(kf)  \
+                              _YAFL_IMM_EKF_US(mem), \
+                              _YAFL_IMM_EKF_DS(mem), \
+                              _YAFL_IMM_EKF_XS(mem)  \
                               )
 
-#define YAFL_IMM_UKF_ITEM_INITIALIZER(kf, pre, upd) \
+#define YAFL_IMM_UKF_ITEM_INITIALIZER(kf, mem, pre, upd) \
     _YAFL_IMM_ITEM_INITIALIZER(kf, pre, upd,        \
-                              _YAFL_IMM_UKF_US(kf), \
-                              _YAFL_IMM_UKF_DS(kf), \
-                              _YAFL_IMM_UKF_XS(kf)  \
+                              _YAFL_IMM_UKF_US(mem), \
+                              _YAFL_IMM_UKF_DS(mem), \
+                              _YAFL_IMM_UKF_XS(mem)  \
                               )
 
 /*---------------------------------------------------------------------------*/
@@ -819,8 +819,8 @@ yaflStatusEn yafl_imm_update(yaflIMMCBSt * self, yaflFloat * z);
     yaflFloat cbar[nb];                \
     yaflFloat omega[nb * nb];          \
     yaflFloat y[nx];                   \
-    yaflFloat D[nx];                   \
-    yaflFloat W[2 *nx * nx]
+    yaflFloat D[2 * nx];               \
+    yaflFloat W[2 * nx * nx]
 
 #endif // YAFL_H
 
