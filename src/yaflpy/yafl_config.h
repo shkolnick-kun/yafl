@@ -35,7 +35,6 @@ typedef int32_t yaflInt;
 #   define YAFL_EPS  (1.0e-15)
 #   define YAFL_SQRT sqrt
 #   define YAFL_ABS  fabs
-#   define YAFL_ABS  fabs
 #   define YAFL_EXP  exp
 #   define YAFL_LOG  log
 #else/*YAFL_USE_64_BIT*/

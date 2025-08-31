@@ -183,7 +183,7 @@ mu = np.array([0.5, 0.5])
 M  = np.array([[0.95, 0.05],
                [0.05, 0.95]])
 
-imm = IMMEstimator([ca, cv], mu, M, _dt)
+imm = IMMEstimator([cv, ca], mu, M, _dt)
 
 out = []
 mu  = []
@@ -194,7 +194,7 @@ cax = []
 
 
 for i,z in enumerate(clean):
-     imm.predict()
+     imm.predict(_dt)
      imm.update(np.array([z]))
      out.append(imm.x[0])
      mu.append(imm.mu.copy())

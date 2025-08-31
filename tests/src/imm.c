@@ -33,7 +33,7 @@ yaflStatusEn cv(yaflKalmanBaseSt * self, yaflFloat * x, yaflFloat * xz)
 {
     (void)xz;
     YAFL_CHECK(self,          YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(4 == self->Nx, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(3 == self->Nx, YAFL_ST_INV_ARG_1);
     YAFL_CHECK(x,             YAFL_ST_INV_ARG_2);
 
     x[0] += x[1] * DT;
@@ -48,7 +48,7 @@ yaflStatusEn jcv(yaflKalmanBaseSt * self, yaflFloat * w, yaflFloat * x)
 
     (void)x;
     YAFL_CHECK(self,          YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(4 == self->Nx, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(3 == self->Nx, YAFL_ST_INV_ARG_1);
     YAFL_CHECK(w,             YAFL_ST_INV_ARG_2);
 
     nx  = self->Nx;
@@ -74,7 +74,7 @@ yaflStatusEn ca(yaflKalmanBaseSt * self, yaflFloat * x, yaflFloat * xz)
 {
     (void)xz;
     YAFL_CHECK(self,          YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(4 == self->Nx, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(3 == self->Nx, YAFL_ST_INV_ARG_1);
     YAFL_CHECK(x,             YAFL_ST_INV_ARG_2);
 
     x[0] += (x[1] + 0.5 * x[2] * DT) * DT;
@@ -90,7 +90,7 @@ yaflStatusEn jca(yaflKalmanBaseSt * self, yaflFloat * w, yaflFloat * x)
 
     (void)x;
     YAFL_CHECK(self,          YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(4 == self->Nx, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(3 == self->Nx, YAFL_ST_INV_ARG_1);
     YAFL_CHECK(w,             YAFL_ST_INV_ARG_2);
 
     nx  = self->Nx;
@@ -117,7 +117,7 @@ yaflStatusEn jca(yaflKalmanBaseSt * self, yaflFloat * w, yaflFloat * x)
 yaflStatusEn hx(yaflKalmanBaseSt * self, yaflFloat * y, yaflFloat * x)
 {
     YAFL_CHECK(self,          YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(2 == self->Nz, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(1 == self->Nz, YAFL_ST_INV_ARG_1);
     YAFL_CHECK(y,             YAFL_ST_INV_ARG_2);
     YAFL_CHECK(x,             YAFL_ST_INV_ARG_3);
 
@@ -132,8 +132,8 @@ yaflStatusEn jhx(yaflKalmanBaseSt * self, yaflFloat * h, yaflFloat * x)
     yaflInt nz;
 
     YAFL_CHECK(self,          YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(4 == self->Nx, YAFL_ST_INV_ARG_1);
-    YAFL_CHECK(2 == self->Nz, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(3 == self->Nx, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(1 == self->Nz, YAFL_ST_INV_ARG_1);
     YAFL_CHECK(h,             YAFL_ST_INV_ARG_2);
     YAFL_CHECK(x,             YAFL_ST_INV_ARG_3);
 
@@ -159,13 +159,13 @@ yaflStatusEn jhx(yaflKalmanBaseSt * self, yaflFloat * h, yaflFloat * x)
 typedef struct
 {
     YAFL_EKF_BASE_MEMORY_MIXIN(NX, NZ);
-} kfMemorySt;
+} ekfMemorySt;
 
 #define DP (0.1)
 #define DX (1.0e-6)
 #define DZ (1)
 
-kfMemorySt cv_memory =
+ekfMemorySt cv_memory =
 {
     .x = {
         [0] = 0.0,
@@ -191,7 +191,15 @@ kfMemorySt cv_memory =
 
 yaflEKFBaseSt cv_kf = YAFL_EKF_BASE_INITIALIZER(cv, jcv, hx, jhx, 0, NX, NZ, 0.0, 0.0, cv_memory);
 
-kfMemorySt ca_memory =
+/*---------------------------------------------------------------------------*/
+typedef struct
+{
+    YAFL_UKF_MEMORY_MIXIN(NX, NZ);
+    YAFL_UKF_JULIER_MEMORY_MIXIN(NX, NZ);
+} ukfMemorySt;
+
+ekfMemorySt ca_memory =
+//ukfMemorySt ca_memory =
 {
     .x = {
         [0] = 0.0,
@@ -215,7 +223,9 @@ kfMemorySt ca_memory =
     .Dr = {DZ}
 };
 
-yaflEKFBaseSt ca_kf = YAFL_EKF_BASE_INITIALIZER(cv, jcv, hx, jhx, 0, NX, NZ, 0.0, 0.0, ca_memory);
+yaflEKFBaseSt ca_kf = YAFL_EKF_BASE_INITIALIZER(ca, jca, hx, jhx, 0, NX, NZ, 0.0, 0.0, ca_memory);
+//yaflUKFJulierSt sp    = YAFL_UKF_JULIER_INITIALIZER(NX, 0, 0.0, kf_memory);
+//yaflUKFSt       ca_kf = YAFL_UKF_INITIALIZER(&sp.base, &yafl_ukf_julier_spm, ca, 0, 0, hx, 0, 0, NX, NZ, 0.0, ca_memory);
 
 /*---------------------------------------------------------------------------*/
 typedef struct {
@@ -225,6 +235,7 @@ typedef struct {
 yaflFilterBankItemSt imm_bank[2] = {
     [0] = YAFL_IMM_EKF_ITEM_INITIALIZER(&cv_kf, cv_memory, yafl_ekf_base_predict, yafl_ekf_bierman_update),
     [1] = YAFL_IMM_EKF_ITEM_INITIALIZER(&ca_kf, ca_memory, yafl_ekf_base_predict, yafl_ekf_bierman_update)
+    //[1] = YAFL_IMM_UKF_ITEM_INITIALIZER(&ca_kf, ca_memory, yafl_ukf_base_predict, yafl_ukf_update)
 };
 
 immMemorySt imm_memory = {
@@ -270,7 +281,7 @@ yaflIMMCBSt imm = YAFL_IMM_INITIALIZER(imm_bank, 2, imm_memory);
 #define IN_DS    "noisy"
 
 #define OUT_FILE "../../data/output.h5"
-#define OUT_DS   "kf_out"
+#define OUT_DS   "imm_out"
 
 /*---------------------------------------------------------------------------*/
 int main (void)
