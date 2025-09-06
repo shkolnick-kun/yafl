@@ -1293,5 +1293,430 @@ The update function is `yafl_ukf_adaptive_update`.
 
 The filter bootstap initialization and run are simmilar to **UD-factorized UKF** with exception of `YAFL_UKF_FULL_ADAPTIVE_INITIALIZER` which needs `chi2` value.
 
+### Interracting multiple model stuff
+
+IMM estimator used to track manuevering targets or other objects wich have multiple modes.
+IMM uses separate KFs to estimate different object modes. Markov chain based algorithm is used to manage KFs in the estimator.
+
+#### Data types
+
+The IMM estimator control block is:
+```C
+typedef struct _yaflIMMCBSt {
+    yaflFilterBankItemSt * bank;
+    /*Markov chain parameters*/
+    yaflFloat            * mu;
+    yaflFloat            * M;
+    /*Mixed state*/
+    yaflFloat            * Up;
+    yaflFloat            * Dp;
+    yaflFloat            * x;
+    /*Scratchpad memory*/
+    yaflFloat            * cbar;
+    yaflFloat            * omega;
+    yaflFloat            * y;
+    yaflFloat            * W;
+    yaflFloat            * D;
+    /*Number of filters in the bank*/
+    yaflInt               Nb;
+} yaflIMMCBSt;
+```
+where:
+* `bank` is a pointer to the filter bank array of type `yaflFilterBankItemSt`;
+* `mu` is a pointer to mode probability vector;
+* `M` is a pointer to transition probability matrix;
+* `Up` is a pointer to estimators U component of estimators covariance decomposition;
+* `Dp` is a pointer to estimators D component of estimators covariance decomposition;
+* `x` is a pointer to estimators state vector;
+* `cbar` is a pointer scratchpad memory;
+* `omega` is a pointer to mode mixing probabilities;
+* `y` is a pointer scratchpad memory;
+* `W` is a pointer scratchpad memory used for covariance uptdates;
+* `D` is a pointer scratchpad memory used for covariance uptdates;
+* `Nb` is a number of KFs in the filter bank;
+
+THe filter bank consist of the folowing records:
+```C
+typedef struct _yaflFilterBankItemSt {
+    yaflKalmanBaseSt   * filter;
+    yaflKalmanUpdateCBP  predict;
+    yaflKalmanUpdateCBP2 update;
+    /*Scratchpad memory for mixed updates*/
+    yaflFloat          * Us;
+    yaflFloat          * Ds;
+    yaflFloat          * Xs;
+} yaflFilterBankItemSt;
+```
+where:
+* `filter` is a pointer to a filter;
+* `predict` is a pointer to filters predict function;
+* `update` is a pointer to filters update function;
+* `Us` is a pointer to scratchpad memory used to compute mixed covariance;
+* `Ds` is a pointer to scratchpad memory used to compute mixed covariance;
+* `Xs` is a pointer to scratchpad memory used to compute mixed state.
+
+#### Memories
+The filter bank items use filter memory pool for scratchpad memories so no extra memory needed.
+
+The IMM estimator ise `YAFL_IMM_MEMORY_MIXIN(nb, nx)` to delacre estimators memory pool. The parameters are:
+* `nb` is a number of filters in the bank.
+* `nx` is a lenght of estimator and filter state vector.
+
+#### Initializers
+Filter bank items are initialized with:
+* `YAFL_IMM_EKF_ITEM_INITIALIZER(kf, mem, pre, upd)` for EKF variants.
+* `YAFL_IMM_UKF_ITEM_INITIALIZER(kf, mem, pre, upd)` for UKF variants.
+
+The parameters are:
+* `kf`is a pointer to the filter;
+* `mem` is filters memory pool variable name;
+* `pre` is a filters predict function name (pointer);
+* `upd` is a filters update function name (pointer).
+
+Different filter types can be used in one bank.
+
+The IMM estimator is initialized with `YAFL_IMM_INITIALIZER(_bank, _nb, mem)`.
+
+The parameters are:
+* `_bank` is a filter bank array name (pointer);
+* `_nb` is a filter bank size;
+* `mem` is IMM estimator memory pool variable name.
+
+#### Methods
+IMM estimator have three methods:
+* `yaflStatusEn yafl_imm_post_init(yaflIMMCBSt * self);` must be called to check filters integrity before use;
+* `yaflStatusEn yafl_imm_predict(yaflIMMCBSt * self);` is ***predict*** function;
+* `yaflStatusEn yafl_imm_update(yaflIMMCBSt * self, yaflFloat * z);` is ***update*** function.
+
+#### Example:
+Now let's put it all together:
+```C
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+
+#include <yafl.h>
+
+/*=============================================================================
+                            Kalman filter stuff
+=============================================================================*/
+#define NX 3
+#define NZ 1
+#define DT (0.1)
+
+/*-----------------------------------------------------------------------------
+                          Constant velocity model
+-----------------------------------------------------------------------------*/
+yaflStatusEn cv(yaflKalmanBaseSt * self, yaflFloat * x, yaflFloat * xz)
+{
+    (void)xz;
+    YAFL_CHECK(self,          YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(3 == self->Nx, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(x,             YAFL_ST_INV_ARG_2);
+
+    x[0] += x[1] * DT;
+    return YAFL_ST_OK;
+}
+
+yaflStatusEn jcv(yaflKalmanBaseSt * self, yaflFloat * w, yaflFloat * x)
+{
+    yaflInt i;
+    yaflInt nx;
+    yaflInt nx2;
+
+    (void)x;
+    YAFL_CHECK(self,          YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(3 == self->Nx, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(w,             YAFL_ST_INV_ARG_2);
+
+    nx  = self->Nx;
+    nx2 = nx * 2;
+
+    for (i = 0; i < nx; i++)
+    {
+        yaflInt j;
+        yaflInt nci;
+
+        nci = nx2 * i;
+        for (j = 0; j < nx; j++)
+        {
+            w[nci + j] = (i != j) ? 0.0 : 1.0;
+        }
+    }
+
+    w[nx2*0 + 1] = DT;
+    return YAFL_ST_OK;
+}
+
+/*-----------------------------------------------------------------------------
+                         Constant acceleration model
+-----------------------------------------------------------------------------*/
+yaflStatusEn ca(yaflKalmanBaseSt * self, yaflFloat * x, yaflFloat * xz)
+{
+    (void)xz;
+    YAFL_CHECK(self,          YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(3 == self->Nx, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(x,             YAFL_ST_INV_ARG_2);
+
+    x[0] += (x[1] + 0.5 * x[2] * DT) * DT;
+    x[1] += x[2] * DT;
+    return YAFL_ST_OK;
+}
+
+yaflStatusEn jca(yaflKalmanBaseSt * self, yaflFloat * w, yaflFloat * x)
+{
+    yaflInt i;
+    yaflInt nx;
+    yaflInt nx2;
+
+    (void)x;
+    YAFL_CHECK(self,          YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(3 == self->Nx, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(w,             YAFL_ST_INV_ARG_2);
+
+    nx  = self->Nx;
+    nx2 = nx * 2;
+
+    for (i = 0; i < nx; i++)
+    {
+        yaflInt j;
+        yaflInt nci;
+
+        nci = nx2 * i;
+        for (j = 0; j < nx; j++)
+        {
+            w[nci + j] = (i != j) ? 0.0 : 1.0;
+        }
+    }
+
+    w[nx2*0 + 1] = DT;
+    w[nx2*0 + 2] = DT * DT * 0.5;
+    w[nx2*1 + 2] = DT;
+    return YAFL_ST_OK;
+}
+
+/*-----------------------------------------------------------------------------
+                              Measurement model
+-----------------------------------------------------------------------------*/
+yaflStatusEn hx(yaflKalmanBaseSt * self, yaflFloat * y, yaflFloat * x)
+{
+    YAFL_CHECK(self,          YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(1 == self->Nz, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(y,             YAFL_ST_INV_ARG_2);
+    YAFL_CHECK(x,             YAFL_ST_INV_ARG_3);
+
+    y[0] = x[0];
+    return YAFL_ST_OK;
+}
+
+yaflStatusEn jhx(yaflKalmanBaseSt * self, yaflFloat * h, yaflFloat * x)
+{
+    yaflInt i;
+    yaflInt nx;
+    yaflInt nz;
+
+    YAFL_CHECK(self,          YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(3 == self->Nx, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(1 == self->Nz, YAFL_ST_INV_ARG_1);
+    YAFL_CHECK(h,             YAFL_ST_INV_ARG_2);
+    YAFL_CHECK(x,             YAFL_ST_INV_ARG_3);
+
+    nx = self->Nx;
+    nz = self->Nz;
+
+    for (i = 0; i < nz; i++)
+    {
+        yaflInt j;
+        yaflInt nci;
+
+        nci = nx * i;
+        for (j = 0; j < nx; j++)
+        {
+            h[nci + j] = 0.0;
+        }
+    }
+
+    h[nx*0 + 0] = 1.0;
+    return YAFL_ST_OK;
+}
+
+/*-----------------------------------------------------------------------------
+                           Constant velocity filter
+-----------------------------------------------------------------------------*/
+typedef struct
+{
+    YAFL_EKF_BASE_MEMORY_MIXIN(NX, NZ);
+} ekfMemorySt;
+
+#define DP (0.1)
+#define DX (1.0e-6)
+#define DZ (1)
+
+ekfMemorySt cv_memory =
+{
+    .x = {
+        [0] = 0.0,
+        [1] = 0.0,
+        [2] = 0.0
+    },
+
+    .Up = {
+        0,
+        0,0,
+    },
+    .Dp = {DP, DP, DP},
+
+    .Uq = {
+        0,
+        0,0,
+    },
+    .Dq = {DX, DX, DX},
+
+    //.Ur = {0},
+    .Dr = {DZ}
+};
+
+yaflEKFBaseSt cv_kf = YAFL_EKF_BASE_INITIALIZER(cv, jcv, hx, jhx, 0, NX, NZ, 0.0, 0.0, cv_memory);
+
+/*-----------------------------------------------------------------------------
+                         Constant acceleration filter
+-----------------------------------------------------------------------------*/
+typedef struct
+{
+    YAFL_UKF_MEMORY_MIXIN(NX, NZ);
+    YAFL_UKF_JULIER_MEMORY_MIXIN(NX, NZ);
+} ukfMemorySt;
+
+ekfMemorySt ca_memory =
+//ukfMemorySt ca_memory =
+{
+    .x = {
+        [0] = 0.0,
+        [1] = 0.0,
+        [2] = 0.0
+    },
+
+    .Up = {
+        0,
+        0,0,
+    },
+    .Dp = {DP, DP, DP},
+
+    .Uq = {
+        0,
+        0,0,
+    },
+    .Dq = {DX, DX, DX},
+
+    //.Ur = {0},
+    .Dr = {DZ}
+};
+
+yaflEKFBaseSt ca_kf = YAFL_EKF_BASE_INITIALIZER(ca, jca, hx, jhx, 0, NX, NZ, 0.0, 0.0, ca_memory);
+//yaflUKFJulierSt sp    = YAFL_UKF_JULIER_INITIALIZER(NX, 0, 0.0, kf_memory);
+//yaflUKFSt       ca_kf = YAFL_UKF_INITIALIZER(&sp.base, &yafl_ukf_julier_spm, ca, 0, 0, hx, 0, 0, NX, NZ, 0.0, ca_memory);
+
+/*=============================================================================
+                             IMM estimator stuff
+=============================================================================*/
+typedef struct {
+    YAFL_IMM_MEMORY_MIXIN(2,3);
+}immMemorySt;
+
+//Yes we can use different filter types in one bank!
+yaflFilterBankItemSt imm_bank[2] = {
+    [0] = YAFL_IMM_EKF_ITEM_INITIALIZER(&cv_kf, cv_memory, yafl_ekf_base_predict, yafl_ekf_bierman_update),
+    [1] = YAFL_IMM_EKF_ITEM_INITIALIZER(&ca_kf, ca_memory, yafl_ekf_base_predict, yafl_ekf_bierman_update)
+    //[1] = YAFL_IMM_UKF_ITEM_INITIALIZER(&ca_kf, ca_memory, yafl_ukf_base_predict, yafl_ukf_update)
+};
+
+immMemorySt imm_memory = {
+    .mu = {0.5, 0.5},
+    .M  = {
+        0.95, 0.05,
+        0.05, 0.95
+    },
+    .Up = {
+        0,
+        0,0,
+    },
+    .Dp = {DP, DP, DP},
+    .x = {
+        [0] = 0.0,
+        [1] = 0.0,
+        [2] = 0.0
+    },
+    .cbar  = {0.0, 0.0},
+    .omega = {
+        0.0, 0.0,
+        0.0, 0.0
+    },
+    .y = {
+        [0] = 0.0,
+        [1] = 0.0,
+        [2] = 0.0
+    },
+    .D = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+    .W = {
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+        },
+};
+
+yaflIMMCBSt imm = YAFL_IMM_INITIALIZER(imm_bank, 2, imm_memory);
+
+/*=============================================================================
+                                 IMM usage
+=============================================================================*/
+extern volatile int some_condition;
+extern yaflStatusEn get_some_measurement(yaflFloat * measurement_vector);
+
+yaflFloat z[NZ]; /*Memory for measurement vectors*/
+
+int main (void)
+{
+    yaflStatusEn status = yafl_imm_post_init(&imm);
+
+    if (YAFL_ST_OK != status)
+    {
+        /*Handle errors here*/
+        (void)status;
+    }
+
+    while (some_condition)
+    {
+        /* This is Bierman filter predict step */
+        status = yafl_imm_predict(&imm);
+        if (YAFL_ST_OK != status)
+        {
+            /*Handle errors here*/
+            (void)status;
+        }
+
+        /*Now get one measurement vector*/
+        status = get_some_measurement(&z[0]);
+        if (YAFL_ST_OK != status)
+        {
+            /*Handle errors here*/
+            (void)status;
+        }
+
+        /*OK! We have a correct measurement at this point. Let's process it...*/
+
+        /*The filter update*/
+        status = yafl_imm_update(&imm, &z[0]);
+        if (YAFL_ST_OK != status)
+        {
+            /*Handle errors here*/
+            (void)status;
+        }
+    }
+
+    return 0;
+}
+
+```
+
 ## Good luck \%username\%
 And we hope that you run YAFL on your MCUs and get some usefull results.
