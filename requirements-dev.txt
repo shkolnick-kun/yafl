@@ -1,5 +1,5 @@
 Cython >= 0.29.21
-numpy >= 1.17
+numpy >= 1.17, <2.0
 scipy >= 1.5
 filterpy >= 1.4.5
 setuptools >= 51.0.0

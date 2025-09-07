@@ -17,9 +17,13 @@
 """
 import matplotlib.pyplot as plt
 import numpy as np
+
+import numpy as np
+
 from numpy.linalg import norm
 
 ##############################################################################
+from yaflpy import NP_DTYPE
 from yaflpy import Bierman as KFB
 from yaflpy import IMMEstimator as IMMEstimatorB
 
@@ -170,9 +174,9 @@ def _jhx_imm(x, **hx_args):
     return H
 
 #IMM estimator data
-mu = np.array([0.5, 0.5])
+mu = np.array([0.5, 0.5], dtype=NP_DTYPE)
 M  = np.array([[0.95, 0.05],
-               [0.05, 0.95]])
+               [0.05, 0.95]], dtype=NP_DTYPE)
 
 ###############################################################################
 _dt = 0.1
