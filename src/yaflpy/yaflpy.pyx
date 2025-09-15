@@ -2772,16 +2772,19 @@ cdef class yaflExtendedBase(yaflKalmanBase):
 
         self.c_self.base.ekf.qff = 0.0
 
-        if not callable(jfx):
-            raise ValueError('jfx must be callable!')
-        self.c_self.base.ekf.jf = <yaflKalmanFuncP>yafl_py_ekf_jfx
-        self._jfx = jfx
+        if fx:
+            if not callable(jfx):
+                raise ValueError('jfx must be callable!')
+            self.c_self.base.ekf.jf = <yaflKalmanFuncP>yafl_py_ekf_jfx
+            self._jfx = jfx
+        else:
+            self.c_self.base.ekf.jf = <yaflKalmanFuncP>0
+            self._jfx = None
 
         if not callable(jhx):
             raise ValueError('jhx must be callable!')
         self.c_self.base.ekf.jh = <yaflKalmanFuncP>yafl_py_ekf_jhx
         self._jhx = jhx
-
 
         # Allocate memories and setup the rest of c_self
         self._H  = np.zeros((dim_z, dim_x), dtype=NP_DTYPE)
