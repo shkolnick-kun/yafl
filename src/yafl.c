@@ -788,7 +788,8 @@ yaflStatusEn \
 static inline yaflStatusEn \
     _scalar_robustify(yaflKalmanBaseSt * self, \
                       yaflKalmanRobFuncP g, yaflKalmanRobFuncP gdot, \
-                      yaflFloat * gdot_res, yaflFloat * nu, yaflFloat r)
+                      yaflFloat * gdot_res, yaflFloat * nu, yaflFloat r,
+                      yaflInt i)
 {
     yaflFloat tmp;
 
@@ -801,11 +802,11 @@ static inline yaflStatusEn \
         r = YAFL_SQRT(r);/*We need sqrt here*/
 
         tmp = *nu / r;
-        *nu = r * g(self, tmp);
+        *nu = r * g(self, tmp, i);
 
         YAFL_CHECK(gdot, YAFL_ST_INV_ARG_1);
 
-        tmp = gdot(self, tmp);
+        tmp = gdot(self, tmp, i);
     }
     else
     {
@@ -828,11 +829,11 @@ static inline yaflStatusEn \
     return YAFL_ST_OK;
 }
 
-#define YAFL_EKF_SCALAR_ROBUSTIFY(_self, _gdot_res, _nu, _r) \
+#define YAFL_EKF_SCALAR_ROBUSTIFY(_self, _gdot_res, _nu, _r, _i) \
     _scalar_robustify(_self,                                 \
                       ((yaflEKFRobustSt *)_self)->g,         \
                       ((yaflEKFRobustSt *)_self)->gdot,      \
-                      _gdot_res, _nu, _r)
+                      _gdot_res, _nu, _r, _i)
 
 /*---------------------------------------------------------------------------*/
 yaflStatusEn \
@@ -850,7 +851,7 @@ yaflStatusEn \
     r  = _dr[i];
     nu = _y[i];
 
-    YAFL_TRY(status, YAFL_EKF_SCALAR_ROBUSTIFY(self, &gdot, &nu, r));
+    YAFL_TRY(status, YAFL_EKF_SCALAR_ROBUSTIFY(self, &gdot, &nu, r, i));
 
     h = _hy + _nx * i;
     /* f = h.dot(Up) */
@@ -893,7 +894,7 @@ yaflStatusEn \
     r   = _dr[i];
     nu  = _y[i];
 
-    YAFL_TRY(status, YAFL_EKF_SCALAR_ROBUSTIFY(self, &gdot, &nu, r));
+    YAFL_TRY(status, YAFL_EKF_SCALAR_ROBUSTIFY(self, &gdot, &nu, r, i));
 
     h = _hy + _nx * i;
 #   define v _d
@@ -942,7 +943,7 @@ yaflStatusEn \
     r  = _dr[i];
     nu = _y[i];
 
-    YAFL_TRY(status, YAFL_EKF_SCALAR_ROBUSTIFY(self, &gdot, &nu, r));
+    YAFL_TRY(status, YAFL_EKF_SCALAR_ROBUSTIFY(self, &gdot, &nu, r, i));
 
     h = _hy + _nx * i;
 
@@ -991,7 +992,7 @@ yaflStatusEn \
     r  = _dr[i]; /* alpha = r**0.5 is stored in Dr*/
     nu = _y[i];
 
-    YAFL_TRY(status, YAFL_EKF_SCALAR_ROBUSTIFY(self, &gdot, &nu, r));
+    YAFL_TRY(status, YAFL_EKF_SCALAR_ROBUSTIFY(self, &gdot, &nu, r, i));
 
     h = _hy + _nx * i;
 #   define v _d
@@ -1611,11 +1612,11 @@ yaflStatusEn yafl_ukf_adaptive_bierman_update_scalar(yaflKalmanBaseSt * self, ya
 /*=============================================================================
                            Robust Bierman UKF
 =============================================================================*/
-#define YAFL_UKF_SCALAR_ROBUSTIFY(_self, _gdot_res, _nu, _r)   \
-    _scalar_robustify(self,                            \
-                      ((yaflUKFRobustSt *)self)->g,    \
-                      ((yaflUKFRobustSt *)self)->gdot, \
-                      _gdot_res, _nu, _r)
+#define YAFL_UKF_SCALAR_ROBUSTIFY(_self, _gdot_res, _nu, _r, _i)   \
+    _scalar_robustify(_self,                            \
+                      ((yaflUKFRobustSt *)_self)->g,    \
+                      ((yaflUKFRobustSt *)_self)->gdot, \
+                      _gdot_res, _nu, _r, _i)
 
 yaflStatusEn yafl_ukf_robust_bierman_update_scalar(yaflKalmanBaseSt * self, \
                                                    yaflInt i)
@@ -1635,7 +1636,7 @@ yaflStatusEn yafl_ukf_robust_bierman_update_scalar(yaflKalmanBaseSt * self, \
     r  = _dr[i];
     nu = _y[i];
 
-    YAFL_TRY(status, YAFL_UKF_SCALAR_ROBUSTIFY(self, &gdot, &nu, r));
+    YAFL_TRY(status, YAFL_UKF_SCALAR_ROBUSTIFY(self, &gdot, &nu, r, i));
 
     v = _upzx + nx * i;/*h is stored in v*/
 
@@ -1676,7 +1677,7 @@ yaflStatusEn \
     r  = _dr[i];
     nu = _y[i];
 
-    YAFL_TRY(status, YAFL_UKF_SCALAR_ROBUSTIFY(self, &gdot, &nu, r));
+    YAFL_TRY(status, YAFL_UKF_SCALAR_ROBUSTIFY(self, &gdot, &nu, r, i));
 
     v = _upzx + nx * i;/*h is stored in v*/
 
@@ -1686,7 +1687,6 @@ yaflStatusEn \
 
     /* v = f.dot(Dp).T = Dp.dot(f.T).T */
     YAFL_TRY(status, YAFL_MATH_SET_DV(nx, v, _dp, f));
-
 
     YAFL_TRY(status, \
              _adaptive_correction(nx, &ac, 0, f, v, r, nu, gdot, \
@@ -2315,6 +2315,9 @@ const yaflUKFSigmaMethodsSt yafl_ukf_julier_spm =
 #undef _nx
 #undef _nz
 
+/*=============================================================================
+                       Interacting Multiple Model
+=============================================================================*/
 yaflStatusEn yafl_imm_post_init(yaflIMMCBSt * self)
 {
     yaflInt i;
@@ -2618,4 +2621,3 @@ yaflStatusEn yafl_imm_update(yaflIMMCBSt * self, yaflFloat * z)
 
     return status;
 }
-

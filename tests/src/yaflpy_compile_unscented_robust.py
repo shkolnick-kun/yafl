@@ -51,7 +51,7 @@ def _hx(x, **hx_args):
         print(hx_args)
     return np.array([x[0], x[2]])
 
-def _gz(beta):
+def _gz(beta, i):
     # +- 3*sigma
     if 3.0 >= np.abs(beta):
         return float(beta)
@@ -63,7 +63,7 @@ def _gz(beta):
     # outliers
     return float(np.sign(beta))
 
-def _gdotz(beta):
+def _gdotz(beta, i):
     # +- 3*sigma
     if 3.0 >= np.abs(beta):
         return 1.0

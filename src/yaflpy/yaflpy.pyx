@@ -197,7 +197,7 @@ cdef extern from "yafl.c":
     ctypedef yaflStatusEn (* yaflKalmanUpdateCBP2)(yaflKalmanBaseSt *, \
                                                    yaflFloat *)
 
-    ctypedef yaflFloat (* yaflKalmanRobFuncP)(yaflKalmanBaseSt *, yaflFloat)
+    ctypedef yaflFloat (* yaflKalmanRobFuncP)(yaflKalmanBaseSt *, yaflFloat, yaflInt)
 
     ctypedef struct _yaflKalmanBaseSt:
         yaflKalmanFuncP f       #
@@ -2772,19 +2772,16 @@ cdef class yaflExtendedBase(yaflKalmanBase):
 
         self.c_self.base.ekf.qff = 0.0
 
-        if fx:
-            if not callable(jfx):
-                raise ValueError('jfx must be callable!')
-            self.c_self.base.ekf.jf = <yaflKalmanFuncP>yafl_py_ekf_jfx
-            self._jfx = jfx
-        else:
-            self.c_self.base.ekf.jf = <yaflKalmanFuncP>0
-            self._jfx = None
+        if not callable(jfx):
+            raise ValueError('jfx must be callable!')
+        self.c_self.base.ekf.jf = <yaflKalmanFuncP>yafl_py_ekf_jfx
+        self._jfx = jfx
 
         if not callable(jhx):
             raise ValueError('jhx must be callable!')
         self.c_self.base.ekf.jh = <yaflKalmanFuncP>yafl_py_ekf_jhx
         self._jhx = jhx
+
 
         # Allocate memories and setup the rest of c_self
         self._H  = np.zeros((dim_z, dim_x), dtype=NP_DTYPE)
@@ -2988,8 +2985,8 @@ cdef class yaflRobustBase(yaflExtendedBase):
             self.c_self.base.ekf_robust.gdot = <yaflKalmanRobFuncP>0
 
 #------------------------------------------------------------------------------
-# Influence limiting function
-cdef yaflFloat yafl_py_ekf_rob_gz(yaflPyKalmanBaseSt * self, yaflFloat nu):
+# Influence limiting function for EKF robust filters
+cdef yaflFloat yafl_py_ekf_rob_gz(yaflPyKalmanBaseSt * self, yaflFloat nu, yaflInt i):
     try:
         if not isinstance(<object>(self.py_self), yaflRobustBase):
             raise ValueError('Invalid py_self type (must be subclass of yaflRobustBase)!')
@@ -3004,8 +3001,7 @@ cdef yaflFloat yafl_py_ekf_rob_gz(yaflPyKalmanBaseSt * self, yaflFloat nu):
         if not isinstance(hx_args, dict):
             raise ValueError('Invalid hx_args type (must be dict)!')
 
-        #How about handling exceptions here???
-        ret = gz(nu, **hx_args)
+        ret = gz(nu, i, **hx_args)
         if type(ret) != float:
             raise ValueError('gz must return float!')
 
@@ -3014,9 +3010,10 @@ cdef yaflFloat yafl_py_ekf_rob_gz(yaflPyKalmanBaseSt * self, yaflFloat nu):
     except Exception as e:
         print(tb.format_exc())
         return <yaflFloat>0.0
+
 #------------------------------------------------------------------------------
-# Influence limiting function derivative
-cdef yaflFloat yafl_py_ekf_rob_gdotz(yaflPyKalmanBaseSt * self, yaflFloat nu):
+# Influence limiting function derivative for EKF robust filters
+cdef yaflFloat yafl_py_ekf_rob_gdotz(yaflPyKalmanBaseSt * self, yaflFloat nu, yaflInt i):
     try:
         if not isinstance(<object>(self.py_self), yaflRobustBase):
             raise ValueError('Invalid py_self type (must be subclass of yaflRobustBase)!')
@@ -3031,8 +3028,7 @@ cdef yaflFloat yafl_py_ekf_rob_gdotz(yaflPyKalmanBaseSt * self, yaflFloat nu):
         if not isinstance(hx_args, dict):
             raise ValueError('Invalid hx_args type (must be dict)!')
 
-        #How about handling exceptions here???
-        ret = gdotz(nu, **hx_args)
+        ret = gdotz(nu, i, **hx_args)
         if type(ret) != float:
             raise ValueError('gdotz must return float!')
 
@@ -3041,6 +3037,7 @@ cdef yaflFloat yafl_py_ekf_rob_gdotz(yaflPyKalmanBaseSt * self, yaflFloat nu):
     except Exception as e:
         print(tb.format_exc())
         return <yaflFloat>0.0
+
 #==============================================================================
 cdef class RobustBierman(yaflRobustBase):
     def _update(self):
@@ -3180,7 +3177,7 @@ cdef class yaflUnscentedBase(yaflKalmanBase):
     cdef object    _points
 
     cdef object    _mean_x
-    cdef object    _resudual_x
+    cdef object    _residual_x
 
     cdef object    _mean_z
 
@@ -3525,11 +3522,11 @@ cdef class yaflRobustUKFBase(yaflUnscentedBase):
             self.c_self.base.ukf_robust.gdot = <yaflKalmanRobFuncP>0
 
 #------------------------------------------------------------------------------
-# Influence limiting function
-cdef yaflFloat yafl_py_ukf_rob_gz(yaflPyKalmanBaseSt * self, yaflFloat nu):
+# Influence limiting function for UKF robust filters
+cdef yaflFloat yafl_py_ukf_rob_gz(yaflPyKalmanBaseSt * self, yaflFloat nu, yaflInt i):
     try:
         if not isinstance(<object>(self.py_self), yaflRobustUKFBase):
-            raise ValueError('Invalid py_self type (must be subclass of yaflRobustBase)!')
+            raise ValueError('Invalid py_self type (must be subclass of yaflRobustUKFBase)!')
 
         py_self = <yaflRobustUKFBase>(self.py_self)
 
@@ -3541,8 +3538,7 @@ cdef yaflFloat yafl_py_ukf_rob_gz(yaflPyKalmanBaseSt * self, yaflFloat nu):
         if not isinstance(hx_args, dict):
             raise ValueError('Invalid hx_args type (must be dict)!')
 
-        #How about handling exceptions here???
-        ret = gz(nu, **hx_args)
+        ret = gz(nu, i, **hx_args)
         if type(ret) != float:
             raise ValueError('gz must return float!')
 
@@ -3551,12 +3547,13 @@ cdef yaflFloat yafl_py_ukf_rob_gz(yaflPyKalmanBaseSt * self, yaflFloat nu):
     except Exception as e:
         print(tb.format_exc())
         return <yaflFloat>0.0
+
 #------------------------------------------------------------------------------
-# Influence limiting function derivative
-cdef yaflFloat yafl_py_ukf_rob_gdotz(yaflPyKalmanBaseSt * self, yaflFloat nu):
+# Influence limiting function derivative for UKF robust filters
+cdef yaflFloat yafl_py_ukf_rob_gdotz(yaflPyKalmanBaseSt * self, yaflFloat nu, yaflInt i):
     try:
         if not isinstance(<object>(self.py_self), yaflRobustUKFBase):
-            raise ValueError('Invalid py_self type (must be subclass of yaflRobustBase)!')
+            raise ValueError('Invalid py_self type (must be subclass of yaflRobustUKFBase)!')
 
         py_self = <yaflRobustUKFBase>(self.py_self)
 
@@ -3568,8 +3565,7 @@ cdef yaflFloat yafl_py_ukf_rob_gdotz(yaflPyKalmanBaseSt * self, yaflFloat nu):
         if not isinstance(hx_args, dict):
             raise ValueError('Invalid hx_args type (must be dict)!')
 
-        #How about handling exceptions here???
-        ret = gdotz(nu, **hx_args)
+        ret = gdotz(nu, i, **hx_args)
         if type(ret) != float:
             raise ValueError('gdotz must return float!')
 
@@ -3578,6 +3574,7 @@ cdef yaflFloat yafl_py_ukf_rob_gdotz(yaflPyKalmanBaseSt * self, yaflFloat nu):
     except Exception as e:
         print(tb.format_exc())
         return <yaflFloat>0.0
+
 #==============================================================================
 cdef class UnscentedRobustBierman(yaflRobustUKFBase):
     def _update(self):
@@ -3924,7 +3921,7 @@ cdef class IMMEstimator:
 
     #==========================================================================
     def __init__(self, filters, mu, M, yaflFloat dt):
-        
+
         cdef yaflPyKalmanBaseUn * base = (<yaflKalmanBase>filters[0]).cbase()
 
         nx = base.base.Nx
@@ -3992,12 +3989,12 @@ cdef class IMMEstimator:
         self.c_self.D = &self.v_D[0]
 
         assert YAFL_ST_OK == yafl_imm_post_init(&self.c_self)
-        
+
         self._z  = np.zeros((nz,), dtype=NP_DTYPE)
         self.v_z = self._z
 
         self._dt = dt
-        
+
 
     #==========================================================================
     def __dealloc__(self):
@@ -4036,7 +4033,7 @@ cdef class IMMEstimator:
             raise ValueError('Bad return value on IMMEstimator.update!')
 
         return res
-    
+
     #==========================================================================
     #Decorators
     @property

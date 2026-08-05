@@ -49,9 +49,18 @@ Based on:
 2. Gaver, Donald Paul; Jacobs, Patricia A., "Robustifying the Kalman filter",
    Naval Postgraduate School technical report. 1987
    http://hdl.handle.net/10945/30147
-*/
-typedef yaflFloat (* yaflKalmanRobFuncP)(yaflKalmanBaseSt *, yaflFloat);
 
+Parameters:
+  self  - pointer to the Kalman filter base structure
+  nu    - scalar innovation (normalised by sqrt(R) if used)
+  i     - index of the scalar update (0 .. Nz-1)
+
+Returns:
+  value of g(nu) or g'(nu) depending on context.
+*/
+typedef yaflFloat (* yaflKalmanRobFuncP)(yaflKalmanBaseSt *, yaflFloat, yaflInt);
+
+/*---------------------------------------------------------------------------*/
 struct _yaflKalmanBaseSt {
     yaflKalmanFuncP f;       /*A state transition function*/
     yaflKalmanFuncP h;       /*A measurement function*/
@@ -823,4 +832,3 @@ yaflStatusEn yafl_imm_update(yaflIMMCBSt * self, yaflFloat * z);
     yaflFloat W[2 * nx * nx]
 
 #endif // YAFL_H
-

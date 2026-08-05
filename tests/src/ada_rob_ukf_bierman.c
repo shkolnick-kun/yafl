@@ -53,9 +53,10 @@ yaflStatusEn hx(yaflKalmanBaseSt * self, yaflFloat * y, yaflFloat * x)
 }
 
 /*---------------------------------------------------------------------------*/
-yaflFloat g(yaflKalmanBaseSt * self, yaflFloat x)
+yaflFloat g(yaflKalmanBaseSt * self, yaflFloat x, yaflInt i)
 {
     (void)self;
+    (void)i;
 
     if (3.0 >= fabs(x))
     {
@@ -70,9 +71,10 @@ yaflFloat g(yaflKalmanBaseSt * self, yaflFloat x)
     return (x > 0.0) ? 1.0 : -1.0;
 }
 
-yaflFloat gdot(yaflKalmanBaseSt * self, yaflFloat x)
+yaflFloat gdot(yaflKalmanBaseSt * self, yaflFloat x, yaflInt i)
 {
     (void)self;
+    (void)i;
 
     if (3.0 >= fabs(x))
     {

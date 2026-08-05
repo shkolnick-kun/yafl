@@ -50,7 +50,7 @@ def _zrf(a,b):
     return a - b
 
 #Default noice model is Normal with Poisson outliers
-def _gz(beta):
+def _gz(beta, i):
     # +- 3*sigma
     if 3.0 >= np.abs(beta):
         return float(beta)
@@ -62,7 +62,7 @@ def _gz(beta):
     # outliers
     return float(np.sign(beta))
 
-def _gdotz(beta):
+def _gdotz(beta, i):
     # +- 3*sigma
     if 3.0 >= np.abs(beta):
         return 1.0
