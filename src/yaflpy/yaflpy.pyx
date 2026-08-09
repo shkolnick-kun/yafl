@@ -537,1631 +537,1563 @@ ST_INV_ARG_12 = YAFL_ST_INV_ARG_12
 #                            Helper functions
 #==============================================================================
 cdef int _U_sz(int dim_u):
+    """Return the number of elements in the upper triangular part of a matrix.
+
+    Args:
+        dim_u (int): Matrix dimension (must be > 0).
+
+    Returns:
+        int: Number of elements in the upper triangle (including diagonal).
+    """
     assert 0 < dim_u
     return max(1, (dim_u * (dim_u - 1))//2)
 
 #==============================================================================
-#                            Test functions
+#                            Test functions (mathematical wrappers)
 #==============================================================================
-def _set_vxn(v, yaflFloat n):
-    assert isinstance(v, np.ndarray)
-    assert NP_DTYPE == v.dtype
-    assert 1 == len(v.shape)
 
+# All test functions now automatically cast input arrays to NP_DTYPE.
+# For in-place operations we create a temporary copy of the whole res
+# to preserve the original C-call signatures.
+
+def _set_vxn(v, yaflFloat n):
+    """Set res = v * n (elementwise).
+
+    Args:
+        v (array_like): Input vector.
+        n (float): Scalar multiplier.
+
+    Returns:
+        tuple: (status, result_array) where status is a yaflStatusEn code.
+    """
+    v = np.asarray(v, dtype=NP_DTYPE)
+    if v.ndim != 1:
+        raise ValueError("v must be 1-dimensional")
     sz = v.shape[0]
     res = np.zeros((sz,), dtype=NP_DTYPE)
-
     cdef yaflFloat [::1]    v_v = v
     cdef yaflFloat [::1]    v_r = res
-
     status = yafl_math_set_vxn(sz, &v_r[0], &v_v[0], n)
     return status, res
 
 #------------------------------------------------------------------------------
 def _add_vxn(a, b, yaflFloat n):
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
+    """Add b*n to a in-place and return status and result.
 
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
+    Args:
+        a (array_like): Base vector (copied).
+        b (array_like): Vector to scale and add.
+        n (float): Scalar multiplier.
 
+    Returns:
+        tuple: (status, result_array).
+    """
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 1 or b.ndim != 1 or a.shape != b.shape:
+        raise ValueError("a and b must be 1D arrays of same shape")
     sz = a.shape[0]
-    assert b.shape[0] == sz
-
     res = a.copy()
-
     cdef yaflFloat [::1]    v_v = b
     cdef yaflFloat [::1]    v_r = res
-
     status = yafl_math_add_vxn(sz, &v_r[0], &v_v[0], n)
     return status, res
 
 #------------------------------------------------------------------------------
 def _sub_vxn(a, b, yaflFloat n):
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
+    """Subtract b*n from a in-place and return status and result.
 
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
+    Args:
+        a (array_like): Base vector (copied).
+        b (array_like): Vector to scale and subtract.
+        n (float): Scalar multiplier.
 
+    Returns:
+        tuple: (status, result_array).
+    """
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 1 or b.ndim != 1 or a.shape != b.shape:
+        raise ValueError("a and b must be 1D arrays of same shape")
     sz = a.shape[0]
-    assert b.shape[0] == sz
-
     res = a.copy()
-
     cdef yaflFloat [::1]    v_v = b
     cdef yaflFloat [::1]    v_r = res
-
     status = yafl_math_sub_vxn(sz, &v_r[0], &v_v[0], n)
     return status, res
 
 #------------------------------------------------------------------------------
 def _set_vrn(v, yaflFloat n):
-    assert isinstance(v, np.ndarray)
-    assert NP_DTYPE == v.dtype
-    assert 1 == len(v.shape)
+    """Set res = v / n.
 
+    Args:
+        v (array_like): Input vector.
+        n (float): Scalar divisor.
+
+    Returns:
+        tuple: (status, result_array).
+    """
+    v = np.asarray(v, dtype=NP_DTYPE)
+    if v.ndim != 1:
+        raise ValueError("v must be 1-dimensional")
     sz = v.shape[0]
     res = np.zeros((sz,), dtype=NP_DTYPE)
-
     cdef yaflFloat [::1]    v_v = v
     cdef yaflFloat [::1]    v_r = res
-
     status = yafl_math_set_vrn(sz, &v_r[0], &v_v[0], n)
     return status, res
 
 #------------------------------------------------------------------------------
 def _add_vrn(a, b, yaflFloat n):
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
+    """Add b/n to a in-place.
 
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
+    Args:
+        a (array_like): Base vector (copied).
+        b (array_like): Vector to scale and add.
+        n (float): Scalar divisor.
 
+    Returns:
+        tuple: (status, result_array).
+    """
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 1 or b.ndim != 1 or a.shape != b.shape:
+        raise ValueError("a and b must be 1D arrays of same shape")
     sz = a.shape[0]
-    assert b.shape[0] == sz
-
     res = a.copy()
-
     cdef yaflFloat [::1]    v_v = b
     cdef yaflFloat [::1]    v_r = res
-
     status = yafl_math_add_vrn(sz, &v_r[0], &v_v[0], n)
     return status, res
 
 #------------------------------------------------------------------------------
 def _sub_vrn(a, b, yaflFloat n):
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
+    """Subtract b/n from a in-place.
 
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
+    Args:
+        a (array_like): Base vector (copied).
+        b (array_like): Vector to scale and subtract.
+        n (float): Scalar divisor.
 
+    Returns:
+        tuple: (status, result_array).
+    """
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 1 or b.ndim != 1 or a.shape != b.shape:
+        raise ValueError("a and b must be 1D arrays of same shape")
     sz = a.shape[0]
-    assert b.shape[0] == sz
-
     res = a.copy()
-
     cdef yaflFloat [::1]    v_v = b
     cdef yaflFloat [::1]    v_r = res
-
     status = yafl_math_sub_vrn(sz, &v_r[0], &v_v[0], n)
     return status, res
 
 #------------------------------------------------------------------------------
 def _set_vxv(a, b):
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
+    """Set res = a * b (elementwise).
 
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
+    Args:
+        a (array_like): First vector.
+        b (array_like): Second vector.
 
+    Returns:
+        tuple: (status, result_array).
+    """
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 1 or b.ndim != 1 or a.shape != b.shape:
+        raise ValueError("a and b must be 1D arrays of same shape")
     sz = a.shape[0]
-    assert b.shape[0] == sz
-
     res = np.zeros((sz,), dtype=NP_DTYPE)
-
     cdef yaflFloat [::1]    v_a = a
     cdef yaflFloat [::1]    v_b = b
     cdef yaflFloat [::1]    v_r = res
-
     status = yafl_math_set_vxv(sz, &v_r[0], &v_a[0], &v_b[0])
     return status, res
 
 #------------------------------------------------------------------------------
 def _add_vxv(res, a, b):
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
+    """Add a*b to res in-place (elementwise).
 
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
+    Args:
+        res (np.ndarray): Destination array (modified in-place).
+        a (array_like): First vector.
+        b (array_like): Second vector.
 
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 1 == len(res.shape)
-
+    Returns:
+        int: status code.
+    """
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 1 or b.ndim != 1 or a.shape != b.shape:
+        raise ValueError("a and b must be 1D arrays of same shape")
     sz = a.shape[0]
-    assert b.shape[0] == sz
-    assert res.shape[0] == sz
-
-    cdef yaflFloat [::1]    v_a = a
-    cdef yaflFloat [::1]    v_b = b
-    cdef yaflFloat [::1]    v_r = res
-
+    if not isinstance(res, np.ndarray) or res.ndim != 1 or res.shape[0] != sz:
+        raise ValueError("res must be a 1D array of length sz")
+    # Create a temporary copy of the whole res
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [::1] v_r = temp
+    cdef yaflFloat [::1] v_a = a
+    cdef yaflFloat [::1] v_b = b
     status = yafl_math_add_vxv(sz, &v_r[0], &v_a[0], &v_b[0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _sub_vxv(res, a, b):
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
+    """Subtract a*b from res in-place (elementwise).
 
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
+    Args:
+        res (np.ndarray): Destination array (modified in-place).
+        a (array_like): First vector.
+        b (array_like): Second vector.
 
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 1 == len(res.shape)
-
+    Returns:
+        int: status code.
+    """
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 1 or b.ndim != 1 or a.shape != b.shape:
+        raise ValueError("a and b must be 1D arrays of same shape")
     sz = a.shape[0]
-    assert b.shape[0] == sz
-    assert res.shape[0] == sz
-
-    cdef yaflFloat [::1]    v_a = a
-    cdef yaflFloat [::1]    v_b = b
-    cdef yaflFloat [::1]    v_r = res
-
+    if not isinstance(res, np.ndarray) or res.ndim != 1 or res.shape[0] != sz:
+        raise ValueError("res must be a 1D array of length sz")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [::1] v_r = temp
+    cdef yaflFloat [::1] v_a = a
+    cdef yaflFloat [::1] v_b = b
     status = yafl_math_sub_vxv(sz, &v_r[0], &v_a[0], &v_b[0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _set_vrv(a, b):
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
+    """Set res = a / b (elementwise).
 
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
+    Args:
+        a (array_like): Numerator vector.
+        b (array_like): Denominator vector.
 
+    Returns:
+        tuple: (status, result_array).
+    """
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 1 or b.ndim != 1 or a.shape != b.shape:
+        raise ValueError("a and b must be 1D arrays of same shape")
     sz = a.shape[0]
-    assert b.shape[0] == sz
-
     res = np.zeros((sz,), dtype=NP_DTYPE)
-
     cdef yaflFloat [::1]    v_a = a
     cdef yaflFloat [::1]    v_b = b
     cdef yaflFloat [::1]    v_r = res
-
     status = yafl_math_set_vrv(sz, &v_r[0], &v_a[0], &v_b[0])
     return status, res
 
 #------------------------------------------------------------------------------
 def _add_vrv(res, a, b):
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
+    """Add a/b to res in-place (elementwise).
 
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
+    Args:
+        res (np.ndarray): Destination array (modified in-place).
+        a (array_like): Numerator vector.
+        b (array_like): Denominator vector.
 
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 1 == len(res.shape)
-
+    Returns:
+        int: status code.
+    """
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 1 or b.ndim != 1 or a.shape != b.shape:
+        raise ValueError("a and b must be 1D arrays of same shape")
     sz = a.shape[0]
-    assert b.shape[0] == sz
-    assert res.shape[0] == sz
-
-    cdef yaflFloat [::1]    v_a = a
-    cdef yaflFloat [::1]    v_b = b
-    cdef yaflFloat [::1]    v_r = res
-
+    if not isinstance(res, np.ndarray) or res.ndim != 1 or res.shape[0] != sz:
+        raise ValueError("res must be a 1D array of length sz")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [::1] v_r = temp
+    cdef yaflFloat [::1] v_a = a
+    cdef yaflFloat [::1] v_b = b
     status = yafl_math_add_vrv(sz, &v_r[0], &v_a[0], &v_b[0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _sub_vrv(res, a, b):
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
+    """Subtract a/b from res in-place (elementwise).
 
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
+    Args:
+        res (np.ndarray): Destination array (modified in-place).
+        a (array_like): Numerator vector.
+        b (array_like): Denominator vector.
 
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 1 == len(res.shape)
-
+    Returns:
+        int: status code.
+    """
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 1 or b.ndim != 1 or a.shape != b.shape:
+        raise ValueError("a and b must be 1D arrays of same shape")
     sz = a.shape[0]
-    assert b.shape[0] == sz
-    assert res.shape[0] == sz
-
-    cdef yaflFloat [::1]    v_a = a
-    cdef yaflFloat [::1]    v_b = b
-    cdef yaflFloat [::1]    v_r = res
-
+    if not isinstance(res, np.ndarray) or res.ndim != 1 or res.shape[0] != sz:
+        raise ValueError("res must be a 1D array of length sz")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [::1] v_r = temp
+    cdef yaflFloat [::1] v_a = a
+    cdef yaflFloat [::1] v_b = b
     status = yafl_math_sub_vrv(sz, &v_r[0], &v_a[0], &v_b[0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _vtv(a, b):
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
+    """Return dot product of a and b.
 
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
+    Args:
+        a (array_like): First vector.
+        b (array_like): Second vector.
 
+    Returns:
+        tuple: (status, dot_product).
+    """
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 1 or b.ndim != 1 or a.shape != b.shape:
+        raise ValueError("a and b must be 1D arrays of same shape")
     sz = a.shape[0]
-    assert b.shape[0] == sz
-
     cdef yaflFloat [::1]    v_a = a
     cdef yaflFloat [::1]    v_b = b
     cdef yaflFloat res = 0
-
     status = yafl_math_vtv(sz, &res, &v_a[0], &v_b[0])
     return status, res
 
 #------------------------------------------------------------------------------
 def _set_vvt(a, b):
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
+    """Set res = a * b^T (outer product).
 
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
+    Args:
+        a (array_like): Column vector.
+        b (array_like): Row vector.
 
+    Returns:
+        tuple: (status, result_matrix).
+    """
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 1 or b.ndim != 1:
+        raise ValueError("a and b must be 1D arrays")
     nr = a.shape[0]
     nc = b.shape[0]
-
-    res = np.zeros((nr,nc), dtype=NP_DTYPE)
-
+    res = np.zeros((nr, nc), dtype=NP_DTYPE)
     cdef yaflFloat [::1]    v_a = a
     cdef yaflFloat [::1]    v_b = b
     cdef yaflFloat [:, ::1] v_r = res
-
     status = yafl_math_set_vvt(nr, nc, &v_r[0,0], &v_a[0], &v_b[0])
     return status, res
 
 #------------------------------------------------------------------------------
 def _add_vvt(res, a, b):
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
+    """Add a * b^T to res in-place.
 
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
+    Args:
+        res (np.ndarray): Destination matrix (modified in-place).
+        a (array_like): Column vector.
+        b (array_like): Row vector.
 
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 2 == len(res.shape)
-
+    Returns:
+        int: status code.
+    """
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 1 or b.ndim != 1:
+        raise ValueError("a and b must be 1D arrays")
     nr = a.shape[0]
     nc = b.shape[0]
-    assert res.shape[0] == nr
-    assert res.shape[1] == nc
-
-    cdef yaflFloat [::1]    v_a = a
-    cdef yaflFloat [::1]    v_b = b
-    cdef yaflFloat [:, ::1] v_r = res
-
+    if not isinstance(res, np.ndarray) or res.ndim != 2 or res.shape[0] != nr or res.shape[1] != nc:
+        raise ValueError("res must be a 2D array of shape (nr, nc)")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [:, ::1] v_r = temp
+    cdef yaflFloat [::1] v_a = a
+    cdef yaflFloat [::1] v_b = b
     status = yafl_math_add_vvt(nr, nc, &v_r[0,0], &v_a[0], &v_b[0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _sub_vvt(res, a, b):
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
+    """Subtract a * b^T from res in-place.
 
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
+    Args:
+        res (np.ndarray): Destination matrix (modified in-place).
+        a (array_like): Column vector.
+        b (array_like): Row vector.
 
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 2 == len(res.shape)
-
+    Returns:
+        int: status code.
+    """
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 1 or b.ndim != 1:
+        raise ValueError("a and b must be 1D arrays")
     nr = a.shape[0]
     nc = b.shape[0]
-    assert res.shape[0] == nr
-    assert res.shape[1] == nc
-
-    cdef yaflFloat [::1]    v_a = a
-    cdef yaflFloat [::1]    v_b = b
-    cdef yaflFloat [:, ::1] v_r = res
-
+    if not isinstance(res, np.ndarray) or res.ndim != 2 or res.shape[0] != nr or res.shape[1] != nc:
+        raise ValueError("res must be a 2D array of shape (nr, nc)")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [:, ::1] v_r = temp
+    cdef yaflFloat [::1] v_a = a
+    cdef yaflFloat [::1] v_b = b
     status = yafl_math_sub_vvt(nr, nc, &v_r[0,0], &v_a[0], &v_b[0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _set_vvtxn(a, b, yaflFloat n):
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
+    """Set res = a * b^T * n.
 
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
+    Args:
+        a (array_like): Column vector.
+        b (array_like): Row vector.
+        n (float): Scalar multiplier.
 
+    Returns:
+        tuple: (status, result_matrix).
+    """
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 1 or b.ndim != 1:
+        raise ValueError("a and b must be 1D arrays")
     nr = a.shape[0]
     nc = b.shape[0]
-
-    res = np.zeros((nr,nc), dtype=NP_DTYPE)
-
+    res = np.zeros((nr, nc), dtype=NP_DTYPE)
     cdef yaflFloat [::1]    v_a = a
     cdef yaflFloat [::1]    v_b = b
     cdef yaflFloat [:, ::1] v_r = res
-
     status = yafl_math_set_vvtxn(nr, nc, &v_r[0,0], &v_a[0], &v_b[0], n)
     return status, res
 
 #------------------------------------------------------------------------------
 def _add_vvtxn(res, a, b, yaflFloat n):
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
+    """Add a * b^T * n to res in-place.
 
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
+    Args:
+        res (np.ndarray): Destination matrix (modified in-place).
+        a (array_like): Column vector.
+        b (array_like): Row vector.
+        n (float): Scalar multiplier.
 
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 2 == len(res.shape)
-
+    Returns:
+        int: status code.
+    """
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 1 or b.ndim != 1:
+        raise ValueError("a and b must be 1D arrays")
     nr = a.shape[0]
     nc = b.shape[0]
-    assert res.shape[0] == nr
-    assert res.shape[1] == nc
-
-    cdef yaflFloat [::1]    v_a = a
-    cdef yaflFloat [::1]    v_b = b
-    cdef yaflFloat [:, ::1] v_r = res
-
+    if not isinstance(res, np.ndarray) or res.ndim != 2 or res.shape[0] != nr or res.shape[1] != nc:
+        raise ValueError("res must be a 2D array of shape (nr, nc)")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [:, ::1] v_r = temp
+    cdef yaflFloat [::1] v_a = a
+    cdef yaflFloat [::1] v_b = b
     status = yafl_math_add_vvtxn(nr, nc, &v_r[0,0], &v_a[0], &v_b[0], n)
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _sub_vvtxn(res, a, b, yaflFloat n):
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
+    """Subtract a * b^T * n from res in-place.
 
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
+    Args:
+        res (np.ndarray): Destination matrix (modified in-place).
+        a (array_like): Column vector.
+        b (array_like): Row vector.
+        n (float): Scalar multiplier.
 
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 2 == len(res.shape)
-
+    Returns:
+        int: status code.
+    """
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 1 or b.ndim != 1:
+        raise ValueError("a and b must be 1D arrays")
     nr = a.shape[0]
     nc = b.shape[0]
-    assert res.shape[0] == nr
-    assert res.shape[1] == nc
-
-    cdef yaflFloat [::1]    v_a = a
-    cdef yaflFloat [::1]    v_b = b
-    cdef yaflFloat [:, ::1] v_r = res
-
+    if not isinstance(res, np.ndarray) or res.ndim != 2 or res.shape[0] != nr or res.shape[1] != nc:
+        raise ValueError("res must be a 2D array of shape (nr, nc)")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [:, ::1] v_r = temp
+    cdef yaflFloat [::1] v_a = a
+    cdef yaflFloat [::1] v_b = b
     status = yafl_math_sub_vvtxn(nr, nc, &v_r[0,0], &v_a[0], &v_b[0], n)
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _set_mv(a, b):
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 2 == len(a.shape)
+    """Set res = a * b (matrix-vector product).
 
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
+    Args:
+        a (array_like): 2D matrix.
+        b (array_like): 1D vector.
 
+    Returns:
+        tuple: (status, result_vector).
+    """
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 2 or b.ndim != 1:
+        raise ValueError("a must be 2D, b must be 1D")
     nr = a.shape[0]
     nc = a.shape[1]
-
-    assert b.shape[0] == nc
-
+    if b.shape[0] != nc:
+        raise ValueError("b length must equal number of columns of a")
     res = np.zeros((nr,), dtype=NP_DTYPE)
-
     cdef yaflFloat [:, ::1] v_a = a
     cdef yaflFloat [::1]    v_b = b
     cdef yaflFloat [::1]    v_r = res
-
     status = yafl_math_set_mv(nr, nc, &v_r[0], &v_a[0,0], &v_b[0])
     return status, res
 
 #------------------------------------------------------------------------------
 def _add_mv(res, a, b):
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 2 == len(a.shape)
+    """Add a * b to res in-place.
 
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
+    Args:
+        res (np.ndarray): Destination vector (modified in-place).
+        a (array_like): 2D matrix.
+        b (array_like): 1D vector.
 
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 1 == len(res.shape)
-
+    Returns:
+        int: status code.
+    """
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 2 or b.ndim != 1:
+        raise ValueError("a must be 2D, b must be 1D")
     nr = a.shape[0]
     nc = a.shape[1]
-
-    assert b.shape[0]   == nc
-    assert res.shape[0] == nr
-
+    if b.shape[0] != nc:
+        raise ValueError("b length must equal number of columns of a")
+    if not isinstance(res, np.ndarray) or res.ndim != 1 or res.shape[0] != nr:
+        raise ValueError("res must be a 1D array of length nr")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [::1] v_r = temp
     cdef yaflFloat [:, ::1] v_a = a
-    cdef yaflFloat [::1]    v_b = b
-    cdef yaflFloat [::1]    v_r = res
-
+    cdef yaflFloat [::1] v_b = b
     status = yafl_math_add_mv(nr, nc, &v_r[0], &v_a[0,0], &v_b[0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _sub_mv(res, a, b):
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 2 == len(a.shape)
+    """Subtract a * b from res in-place.
 
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
+    Args:
+        res (np.ndarray): Destination vector (modified in-place).
+        a (array_like): 2D matrix.
+        b (array_like): 1D vector.
 
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 1 == len(res.shape)
-
+    Returns:
+        int: status code.
+    """
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 2 or b.ndim != 1:
+        raise ValueError("a must be 2D, b must be 1D")
     nr = a.shape[0]
     nc = a.shape[1]
-
-    assert b.shape[0]   == nc
-    assert res.shape[0] == nr
-
+    if b.shape[0] != nc:
+        raise ValueError("b length must equal number of columns of a")
+    if not isinstance(res, np.ndarray) or res.ndim != 1 or res.shape[0] != nr:
+        raise ValueError("res must be a 1D array of length nr")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [::1] v_r = temp
     cdef yaflFloat [:, ::1] v_a = a
-    cdef yaflFloat [::1]    v_b = b
-    cdef yaflFloat [::1]    v_r = res
-
+    cdef yaflFloat [::1] v_b = b
     status = yafl_math_sub_mv(nr, nc, &v_r[0], &v_a[0,0], &v_b[0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _set_vtm(a, b):
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
+    """Set res = a^T * b (vector-matrix product).
 
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 2 == len(b.shape)
+    Args:
+        a (array_like): 1D vector.
+        b (array_like): 2D matrix.
 
+    Returns:
+        tuple: (status, result_vector).
+    """
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 1 or b.ndim != 2:
+        raise ValueError("a must be 1D, b must be 2D")
     nr = b.shape[0]
     nc = b.shape[1]
-
-    assert a.shape[0] == nr
-
+    if a.shape[0] != nr:
+        raise ValueError("a length must equal number of rows of b")
     res = np.zeros((nc,), dtype=NP_DTYPE)
-
     cdef yaflFloat [::1]    v_a = a
     cdef yaflFloat [:, ::1] v_b = b
     cdef yaflFloat [::1]    v_r = res
-
     status = yafl_math_set_vtm(nr, nc, &v_r[0], &v_a[0], &v_b[0,0])
     return status, res
 
 #------------------------------------------------------------------------------
 def _add_vtm(res, a, b):
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
+    """Add a^T * b to res in-place.
 
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 2 == len(b.shape)
+    Args:
+        res (np.ndarray): Destination vector (modified in-place).
+        a (array_like): 1D vector.
+        b (array_like): 2D matrix.
 
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 1 == len(res.shape)
-
+    Returns:
+        int: status code.
+    """
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 1 or b.ndim != 2:
+        raise ValueError("a must be 1D, b must be 2D")
     nr = b.shape[0]
     nc = b.shape[1]
-
-    assert a.shape[0]   == nr
-    assert res.shape[0] == nc
-
-    cdef yaflFloat [::1]    v_a = a
+    if a.shape[0] != nr:
+        raise ValueError("a length must equal number of rows of b")
+    if not isinstance(res, np.ndarray) or res.ndim != 1 or res.shape[0] != nc:
+        raise ValueError("res must be a 1D array of length nc")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [::1] v_r = temp
+    cdef yaflFloat [::1] v_a = a
     cdef yaflFloat [:, ::1] v_b = b
-    cdef yaflFloat [::1]    v_r = res
-
     status = yafl_math_add_vtm(nr, nc, &v_r[0], &v_a[0], &v_b[0,0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _sub_vtm(res, a, b):
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
+    """Subtract a^T * b from res in-place.
 
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 2 == len(b.shape)
+    Args:
+        res (np.ndarray): Destination vector (modified in-place).
+        a (array_like): 1D vector.
+        b (array_like): 2D matrix.
 
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 1 == len(res.shape)
-
+    Returns:
+        int: status code.
+    """
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 1 or b.ndim != 2:
+        raise ValueError("a must be 1D, b must be 2D")
     nr = b.shape[0]
     nc = b.shape[1]
-
-    assert a.shape[0]   == nr
-    assert res.shape[0] == nc
-
-    cdef yaflFloat [::1]    v_a = a
+    if a.shape[0] != nr:
+        raise ValueError("a length must equal number of rows of b")
+    if not isinstance(res, np.ndarray) or res.ndim != 1 or res.shape[0] != nc:
+        raise ValueError("res must be a 1D array of length nc")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [::1] v_r = temp
+    cdef yaflFloat [::1] v_a = a
     cdef yaflFloat [:, ::1] v_b = b
-    cdef yaflFloat [::1]    v_r = res
-
     status = yafl_math_sub_vtm(nr, nc, &v_r[0], &v_a[0], &v_b[0,0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _set_mm(a, b):
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 2 == len(a.shape)
+    """Set res = a * b (matrix-matrix product).
 
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 2 == len(b.shape)
+    Args:
+        a (array_like): Left matrix.
+        b (array_like): Right matrix.
 
+    Returns:
+        tuple: (status, result_matrix).
+    """
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 2 or b.ndim != 2:
+        raise ValueError("a and b must be 2D")
     nr =  a.shape[0]
     ncr = a.shape[1]
-
-    assert b.shape[0] == ncr
+    if b.shape[0] != ncr:
+        raise ValueError("number of columns of a must equal number of rows of b")
     nc =  b.shape[1]
-
     res = np.zeros((nr,nc), dtype=NP_DTYPE)
-
     cdef yaflFloat [:, ::1] v_a = a
     cdef yaflFloat [:, ::1] v_b = b
     cdef yaflFloat [:, ::1] v_r = res
-
     status = yafl_math_set_mm(nr, ncr, nc, &v_r[0,0], &v_a[0,0], &v_b[0,0])
     return status, res
 
 #------------------------------------------------------------------------------
 def _add_mm(res, a, b):
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 2 == len(a.shape)
+    """Add a * b to res in-place.
 
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 2 == len(b.shape)
+    Args:
+        res (np.ndarray): Destination matrix (modified in-place).
+        a (array_like): Left matrix.
+        b (array_like): Right matrix.
 
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 2 == len(res.shape)
-
+    Returns:
+        int: status code.
+    """
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 2 or b.ndim != 2:
+        raise ValueError("a and b must be 2D")
     nr =  a.shape[0]
     ncr = a.shape[1]
-
-    assert b.shape[0] == ncr
+    if b.shape[0] != ncr:
+        raise ValueError("number of columns of a must equal number of rows of b")
     nc =  b.shape[1]
-
-    assert res.shape[0] == nr
-    assert res.shape[1] == nc
-
+    if not isinstance(res, np.ndarray) or res.ndim != 2 or res.shape[0] != nr or res.shape[1] != nc:
+        raise ValueError("res must be a 2D array of shape (nr, nc)")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [:, ::1] v_r = temp
     cdef yaflFloat [:, ::1] v_a = a
     cdef yaflFloat [:, ::1] v_b = b
-    cdef yaflFloat [:, ::1] v_r = res
-
     status = yafl_math_add_mm(nr, ncr, nc, &v_r[0,0], &v_a[0,0], &v_b[0,0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _sub_mm(res, a, b):
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 2 == len(a.shape)
+    """Subtract a * b from res in-place.
 
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 2 == len(b.shape)
+    Args:
+        res (np.ndarray): Destination matrix (modified in-place).
+        a (array_like): Left matrix.
+        b (array_like): Right matrix.
 
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 2 == len(res.shape)
-
+    Returns:
+        int: status code.
+    """
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 2 or b.ndim != 2:
+        raise ValueError("a and b must be 2D")
     nr =  a.shape[0]
     ncr = a.shape[1]
-
-    assert b.shape[0] == ncr
+    if b.shape[0] != ncr:
+        raise ValueError("number of columns of a must equal number of rows of b")
     nc =  b.shape[1]
-
-    assert res.shape[0] == nr
-    assert res.shape[1] == nc
-
+    if not isinstance(res, np.ndarray) or res.ndim != 2 or res.shape[0] != nr or res.shape[1] != nc:
+        raise ValueError("res must be a 2D array of shape (nr, nc)")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [:, ::1] v_r = temp
     cdef yaflFloat [:, ::1] v_a = a
     cdef yaflFloat [:, ::1] v_b = b
-    cdef yaflFloat [:, ::1] v_r = res
-
     status = yafl_math_sub_mm(nr, ncr, nc, &v_r[0,0], &v_a[0,0], &v_b[0,0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _set_u(u):
-    assert isinstance(u, np.ndarray)
-    assert NP_DTYPE == u.dtype
-    assert 1 == len(u.shape)
+    """Build full upper triangular matrix from compact U-vector.
 
+    Args:
+        u (array_like): Compact representation of upper triangular matrix.
+
+    Returns:
+        tuple: (status, full_matrix).
+    """
+    u = np.asarray(u, dtype=NP_DTYPE)
+    if u.ndim != 1:
+        raise ValueError("u must be 1D")
     n = u.shape[0]
     sz = int(round((1. + (1. + 8. * n)**0.5)/2.))
-
-    assert _U_sz(sz) == n
-
-    res = np.zeros((sz,sz), dtype=NP_DTYPE)
-
+    if _U_sz(sz) != n:
+        raise ValueError("length of u does not correspond to a valid upper triangular matrix")
+    res = np.zeros((sz, sz), dtype=NP_DTYPE)
     cdef yaflFloat [::1]    v_u = u
     cdef yaflFloat [:, ::1] v_r = res
-
     status = yafl_math_set_u(sz, &v_r[0,0], &v_u[0])
     return status, res
 
 #------------------------------------------------------------------------------
 def _add_u(res, u):
-    assert isinstance(u, np.ndarray)
-    assert NP_DTYPE == u.dtype
-    assert 1 == len(u.shape)
+    """Add compact U-vector to full matrix res in-place.
 
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 2 == len(res.shape)
+    Args:
+        res (np.ndarray): Full square matrix (modified in-place).
+        u (array_like): Compact upper triangular representation.
 
-    n = u.shape[0]
+    Returns:
+        int: status code.
+    """
+    u = np.asarray(u, dtype=NP_DTYPE)
+    if u.ndim != 1:
+        raise ValueError("u must be 1D")
+    if not isinstance(res, np.ndarray) or res.ndim != 2 or res.shape[0] != res.shape[1]:
+        raise ValueError("res must be a square 2D array")
     sz = res.shape[0]
-    assert res.shape[1] == sz
-    assert _U_sz(sz) == n
-
-    cdef yaflFloat [::1]    v_u = u
-    cdef yaflFloat [:, ::1] v_r = res
-
+    n = u.shape[0]
+    if _U_sz(sz) != n:
+        raise ValueError("length of u does not match matrix size")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [:, ::1] v_r = temp
+    cdef yaflFloat [::1] v_u = u
     status = yafl_math_add_u(sz, &v_r[0,0], &v_u[0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _sub_u(res, u):
-    assert isinstance(u, np.ndarray)
-    assert NP_DTYPE == u.dtype
-    assert 1 == len(u.shape)
+    """Subtract compact U-vector from full matrix res in-place.
 
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 2 == len(res.shape)
+    Args:
+        res (np.ndarray): Full square matrix (modified in-place).
+        u (array_like): Compact upper triangular representation.
 
-    n = u.shape[0]
+    Returns:
+        int: status code.
+    """
+    u = np.asarray(u, dtype=NP_DTYPE)
+    if u.ndim != 1:
+        raise ValueError("u must be 1D")
+    if not isinstance(res, np.ndarray) or res.ndim != 2 or res.shape[0] != res.shape[1]:
+        raise ValueError("res must be a square 2D array")
     sz = res.shape[0]
-    assert res.shape[1] == sz
-    assert _U_sz(sz) == n
-
-    cdef yaflFloat [::1]    v_u = u
-    cdef yaflFloat [:, ::1] v_r = res
-
+    n = u.shape[0]
+    if _U_sz(sz) != n:
+        raise ValueError("length of u does not match matrix size")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [:, ::1] v_r = temp
+    cdef yaflFloat [::1] v_u = u
     status = yafl_math_sub_u(sz, &v_r[0,0], &v_u[0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _set_vtu(a, b):
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
+    """Set res = a^T * U where U is stored in compact form b.
 
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
+    Args:
+        a (array_like): Vector.
+        b (array_like): Compact U matrix.
 
+    Returns:
+        tuple: (status, result_vector).
+    """
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 1 or b.ndim != 1:
+        raise ValueError("a and b must be 1D")
     sz = a.shape[0]
-    assert _U_sz(sz) == b.shape[0]
-
+    if _U_sz(sz) != b.shape[0]:
+        raise ValueError("length of b does not match matrix size")
     res = np.zeros((sz,), dtype=NP_DTYPE)
-
     cdef yaflFloat [::1] v_a = a
     cdef yaflFloat [::1] v_b = b
     cdef yaflFloat [::1] v_r = res
-
     status = yafl_math_set_vtu(sz, &v_r[0], &v_a[0], &v_b[0])
     return status, res
 
 #------------------------------------------------------------------------------
 def _add_vtu(res, a, b):
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
+    """Add a^T * U to res in-place.
 
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
+    Args:
+        res (np.ndarray): Destination vector (modified in-place).
+        a (array_like): Vector.
+        b (array_like): Compact U matrix.
 
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 1 == len(res.shape)
-
+    Returns:
+        int: status code.
+    """
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 1 or b.ndim != 1:
+        raise ValueError("a and b must be 1D")
     sz = a.shape[0]
-    assert _U_sz(sz) == b.shape[0]
-    assert res.shape[0] == sz
-
+    if _U_sz(sz) != b.shape[0]:
+        raise ValueError("length of b does not match matrix size")
+    if not isinstance(res, np.ndarray) or res.ndim != 1 or res.shape[0] != sz:
+        raise ValueError("res must be a 1D array of length sz")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [::1] v_r = temp
     cdef yaflFloat [::1] v_a = a
     cdef yaflFloat [::1] v_b = b
-    cdef yaflFloat [::1] v_r = res
-
     status = yafl_math_add_vtu(sz, &v_r[0], &v_a[0], &v_b[0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _sub_vtu(res, a, b):
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
+    """Subtract a^T * U from res in-place.
 
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
+    Args:
+        res (np.ndarray): Destination vector (modified in-place).
+        a (array_like): Vector.
+        b (array_like): Compact U matrix.
 
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 1 == len(res.shape)
-
+    Returns:
+        int: status code.
+    """
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 1 or b.ndim != 1:
+        raise ValueError("a and b must be 1D")
     sz = a.shape[0]
-    assert _U_sz(sz) == b.shape[0]
-    assert res.shape[0] == sz
-
+    if _U_sz(sz) != b.shape[0]:
+        raise ValueError("length of b does not match matrix size")
+    if not isinstance(res, np.ndarray) or res.ndim != 1 or res.shape[0] != sz:
+        raise ValueError("res must be a 1D array of length sz")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [::1] v_r = temp
     cdef yaflFloat [::1] v_a = a
     cdef yaflFloat [::1] v_b = b
-    cdef yaflFloat [::1] v_r = res
-
     status = yafl_math_sub_vtu(sz, &v_r[0], &v_a[0], &v_b[0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _set_uv(a, b):
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
+    """Set res = U * b where U is in compact form a.
 
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
+    Args:
+        a (array_like): Compact U matrix.
+        b (array_like): Vector.
 
+    Returns:
+        tuple: (status, result_vector).
+    """
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 1 or b.ndim != 1:
+        raise ValueError("a and b must be 1D")
     sz = b.shape[0]
-    assert _U_sz(sz) == a.shape[0]
-
+    if _U_sz(sz) != a.shape[0]:
+        raise ValueError("length of a does not match matrix size")
     res = np.zeros((sz,), dtype=NP_DTYPE)
-
     cdef yaflFloat [::1] v_a = a
     cdef yaflFloat [::1] v_b = b
     cdef yaflFloat [::1] v_r = res
-
     status = yafl_math_set_uv(sz, &v_r[0], &v_a[0], &v_b[0])
     return status, res
 
 #------------------------------------------------------------------------------
 def _add_uv(res, a, b):
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
+    """Add U * b to res in-place.
 
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
+    Args:
+        res (np.ndarray): Destination vector (modified in-place).
+        a (array_like): Compact U matrix.
+        b (array_like): Vector.
 
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 1 == len(res.shape)
-
+    Returns:
+        int: status code.
+    """
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 1 or b.ndim != 1:
+        raise ValueError("a and b must be 1D")
     sz = b.shape[0]
-    assert _U_sz(sz) == a.shape[0]
-    assert res.shape[0] == sz
-
+    if _U_sz(sz) != a.shape[0]:
+        raise ValueError("length of a does not match matrix size")
+    if not isinstance(res, np.ndarray) or res.ndim != 1 or res.shape[0] != sz:
+        raise ValueError("res must be a 1D array of length sz")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [::1] v_r = temp
     cdef yaflFloat [::1] v_a = a
     cdef yaflFloat [::1] v_b = b
-    cdef yaflFloat [::1] v_r = res
-
     status = yafl_math_add_uv(sz, &v_r[0], &v_a[0], &v_b[0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _sub_uv(res, a, b):
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
+    """Subtract U * b from res in-place.
 
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
+    Args:
+        res (np.ndarray): Destination vector (modified in-place).
+        a (array_like): Compact U matrix.
+        b (array_like): Vector.
 
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 1 == len(res.shape)
-
+    Returns:
+        int: status code.
+    """
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 1 or b.ndim != 1:
+        raise ValueError("a and b must be 1D")
     sz = b.shape[0]
-    assert _U_sz(sz) == a.shape[0]
-    assert res.shape[0] == sz
-
+    if _U_sz(sz) != a.shape[0]:
+        raise ValueError("length of a does not match matrix size")
+    if not isinstance(res, np.ndarray) or res.ndim != 1 or res.shape[0] != sz:
+        raise ValueError("res must be a 1D array of length sz")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [::1] v_r = temp
     cdef yaflFloat [::1] v_a = a
     cdef yaflFloat [::1] v_b = b
-    cdef yaflFloat [::1] v_r = res
-
     status = yafl_math_sub_uv(sz, &v_r[0], &v_a[0], &v_b[0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _set_mu(a, b):
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 2 == len(a.shape)
+    """Set res = a * U where U is in compact form b.
 
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
+    Args:
+        a (array_like): Matrix.
+        b (array_like): Compact U matrix.
 
+    Returns:
+        tuple: (status, result_matrix).
+    """
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 2 or b.ndim != 1:
+        raise ValueError("a must be 2D, b must be 1D")
     nr = a.shape[0]
     nc = a.shape[1]
-    assert _U_sz(nc) == b.shape[0]
-
-    res = np.zeros((nr,nc), dtype=NP_DTYPE)
-
+    if _U_sz(nc) != b.shape[0]:
+        raise ValueError("length of b does not match matrix size")
+    res = np.zeros((nr, nc), dtype=NP_DTYPE)
     cdef yaflFloat [:, ::1] v_a = a
     cdef yaflFloat [::1]    v_b = b
     cdef yaflFloat [:, ::1] v_r = res
-
     status = yafl_math_set_mu(nr, nc, &v_r[0,0], &v_a[0,0], &v_b[0])
     return status, res
 
 #------------------------------------------------------------------------------
 def _add_mu(res, a, b):
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 2 == len(a.shape)
+    """Add a * U to res in-place.
 
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
+    Args:
+        res (np.ndarray): Destination matrix (modified in-place).
+        a (array_like): Matrix.
+        b (array_like): Compact U matrix.
 
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 2 == len(res.shape)
-
+    Returns:
+        int: status code.
+    """
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 2 or b.ndim != 1:
+        raise ValueError("a must be 2D, b must be 1D")
     nr = a.shape[0]
     nc = a.shape[1]
-    assert _U_sz(nc) == b.shape[0]
-    assert res.shape == a.shape
-
+    if _U_sz(nc) != b.shape[0]:
+        raise ValueError("length of b does not match matrix size")
+    if not isinstance(res, np.ndarray) or res.ndim != 2 or res.shape[0] != nr or res.shape[1] != nc:
+        raise ValueError("res must be a 2D array of shape (nr, nc)")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [:, ::1] v_r = temp
     cdef yaflFloat [:, ::1] v_a = a
-    cdef yaflFloat [::1]    v_b = b
-    cdef yaflFloat [:, ::1] v_r = res
-
+    cdef yaflFloat [::1] v_b = b
     status = yafl_math_add_mu(nr, nc, &v_r[0,0], &v_a[0,0], &v_b[0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _sub_mu(res, a, b):
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 2 == len(a.shape)
+    """Subtract a * U from res in-place.
 
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
+    Args:
+        res (np.ndarray): Destination matrix (modified in-place).
+        a (array_like): Matrix.
+        b (array_like): Compact U matrix.
 
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 2 == len(res.shape)
-
+    Returns:
+        int: status code.
+    """
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 2 or b.ndim != 1:
+        raise ValueError("a must be 2D, b must be 1D")
     nr = a.shape[0]
     nc = a.shape[1]
-    assert _U_sz(nc) == b.shape[0]
-    assert res.shape == a.shape
-
+    if _U_sz(nc) != b.shape[0]:
+        raise ValueError("length of b does not match matrix size")
+    if not isinstance(res, np.ndarray) or res.ndim != 2 or res.shape[0] != nr or res.shape[1] != nc:
+        raise ValueError("res must be a 2D array of shape (nr, nc)")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [:, ::1] v_r = temp
     cdef yaflFloat [:, ::1] v_a = a
-    cdef yaflFloat [::1]    v_b = b
-    cdef yaflFloat [:, ::1] v_r = res
-
+    cdef yaflFloat [::1] v_b = b
     status = yafl_math_sub_mu(nr, nc, &v_r[0,0], &v_a[0,0], &v_b[0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
+# Block operations: for in-place modification we copy the whole res,
+# call the C function with the original signature, then copy back.
 def _bset_m(res, a, yaflInt r, yaflInt c):
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 2 == len(res.shape)
-
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 2 == len(a.shape)
-
-    rnr = res.shape[0]
-    rnc = res.shape[1]
-
-    nr = a.shape[0]
-    nc = a.shape[1]
-
-    assert r >= 0
-    assert c >= 0
-    assert r + nr <= rnr
-    assert c + nc <= rnc
-
-    cdef yaflFloat [:, ::1] v_r = res
+    """Set a block in res to matrix a."""
+    a = np.asarray(a, dtype=NP_DTYPE)
+    if a.ndim != 2:
+        raise ValueError("a must be 2D")
+    if not isinstance(res, np.ndarray) or res.ndim != 2:
+        raise ValueError("res must be a 2D array")
+    rnr, rnc = res.shape
+    nr, nc = a.shape
+    if r < 0 or c < 0 or r + nr > rnr or c + nc > rnc:
+        raise ValueError("block indices out of range")
+    # For set we don't need to preserve res, but we still use temp for consistency
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [:, ::1] v_r = temp
     cdef yaflFloat [:, ::1] v_a = a
-
-    status = yafl_math_bset_m(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), \
-                              nr, nc, &v_a[0,0])
+    status = yafl_math_bset_m(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), nr, nc, &v_a[0,0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _badd_m(res, a, yaflInt r, yaflInt c):
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 2 == len(res.shape)
-
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 2 == len(a.shape)
-
-    rnr = res.shape[0]
-    rnc = res.shape[1]
-
-    nr = a.shape[0]
-    nc = a.shape[1]
-
-    assert r >= 0
-    assert c >= 0
-    assert r + nr <= rnr
-    assert c + nc <= rnc
-
-    cdef yaflFloat [:, ::1] v_r = res
+    """Add matrix a to a block of res."""
+    a = np.asarray(a, dtype=NP_DTYPE)
+    if a.ndim != 2:
+        raise ValueError("a must be 2D")
+    if not isinstance(res, np.ndarray) or res.ndim != 2:
+        raise ValueError("res must be a 2D array")
+    rnr, rnc = res.shape
+    nr, nc = a.shape
+    if r < 0 or c < 0 or r + nr > rnr or c + nc > rnc:
+        raise ValueError("block indices out of range")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [:, ::1] v_r = temp
     cdef yaflFloat [:, ::1] v_a = a
-
-    status = yafl_math_badd_m(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), \
-                              nr, nc, &v_a[0,0])
+    status = yafl_math_badd_m(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), nr, nc, &v_a[0,0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _bsub_m(res, a, yaflInt r, yaflInt c):
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 2 == len(res.shape)
-
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 2 == len(a.shape)
-
-    rnr = res.shape[0]
-    rnc = res.shape[1]
-
-    nr = a.shape[0]
-    nc = a.shape[1]
-
-    assert r >= 0
-    assert c >= 0
-    assert r + nr <= rnr
-    assert c + nc <= rnc
-
-    cdef yaflFloat [:, ::1] v_r = res
+    """Subtract matrix a from a block of res."""
+    a = np.asarray(a, dtype=NP_DTYPE)
+    if a.ndim != 2:
+        raise ValueError("a must be 2D")
+    if not isinstance(res, np.ndarray) or res.ndim != 2:
+        raise ValueError("res must be a 2D array")
+    rnr, rnc = res.shape
+    nr, nc = a.shape
+    if r < 0 or c < 0 or r + nr > rnr or c + nc > rnc:
+        raise ValueError("block indices out of range")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [:, ::1] v_r = temp
     cdef yaflFloat [:, ::1] v_a = a
-
-    status = yafl_math_bsub_m(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), \
-                              nr, nc, &v_a[0,0])
+    status = yafl_math_bsub_m(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), nr, nc, &v_a[0,0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _bset_u(res, a, yaflInt r, yaflInt c):
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 2 == len(res.shape)
-
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
-
-    rnr = res.shape[0]
-    rnc = res.shape[1]
-
+    """Set a block of res to the full matrix reconstructed from compact U."""
+    a = np.asarray(a, dtype=NP_DTYPE)
+    if a.ndim != 1:
+        raise ValueError("a must be 1D")
+    if not isinstance(res, np.ndarray) or res.ndim != 2:
+        raise ValueError("res must be a 2D array")
+    rnr, rnc = res.shape
     n = a.shape[0]
     sz = int(round((1. + (1. + 8. * n)**0.5)/2.))
-
-    assert _U_sz(sz) == n
-
-    assert r >= 0
-    assert c >= 0
-    assert r + sz <= rnr
-    assert c + sz <= rnc
-
-    cdef yaflFloat [:, ::1] v_r = res
-    cdef yaflFloat [::1]    v_a = a
-
-    status = yafl_math_bset_u(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), \
-                              sz, &v_a[0])
+    if _U_sz(sz) != n:
+        raise ValueError("length of a does not match a valid upper triangular matrix")
+    if r < 0 or c < 0 or r + sz > rnr or c + sz > rnc:
+        raise ValueError("block indices out of range")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [:, ::1] v_r = temp
+    cdef yaflFloat [::1] v_a = a
+    status = yafl_math_bset_u(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), sz, &v_a[0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _badd_u(res, a, yaflInt r, yaflInt c):
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 2 == len(res.shape)
-
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
-
-    rnr = res.shape[0]
-    rnc = res.shape[1]
-
+    """Add full matrix from compact U to a block of res."""
+    a = np.asarray(a, dtype=NP_DTYPE)
+    if a.ndim != 1:
+        raise ValueError("a must be 1D")
+    if not isinstance(res, np.ndarray) or res.ndim != 2:
+        raise ValueError("res must be a 2D array")
+    rnr, rnc = res.shape
     n = a.shape[0]
     sz = int(round((1. + (1. + 8. * n)**0.5)/2.))
-
-    assert _U_sz(sz) == n
-
-    assert r >= 0
-    assert c >= 0
-    assert r + sz <= rnr
-    assert c + sz <= rnc
-
-    cdef yaflFloat [:, ::1] v_r = res
-    cdef yaflFloat [::1]    v_a = a
-
-    status = yafl_math_badd_u(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), \
-                              sz, &v_a[0])
+    if _U_sz(sz) != n:
+        raise ValueError("length of a does not match a valid upper triangular matrix")
+    if r < 0 or c < 0 or r + sz > rnr or c + sz > rnc:
+        raise ValueError("block indices out of range")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [:, ::1] v_r = temp
+    cdef yaflFloat [::1] v_a = a
+    status = yafl_math_badd_u(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), sz, &v_a[0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _bsub_u(res, a, yaflInt r, yaflInt c):
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 2 == len(res.shape)
-
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
-
-    rnr = res.shape[0]
-    rnc = res.shape[1]
-
+    """Subtract full matrix from compact U from a block of res."""
+    a = np.asarray(a, dtype=NP_DTYPE)
+    if a.ndim != 1:
+        raise ValueError("a must be 1D")
+    if not isinstance(res, np.ndarray) or res.ndim != 2:
+        raise ValueError("res must be a 2D array")
+    rnr, rnc = res.shape
     n = a.shape[0]
     sz = int(round((1. + (1. + 8. * n)**0.5)/2.))
-
-    assert _U_sz(sz) == n
-
-    assert r >= 0
-    assert c >= 0
-    assert r + sz <= rnr
-    assert c + sz <= rnc
-
-    cdef yaflFloat [:, ::1] v_r = res
-    cdef yaflFloat [::1]    v_a = a
-
-    status = yafl_math_bsub_u(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), \
-                              sz, &v_a[0])
+    if _U_sz(sz) != n:
+        raise ValueError("length of a does not match a valid upper triangular matrix")
+    if r < 0 or c < 0 or r + sz > rnr or c + sz > rnc:
+        raise ValueError("block indices out of range")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [:, ::1] v_r = temp
+    cdef yaflFloat [::1] v_a = a
+    status = yafl_math_bsub_u(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), sz, &v_a[0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _bset_ut(res, a, yaflInt r, yaflInt c):
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 2 == len(res.shape)
-
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
-
-    rnr = res.shape[0]
-    rnc = res.shape[1]
-
+    """Set block to transpose of compact U."""
+    a = np.asarray(a, dtype=NP_DTYPE)
+    if a.ndim != 1:
+        raise ValueError("a must be 1D")
+    if not isinstance(res, np.ndarray) or res.ndim != 2:
+        raise ValueError("res must be a 2D array")
+    rnr, rnc = res.shape
     n = a.shape[0]
     sz = int(round((1. + (1. + 8. * n)**0.5)/2.))
-
-    assert _U_sz(sz) == n
-
-    assert r >= 0
-    assert c >= 0
-    assert r + sz <= rnr
-    assert c + sz <= rnc
-
-    cdef yaflFloat [:, ::1] v_r = res
-    cdef yaflFloat [::1]    v_a = a
-
-    status = yafl_math_bset_ut(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), \
-                              sz, &v_a[0])
+    if _U_sz(sz) != n:
+        raise ValueError("length of a does not match a valid upper triangular matrix")
+    if r < 0 or c < 0 or r + sz > rnr or c + sz > rnc:
+        raise ValueError("block indices out of range")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [:, ::1] v_r = temp
+    cdef yaflFloat [::1] v_a = a
+    status = yafl_math_bset_ut(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), sz, &v_a[0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _badd_ut(res, a, yaflInt r, yaflInt c):
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 2 == len(res.shape)
-
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
-
-    rnr = res.shape[0]
-    rnc = res.shape[1]
-
+    """Add transpose of compact U to a block of res."""
+    a = np.asarray(a, dtype=NP_DTYPE)
+    if a.ndim != 1:
+        raise ValueError("a must be 1D")
+    if not isinstance(res, np.ndarray) or res.ndim != 2:
+        raise ValueError("res must be a 2D array")
+    rnr, rnc = res.shape
     n = a.shape[0]
     sz = int(round((1. + (1. + 8. * n)**0.5)/2.))
-
-    assert _U_sz(sz) == n
-
-    assert r >= 0
-    assert c >= 0
-    assert r + sz <= rnr
-    assert c + sz <= rnc
-
-    cdef yaflFloat [:, ::1] v_r = res
-    cdef yaflFloat [::1]    v_a = a
-
-    status = yafl_math_badd_ut(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), \
-                              sz, &v_a[0])
+    if _U_sz(sz) != n:
+        raise ValueError("length of a does not match a valid upper triangular matrix")
+    if r < 0 or c < 0 or r + sz > rnr or c + sz > rnc:
+        raise ValueError("block indices out of range")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [:, ::1] v_r = temp
+    cdef yaflFloat [::1] v_a = a
+    status = yafl_math_badd_ut(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), sz, &v_a[0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _bsub_ut(res, a, yaflInt r, yaflInt c):
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 2 == len(res.shape)
-
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
-
-    rnr = res.shape[0]
-    rnc = res.shape[1]
-
+    """Subtract transpose of compact U from a block of res."""
+    a = np.asarray(a, dtype=NP_DTYPE)
+    if a.ndim != 1:
+        raise ValueError("a must be 1D")
+    if not isinstance(res, np.ndarray) or res.ndim != 2:
+        raise ValueError("res must be a 2D array")
+    rnr, rnc = res.shape
     n = a.shape[0]
     sz = int(round((1. + (1. + 8. * n)**0.5)/2.))
-
-    assert _U_sz(sz) == n
-
-    assert r >= 0
-    assert c >= 0
-    assert r + sz <= rnr
-    assert c + sz <= rnc
-
-    cdef yaflFloat [:, ::1] v_r = res
-    cdef yaflFloat [::1]    v_a = a
-
-    status = yafl_math_bsub_ut(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), \
-                              sz, &v_a[0])
+    if _U_sz(sz) != n:
+        raise ValueError("length of a does not match a valid upper triangular matrix")
+    if r < 0 or c < 0 or r + sz > rnr or c + sz > rnc:
+        raise ValueError("block indices out of range")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [:, ::1] v_r = temp
+    cdef yaflFloat [::1] v_a = a
+    status = yafl_math_bsub_ut(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), sz, &v_a[0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _bset_v(res, a, yaflInt r, yaflInt c):
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 2 == len(res.shape)
-
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
-
-    rnr = res.shape[0]
-    rnc = res.shape[1]
-
+    """Set a column block to vector a."""
+    a = np.asarray(a, dtype=NP_DTYPE)
+    if a.ndim != 1:
+        raise ValueError("a must be 1D")
+    if not isinstance(res, np.ndarray) or res.ndim != 2:
+        raise ValueError("res must be a 2D array")
+    rnr, rnc = res.shape
     sz = a.shape[0]
-
-    assert r >= 0
-    assert c >= 0
-    assert r + sz <= rnr
-    assert c + 1  <= rnc
-
-    cdef yaflFloat [:, ::1] v_r = res
-    cdef yaflFloat [::1]    v_a = a
-
-    status = yafl_math_bset_v(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), \
-                              sz, &v_a[0])
+    if r < 0 or c < 0 or r + sz > rnr or c + 1 > rnc:
+        raise ValueError("block indices out of range")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [:, ::1] v_r = temp
+    cdef yaflFloat [::1] v_a = a
+    status = yafl_math_bset_v(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), sz, &v_a[0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _badd_v(res, a, yaflInt r, yaflInt c):
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 2 == len(res.shape)
-
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
-
-    rnr = res.shape[0]
-    rnc = res.shape[1]
-
+    """Add vector a to a column block of res."""
+    a = np.asarray(a, dtype=NP_DTYPE)
+    if a.ndim != 1:
+        raise ValueError("a must be 1D")
+    if not isinstance(res, np.ndarray) or res.ndim != 2:
+        raise ValueError("res must be a 2D array")
+    rnr, rnc = res.shape
     sz = a.shape[0]
-
-    assert r >= 0
-    assert c >= 0
-    assert r + sz <= rnr
-    assert c + 1  <= rnc
-
-    cdef yaflFloat [:, ::1] v_r = res
-    cdef yaflFloat [::1]    v_a = a
-
-    status = yafl_math_badd_v(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), \
-                              sz, &v_a[0])
+    if r < 0 or c < 0 or r + sz > rnr or c + 1 > rnc:
+        raise ValueError("block indices out of range")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [:, ::1] v_r = temp
+    cdef yaflFloat [::1] v_a = a
+    status = yafl_math_badd_v(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), sz, &v_a[0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _bsub_v(res, a, yaflInt r, yaflInt c):
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 2 == len(res.shape)
-
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
-
-    rnr = res.shape[0]
-    rnc = res.shape[1]
-
+    """Subtract vector a from a column block of res."""
+    a = np.asarray(a, dtype=NP_DTYPE)
+    if a.ndim != 1:
+        raise ValueError("a must be 1D")
+    if not isinstance(res, np.ndarray) or res.ndim != 2:
+        raise ValueError("res must be a 2D array")
+    rnr, rnc = res.shape
     sz = a.shape[0]
-
-    assert r >= 0
-    assert c >= 0
-    assert r + sz <= rnr
-    assert c + 1  <= rnc
-
-    cdef yaflFloat [:, ::1] v_r = res
-    cdef yaflFloat [::1]    v_a = a
-
-    status = yafl_math_bsub_v(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), \
-                              sz, &v_a[0])
+    if r < 0 or c < 0 or r + sz > rnr or c + 1 > rnc:
+        raise ValueError("block indices out of range")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [:, ::1] v_r = temp
+    cdef yaflFloat [::1] v_a = a
+    status = yafl_math_bsub_v(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), sz, &v_a[0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _bset_vvt(res, a, b, yaflInt r, yaflInt c):
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 2 == len(res.shape)
-
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
-
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
-
-    rnr = res.shape[0]
-    rnc = res.shape[1]
-
+    """Set block to outer product a*b^T."""
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 1 or b.ndim != 1:
+        raise ValueError("a and b must be 1D")
     sz = a.shape[0]
-    assert b.shape[0] == sz
-
-    assert r >= 0
-    assert c >= 0
-    assert r + sz <= rnr
-    assert c + sz <= rnc
-
-    cdef yaflFloat [:, ::1] v_r = res
-    cdef yaflFloat [::1]    v_a = a
-    cdef yaflFloat [::1]    v_b = b
-
-    status = yafl_math_bset_vvt(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), \
-                              sz, &v_a[0], &v_b[0])
+    if b.shape[0] != sz:
+        raise ValueError("a and b must have same length")
+    if not isinstance(res, np.ndarray) or res.ndim != 2:
+        raise ValueError("res must be a 2D array")
+    rnr, rnc = res.shape
+    if r < 0 or c < 0 or r + sz > rnr or c + sz > rnc:
+        raise ValueError("block indices out of range")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [:, ::1] v_r = temp
+    cdef yaflFloat [::1] v_a = a
+    cdef yaflFloat [::1] v_b = b
+    status = yafl_math_bset_vvt(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), sz, &v_a[0], &v_b[0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _badd_vvt(res, a, b, yaflInt r, yaflInt c):
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 2 == len(res.shape)
-
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
-
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
-
-    rnr = res.shape[0]
-    rnc = res.shape[1]
-
+    """Add outer product a*b^T to a block of res."""
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 1 or b.ndim != 1:
+        raise ValueError("a and b must be 1D")
     sz = a.shape[0]
-    assert b.shape[0] == sz
-
-    assert r >= 0
-    assert c >= 0
-    assert r + sz <= rnr
-    assert c + sz <= rnc
-
-    cdef yaflFloat [:, ::1] v_r = res
-    cdef yaflFloat [::1]    v_a = a
-    cdef yaflFloat [::1]    v_b = b
-
-    status = yafl_math_badd_vvt(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), \
-                              sz, &v_a[0], &v_b[0])
+    if b.shape[0] != sz:
+        raise ValueError("a and b must have same length")
+    if not isinstance(res, np.ndarray) or res.ndim != 2:
+        raise ValueError("res must be a 2D array")
+    rnr, rnc = res.shape
+    if r < 0 or c < 0 or r + sz > rnr or c + sz > rnc:
+        raise ValueError("block indices out of range")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [:, ::1] v_r = temp
+    cdef yaflFloat [::1] v_a = a
+    cdef yaflFloat [::1] v_b = b
+    status = yafl_math_badd_vvt(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), sz, &v_a[0], &v_b[0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _bsub_vvt(res, a, b, yaflInt r, yaflInt c):
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 2 == len(res.shape)
-
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 1 == len(a.shape)
-
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
-
-    rnr = res.shape[0]
-    rnc = res.shape[1]
-
+    """Subtract outer product a*b^T from a block of res."""
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 1 or b.ndim != 1:
+        raise ValueError("a and b must be 1D")
     sz = a.shape[0]
-    assert b.shape[0] == sz
-
-    assert r >= 0
-    assert c >= 0
-    assert r + sz <= rnr
-    assert c + sz <= rnc
-
-    cdef yaflFloat [:, ::1] v_r = res
-    cdef yaflFloat [::1]    v_a = a
-    cdef yaflFloat [::1]    v_b = b
-
-    status = yafl_math_bsub_vvt(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), \
-                              sz, &v_a[0], &v_b[0])
+    if b.shape[0] != sz:
+        raise ValueError("a and b must have same length")
+    if not isinstance(res, np.ndarray) or res.ndim != 2:
+        raise ValueError("res must be a 2D array")
+    rnr, rnc = res.shape
+    if r < 0 or c < 0 or r + sz > rnr or c + sz > rnc:
+        raise ValueError("block indices out of range")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [:, ::1] v_r = temp
+    cdef yaflFloat [::1] v_a = a
+    cdef yaflFloat [::1] v_b = b
+    status = yafl_math_bsub_vvt(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), sz, &v_a[0], &v_b[0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _bset_mu(res, a, b, yaflInt r, yaflInt c):
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 2 == len(res.shape)
-
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 2 == len(a.shape)
-
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
-
-    rnr = res.shape[0]
-    rnc = res.shape[1]
-
-    nr = a.shape[0]
-    nc = a.shape[1]
-
-    assert _U_sz(nc) == b.shape[0]
-
-    assert r >= 0
-    assert c >= 0
-    assert r + nr <= rnr
-    assert c + nc <= rnc
-
-    cdef yaflFloat [:, ::1] v_r = res
+    """Set block to a * U (compact)."""
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 2 or b.ndim != 1:
+        raise ValueError("a must be 2D, b must be 1D")
+    nr, nc = a.shape
+    if _U_sz(nc) != b.shape[0]:
+        raise ValueError("length of b does not match matrix size")
+    if not isinstance(res, np.ndarray) or res.ndim != 2:
+        raise ValueError("res must be a 2D array")
+    rnr, rnc = res.shape
+    if r < 0 or c < 0 or r + nr > rnr or c + nc > rnc:
+        raise ValueError("block indices out of range")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [:, ::1] v_r = temp
     cdef yaflFloat [:, ::1] v_a = a
-    cdef yaflFloat [::1]    v_b = b
-
-    status = yafl_math_bset_mu(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), \
-                              nr, nc, &v_a[0,0], &v_b[0])
+    cdef yaflFloat [::1] v_b = b
+    status = yafl_math_bset_mu(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), nr, nc, &v_a[0,0], &v_b[0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _badd_mu(res, a, b, yaflInt r, yaflInt c):
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 2 == len(res.shape)
-
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 2 == len(a.shape)
-
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
-
-    rnr = res.shape[0]
-    rnc = res.shape[1]
-
-    nr = a.shape[0]
-    nc = a.shape[1]
-
-    assert _U_sz(nc) == b.shape[0]
-
-    assert r >= 0
-    assert c >= 0
-    assert r + nr <= rnr
-    assert c + nc <= rnc
-
-    cdef yaflFloat [:, ::1] v_r = res
+    """Add a * U to a block of res."""
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 2 or b.ndim != 1:
+        raise ValueError("a must be 2D, b must be 1D")
+    nr, nc = a.shape
+    if _U_sz(nc) != b.shape[0]:
+        raise ValueError("length of b does not match matrix size")
+    if not isinstance(res, np.ndarray) or res.ndim != 2:
+        raise ValueError("res must be a 2D array")
+    rnr, rnc = res.shape
+    if r < 0 or c < 0 or r + nr > rnr or c + nc > rnc:
+        raise ValueError("block indices out of range")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [:, ::1] v_r = temp
     cdef yaflFloat [:, ::1] v_a = a
-    cdef yaflFloat [::1]    v_b = b
-
-    status = yafl_math_badd_mu(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), \
-                              nr, nc, &v_a[0,0], &v_b[0])
+    cdef yaflFloat [::1] v_b = b
+    status = yafl_math_badd_mu(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), nr, nc, &v_a[0,0], &v_b[0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _bsub_mu(res, a, b, yaflInt r, yaflInt c):
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 2 == len(res.shape)
-
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 2 == len(a.shape)
-
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
-
-    rnr = res.shape[0]
-    rnc = res.shape[1]
-
-    nr = a.shape[0]
-    nc = a.shape[1]
-
-    assert _U_sz(nc) == b.shape[0]
-
-    assert r >= 0
-    assert c >= 0
-    assert r + nr <= rnr
-    assert c + nc <= rnc
-
-    cdef yaflFloat [:, ::1] v_r = res
+    """Subtract a * U from a block of res."""
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 2 or b.ndim != 1:
+        raise ValueError("a must be 2D, b must be 1D")
+    nr, nc = a.shape
+    if _U_sz(nc) != b.shape[0]:
+        raise ValueError("length of b does not match matrix size")
+    if not isinstance(res, np.ndarray) or res.ndim != 2:
+        raise ValueError("res must be a 2D array")
+    rnr, rnc = res.shape
+    if r < 0 or c < 0 or r + nr > rnr or c + nc > rnc:
+        raise ValueError("block indices out of range")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [:, ::1] v_r = temp
     cdef yaflFloat [:, ::1] v_a = a
-    cdef yaflFloat [::1]    v_b = b
-
-    status = yafl_math_bsub_mu(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), \
-                              nr, nc, &v_a[0,0], &v_b[0])
+    cdef yaflFloat [::1] v_b = b
+    status = yafl_math_bsub_mu(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), nr, nc, &v_a[0,0], &v_b[0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _bset_bu(res, a, b, yaflInt r, yaflInt c, yaflInt ar, yaflInt ac, yaflInt nr, yaflInt nc):
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 2 == len(res.shape)
-
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 2 == len(a.shape)
-
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
-
-    rnr = res.shape[0]
-    rnc = res.shape[1]
-
-    anr = a.shape[0]
-    anc = a.shape[1]
-
-    assert _U_sz(nc) == b.shape[0]
-
-    assert r >= 0
-    assert c >= 0
-    assert r + nr <= rnr
-    assert c + nc <= rnc
-    assert ar + nr <= anr
-    assert ac + nc <= anc
-
-    cdef yaflFloat [:, ::1] v_r = res
+    """Set block using a sub-block of a multiplied by U."""
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 2 or b.ndim != 1:
+        raise ValueError("a must be 2D, b must be 1D")
+    if _U_sz(nc) != b.shape[0]:
+        raise ValueError("length of b does not match matrix size")
+    if not isinstance(res, np.ndarray) or res.ndim != 2:
+        raise ValueError("res must be a 2D array")
+    rnr, rnc = res.shape
+    anr, anc = a.shape
+    if r < 0 or c < 0 or r + nr > rnr or c + nc > rnc:
+        raise ValueError("res block indices out of range")
+    if ar < 0 or ac < 0 or ar + nr > anr or ac + nc > anc:
+        raise ValueError("source block indices out of range")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [:, ::1] v_r = temp
     cdef yaflFloat [:, ::1] v_a = a
-    cdef yaflFloat [::1]    v_b = b
-
-    status = yafl_math_bset_bu(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), nr, nc, \
-                               anc, _yafl_blk_ptr(&v_a[0,0], anc, ar, ac), &v_b[0])
+    cdef yaflFloat [::1] v_b = b
+    status = yafl_math_bset_bu(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), nr, nc, anc,
+                               _yafl_blk_ptr(&v_a[0,0], anc, ar, ac), &v_b[0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _badd_bu(res, a, b, yaflInt r, yaflInt c, yaflInt ar, yaflInt ac, yaflInt nr, yaflInt nc):
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 2 == len(res.shape)
-
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 2 == len(a.shape)
-
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
-
-    rnr = res.shape[0]
-    rnc = res.shape[1]
-
-    anr = a.shape[0]
-    anc = a.shape[1]
-
-    assert _U_sz(nc) == b.shape[0]
-
-    assert r >= 0
-    assert c >= 0
-    assert r + nr <= rnr
-    assert c + nc <= rnc
-    assert ar + nr <= anr
-    assert ac + nc <= anc
-
-    cdef yaflFloat [:, ::1] v_r = res
+    """Add sub-block*a * U to a block of res."""
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 2 or b.ndim != 1:
+        raise ValueError("a must be 2D, b must be 1D")
+    if _U_sz(nc) != b.shape[0]:
+        raise ValueError("length of b does not match matrix size")
+    if not isinstance(res, np.ndarray) or res.ndim != 2:
+        raise ValueError("res must be a 2D array")
+    rnr, rnc = res.shape
+    anr, anc = a.shape
+    if r < 0 or c < 0 or r + nr > rnr or c + nc > rnc:
+        raise ValueError("res block indices out of range")
+    if ar < 0 or ac < 0 or ar + nr > anr or ac + nc > anc:
+        raise ValueError("source block indices out of range")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [:, ::1] v_r = temp
     cdef yaflFloat [:, ::1] v_a = a
-    cdef yaflFloat [::1]    v_b = b
-
-    status = yafl_math_badd_bu(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), nr, nc, \
-                               anc, _yafl_blk_ptr(&v_a[0,0], anc, ar, ac), &v_b[0])
+    cdef yaflFloat [::1] v_b = b
+    status = yafl_math_badd_bu(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), nr, nc, anc,
+                               _yafl_blk_ptr(&v_a[0,0], anc, ar, ac), &v_b[0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _bsub_bu(res, a, b, yaflInt r, yaflInt c, yaflInt ar, yaflInt ac, yaflInt nr, yaflInt nc):
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 2 == len(res.shape)
-
-    assert isinstance(a, np.ndarray)
-    assert NP_DTYPE == a.dtype
-    assert 2 == len(a.shape)
-
-    assert isinstance(b, np.ndarray)
-    assert NP_DTYPE == b.dtype
-    assert 1 == len(b.shape)
-
-    rnr = res.shape[0]
-    rnc = res.shape[1]
-
-    anr = a.shape[0]
-    anc = a.shape[1]
-
-    assert _U_sz(nc) == b.shape[0]
-
-    assert r >= 0
-    assert c >= 0
-    assert r + nr <= rnr
-    assert c + nc <= rnc
-    assert ar + nr <= anr
-    assert ac + nc <= anc
-
-    cdef yaflFloat [:, ::1] v_r = res
+    """Subtract sub-block*a * U from a block of res."""
+    a = np.asarray(a, dtype=NP_DTYPE)
+    b = np.asarray(b, dtype=NP_DTYPE)
+    if a.ndim != 2 or b.ndim != 1:
+        raise ValueError("a must be 2D, b must be 1D")
+    if _U_sz(nc) != b.shape[0]:
+        raise ValueError("length of b does not match matrix size")
+    if not isinstance(res, np.ndarray) or res.ndim != 2:
+        raise ValueError("res must be a 2D array")
+    rnr, rnc = res.shape
+    anr, anc = a.shape
+    if r < 0 or c < 0 or r + nr > rnr or c + nc > rnc:
+        raise ValueError("res block indices out of range")
+    if ar < 0 or ac < 0 or ar + nr > anr or ac + nc > anc:
+        raise ValueError("source block indices out of range")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [:, ::1] v_r = temp
     cdef yaflFloat [:, ::1] v_a = a
-    cdef yaflFloat [::1]    v_b = b
-
-    status = yafl_math_bsub_bu(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), nr, nc, \
-                               anc, _yafl_blk_ptr(&v_a[0,0], anc, ar, ac), &v_b[0])
+    cdef yaflFloat [::1] v_b = b
+    status = yafl_math_bsub_bu(rnc, _yafl_blk_ptr(&v_r[0,0], rnc, r, c), nr, nc, anc,
+                               _yafl_blk_ptr(&v_a[0,0], anc, ar, ac), &v_b[0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _ruv(u, v):
-    assert isinstance(u, np.ndarray)
-    assert NP_DTYPE == u.dtype
-    assert 1 == len(u.shape)
-
-    assert isinstance(v, np.ndarray)
-    assert NP_DTYPE == v.dtype
-    assert 1 == len(v.shape)
+    """Solve U * x = v for x (in-place on v)."""
+    u = np.asarray(u, dtype=NP_DTYPE)
+    v = np.asarray(v, dtype=NP_DTYPE)
+    if u.ndim != 1 or v.ndim != 1:
+        raise ValueError("u and v must be 1D")
     sz = v.shape[0]
-
-    assert u.shape[0] == _U_sz(sz)
-
+    if u.shape[0] != _U_sz(sz):
+        raise ValueError("length of u does not match matrix size")
     v = v.copy()
     cdef yaflFloat [::1]    v_v = v
     cdef yaflFloat [::1]    v_u = u
@@ -2170,17 +2102,14 @@ def _ruv(u, v):
 
 #------------------------------------------------------------------------------
 def _rutv(u, v):
-    assert isinstance(u, np.ndarray)
-    assert NP_DTYPE == u.dtype
-    assert 1 == len(u.shape)
-
-    assert isinstance(v, np.ndarray)
-    assert NP_DTYPE == v.dtype
-    assert 1 == len(v.shape)
+    """Solve U^T * x = v for x (in-place on v)."""
+    u = np.asarray(u, dtype=NP_DTYPE)
+    v = np.asarray(v, dtype=NP_DTYPE)
+    if u.ndim != 1 or v.ndim != 1:
+        raise ValueError("u and v must be 1D")
     sz = v.shape[0]
-
-    assert u.shape[0] == _U_sz(sz)
-
+    if u.shape[0] != _U_sz(sz):
+        raise ValueError("length of u does not match matrix size")
     v = v.copy()
     cdef yaflFloat [::1]    v_v = v
     cdef yaflFloat [::1]    v_u = u
@@ -2189,100 +2118,106 @@ def _rutv(u, v):
 
 #------------------------------------------------------------------------------
 def _rum(res, u):
-    assert isinstance(res, np.ndarray)
-    assert NP_DTYPE == res.dtype
-    assert 2 == len(res.shape)
-
-    assert isinstance(u, np.ndarray)
-    assert NP_DTYPE == u.dtype
-    assert 1 == len(u.shape)
-
+    """Multiply matrix res by U (in-place) where U is in compact form."""
+    u = np.asarray(u, dtype=NP_DTYPE)
+    if u.ndim != 1:
+        raise ValueError("u must be 1D")
+    if not isinstance(res, np.ndarray) or res.ndim != 2:
+        raise ValueError("res must be a 2D array")
     nr = res.shape[0]
     nc = res.shape[1]
-    assert _U_sz(nr) == u.shape[0]
-
-    cdef yaflFloat [:, ::1] v_r = res
-    cdef yaflFloat [::1]    v_u = u
-
+    if _U_sz(nr) != u.shape[0]:
+        raise ValueError("length of u does not match matrix size")
+    temp = np.array(res, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [:, ::1] v_r = temp
+    cdef yaflFloat [::1] v_u = u
     status = yafl_math_rum(nr, nc, &v_r[0,0], &v_u[0])
+    res[:] = temp
     return status
 
 #------------------------------------------------------------------------------
 def _mwgs(W, D):
-    assert isinstance(W, np.ndarray)
-    assert NP_DTYPE == W.dtype
-    assert 2 == len(W.shape)
+    """Modified Gram-Schmidt update with U-D factors.
+
+    Args:
+        W (array_like): Matrix.
+        D (array_like): Diagonal scaling.
+
+    Returns:
+        tuple: (status, u_compact, d_diagonal).
+    """
+    W = np.asarray(W, dtype=NP_DTYPE)
+    D = np.asarray(D, dtype=NP_DTYPE)
+    if W.ndim != 2 or D.ndim != 1:
+        raise ValueError("W must be 2D, D must be 1D")
     nr = W.shape[0]
     nc = W.shape[1]
-
-    assert isinstance(D, np.ndarray)
-    assert NP_DTYPE == D.dtype
-    assert 1 == len(D.shape)
-    assert D.shape[0] == nc
-
+    if D.shape[0] != nc:
+        raise ValueError("D length must match number of columns of W")
     u = np.zeros((_U_sz(nr),), dtype=NP_DTYPE)
     d = np.ones((nr,), dtype=NP_DTYPE)
-
     cdef yaflFloat [:, ::1] v_W = W
     cdef yaflFloat [::1]    v_D = D
     cdef yaflFloat [::1]    v_u = u
     cdef yaflFloat [::1]    v_d = d
-
     res = yafl_math_mwgsu(nr, nc, &v_u[0], &v_d[0], &v_W[0,0], &v_D[0])
-
     return res, u, d
 
 #------------------------------------------------------------------------------
-def _udu_up(u,d, yaflFloat alpha, v):
-    assert isinstance(u, np.ndarray)
-    assert NP_DTYPE == u.dtype
-    assert 1 == len(u.shape)
+def _udu_up(u, d, yaflFloat alpha, v):
+    """UD update with positive alpha (add v*alpha*v^T).
 
-    assert isinstance(d, np.ndarray)
-    assert NP_DTYPE == d.dtype
-    assert 1 == len(d.shape)
+    Args:
+        u (array_like): Compact U matrix (modified in-place).
+        d (array_like): Diagonal matrix (modified in-place).
+        alpha (float): Positive scalar.
+        v (array_like): Vector.
 
-    assert isinstance(v, np.ndarray)
-    assert NP_DTYPE == v.dtype
-    assert 1 == len(v.shape)
-
-    assert alpha > 0.0
-
+    Returns:
+        int: status code.
+    """
+    u = np.asarray(u, dtype=NP_DTYPE)
+    d = np.asarray(d, dtype=NP_DTYPE)
+    v = np.asarray(v, dtype=NP_DTYPE)
+    if u.ndim != 1 or d.ndim != 1 or v.ndim != 1:
+        raise ValueError("u, d, v must be 1D")
+    if alpha <= 0:
+        raise ValueError("alpha must be positive")
     sz = d.shape[0]
-    assert _U_sz(sz) == u.shape[0]
-    assert v.shape[0] == sz
-
-    cdef yaflFloat [::1]    v_u = u
-    cdef yaflFloat [::1]    v_d = d
-    cdef yaflFloat [::1]    v_v = v
-
-    return yafl_math_udu_up(sz, &v_u[0], &v_d[0], alpha, &v_v[0])
+    if _U_sz(sz) != u.shape[0] or v.shape[0] != sz:
+        raise ValueError("dimension mismatch")
+    temp_u = np.array(u, dtype=NP_DTYPE, copy=True)
+    temp_d = np.array(d, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [::1] v_u = temp_u
+    cdef yaflFloat [::1] v_d = temp_d
+    cdef yaflFloat [::1] v_v = v
+    status = yafl_math_udu_up(sz, &v_u[0], &v_d[0], alpha, &v_v[0])
+    u[:] = temp_u
+    d[:] = temp_d
+    return status
 
 #------------------------------------------------------------------------------
-def _udu_down(u,d, yaflFloat alpha, v):
-    assert isinstance(u, np.ndarray)
-    assert NP_DTYPE == u.dtype
-    assert 1 == len(u.shape)
-
-    assert isinstance(d, np.ndarray)
-    assert NP_DTYPE == d.dtype
-    assert 1 == len(d.shape)
-
-    assert isinstance(v, np.ndarray)
-    assert NP_DTYPE == v.dtype
-    assert 1 == len(v.shape)
-
-    assert alpha > 0.0
-
+def _udu_down(u, d, yaflFloat alpha, v):
+    """UD downdate with positive alpha (subtract v*alpha*v^T)."""
+    u = np.asarray(u, dtype=NP_DTYPE)
+    d = np.asarray(d, dtype=NP_DTYPE)
+    v = np.asarray(v, dtype=NP_DTYPE)
+    if u.ndim != 1 or d.ndim != 1 or v.ndim != 1:
+        raise ValueError("u, d, v must be 1D")
+    if alpha <= 0:
+        raise ValueError("alpha must be positive")
     sz = d.shape[0]
-    assert _U_sz(sz) == u.shape[0]
-    assert v.shape[0] == sz
-
-    cdef yaflFloat [::1]    v_u = u
-    cdef yaflFloat [::1]    v_d = d
-    cdef yaflFloat [::1]    v_v = v
-
-    return yafl_math_udu_down(sz, &v_u[0], &v_d[0], alpha, &v_v[0])
+    if _U_sz(sz) != u.shape[0] or v.shape[0] != sz:
+        raise ValueError("dimension mismatch")
+    temp_u = np.array(u, dtype=NP_DTYPE, copy=True)
+    temp_d = np.array(d, dtype=NP_DTYPE, copy=True)
+    cdef yaflFloat [::1] v_u = temp_u
+    cdef yaflFloat [::1] v_d = temp_d
+    cdef yaflFloat [::1] v_v = v
+    status = yafl_math_udu_down(sz, &v_u[0], &v_d[0], alpha, &v_v[0])
+    u[:] = temp_u
+    d[:] = temp_d
+    return status
 
 #==============================================================================
 #                          UD-factorized EKF API
@@ -2318,6 +2253,25 @@ ctypedef struct yaflPyKalmanBaseSt:
 #                             Basic Filter class
 #------------------------------------------------------------------------------
 cdef class yaflKalmanBase:
+    """Base class for all Kalman filters.
+
+    This class provides the core functionality and memory management for
+    UD-factorized Kalman filters. It is not meant to be instantiated directly.
+
+    Attributes:
+        x (np.ndarray): Current state estimate.
+        Up (np.ndarray): Upper triangular factor of state covariance (compact).
+        Dp (np.ndarray): Diagonal factor of state covariance.
+        Uq (np.ndarray): Upper triangular factor of process noise covariance.
+        Dq (np.ndarray): Diagonal factor of process noise covariance.
+        Ur (np.ndarray): Upper triangular factor of measurement noise covariance.
+        Dr (np.ndarray): Diagonal factor of measurement noise covariance.
+        l (float): Log-likelihood of the last measurement.
+        rff (float): Forgetting factor for R (0 <= rff < 1).
+        P (np.ndarray): Full state covariance matrix (read-only).
+        Q (np.ndarray): Full process noise covariance (read-only).
+        R (np.ndarray): Full measurement noise covariance (read-only).
+    """
     # Kalman filter C-self
     cdef yaflPyKalmanBaseSt c_self
 
@@ -2365,7 +2319,6 @@ cdef class yaflKalmanBase:
 
     def __init__(self, int dim_x, int dim_z, yaflFloat dt, \
                  fx, hx, residual_z = None, rcb = None):
-
         #Store dimensions
         self.c_self.base.base.Nx = dim_x
         self.c_self.base.base.Nz = dim_z
@@ -2589,6 +2542,15 @@ cdef class yaflKalmanBase:
         raise NotImplementedError('yaflKalmanBase is the base class!')
 
     def predict(self, dt=None, **fx_args):
+        """Perform prediction step.
+
+        Args:
+            dt (float, optional): Time step. If None, use the default dt.
+            **fx_args: Additional arguments passed to the state transition function.
+
+        Returns:
+            int: status code.
+        """
         old_dt = self._dt
 
         if dt:
@@ -2610,7 +2572,15 @@ cdef class yaflKalmanBase:
         raise NotImplementedError('yaflKalmanBase is the base class!')
 
     def update(self, z, **hx_args):
+        """Perform update step.
 
+        Args:
+            z (array_like): Measurement vector.
+            **hx_args: Additional arguments passed to the measurement function.
+
+        Returns:
+            int: status code.
+        """
         self._z[:] = z
         self._hx_args = hx_args
         res = self._update()
@@ -2619,6 +2589,7 @@ cdef class yaflKalmanBase:
         return res
 
 #------------------------------------------------------------------------------
+# Callback wrappers with explicit casting of user results to NP_DTYPE/yaflFloat
 cdef yaflStatusEn yafl_py_kalman_fx(yaflPyKalmanBaseSt * self, \
                                     yaflFloat * new_x, yaflFloat * old_x):
     try:
@@ -2646,7 +2617,14 @@ cdef yaflStatusEn yafl_py_kalman_fx(yaflPyKalmanBaseSt * self, \
         _new_x = np.asarray(<yaflFloat[:nx]> new_x) #
         _old_x = np.asarray(<yaflFloat[:nx]> old_x) #
 
-        _new_x[:] = fx(_old_x, dt, **fx_args)
+        result = fx(_old_x, dt, **fx_args)
+        # Cast result to NP_DTYPE
+        if not isinstance(result, np.ndarray):
+            result = np.asarray(result, dtype=NP_DTYPE)
+        else:
+            if result.dtype != NP_DTYPE:
+                result = result.astype(NP_DTYPE)
+        _new_x[:] = result
 
         return YAFL_ST_OK
 
@@ -2682,7 +2660,13 @@ cdef yaflStatusEn yafl_py_kalman_hx(yaflPyKalmanBaseSt * self, \
         _x = np.asarray(<yaflFloat[:nx]> x) #
         _z = np.asarray(<yaflFloat[:nz]> z) #
 
-        _z[:] = hx(_x, **hx_args)
+        result = hx(_x, **hx_args)
+        if not isinstance(result, np.ndarray):
+            result = np.asarray(result, dtype=NP_DTYPE)
+        else:
+            if result.dtype != NP_DTYPE:
+                result = result.astype(NP_DTYPE)
+        _z[:] = result
 
         return YAFL_ST_OK
 
@@ -2711,7 +2695,13 @@ cdef yaflStatusEn yafl_py_kalman_zrf(yaflPyKalmanBaseSt * self, yaflFloat * res,
         _sigma = np.asarray(<yaflFloat[:nz]> sigma) #
         _pivot = np.asarray(<yaflFloat[:nz]> pivot) #
 
-        _res[:] = residual_z(_sigma, _pivot)
+        result = residual_z(_sigma, _pivot)
+        if not isinstance(result, np.ndarray):
+            result = np.asarray(result, dtype=NP_DTYPE)
+        else:
+            if result.dtype != NP_DTYPE:
+                result = result.astype(NP_DTYPE)
+        _res[:] = result
 
         return YAFL_ST_OK
 
@@ -2744,10 +2734,16 @@ cdef yaflStatusEn yafl_py_kalman_rcb(yaflPyKalmanBaseSt * self):
         return YAFL_ST_INV_ARG_1
 
 #==============================================================================
-#                             Basic Filter class
+#                             Basic Extended Filter class
 #==============================================================================
 cdef class yaflExtendedBase(yaflKalmanBase):
+    """Base class for Extended Kalman Filters.
 
+    Adds Jacobian functions and memory for EKF-specific arrays.
+
+    Attributes:
+        qff (float): Forgetting factor for Q (0 <= qff < 1).
+    """
     # Kalman filter memory views
     cdef yaflFloat [:, ::1] v_H
     cdef yaflFloat [::1]    v_W
@@ -2767,7 +2763,6 @@ cdef class yaflExtendedBase(yaflKalmanBase):
 
     def __init__(self, int dim_x, int dim_z, yaflFloat dt, \
                  fx, jfx, hx, jhx, residual_z = None):
-
         super().__init__(dim_x, dim_z, dt, fx, hx, residual_z)
 
         self.c_self.base.ekf.qff = 0.0
@@ -2851,7 +2846,13 @@ cdef yaflStatusEn yafl_py_ekf_jfx(yaflPyKalmanBaseSt * self, yaflFloat * w, \
         _w = np.asarray(<yaflFloat[:dim_x, :2 * dim_x]> w)
 
         # Calculate Jacobian
-        _w[:, :dim_x] = jfx(_x, dt, **fx_args)
+        result = jfx(_x, dt, **fx_args)
+        if not isinstance(result, np.ndarray):
+            result = np.asarray(result, dtype=NP_DTYPE)
+        else:
+            if result.dtype != NP_DTYPE:
+                result = result.astype(NP_DTYPE)
+        _w[:, :dim_x] = result
 
         return YAFL_ST_OK
 
@@ -2888,7 +2889,13 @@ cdef yaflStatusEn yafl_py_ekf_jhx(yaflPyKalmanBaseSt * self, yaflFloat * h, \
         _h = np.asarray(<yaflFloat[:dim_z, :dim_x]> h)
 
         # Calculate Jacobian
-        _h[:,:] = jhx(_x, **hx_args)
+        result = jhx(_x, **hx_args)
+        if not isinstance(result, np.ndarray):
+            result = np.asarray(result, dtype=NP_DTYPE)
+        else:
+            if result.dtype != NP_DTYPE:
+                result = result.astype(NP_DTYPE)
+        _h[:,:] = result
 
         return YAFL_ST_OK
 
@@ -2898,12 +2905,14 @@ cdef yaflStatusEn yafl_py_ekf_jhx(yaflPyKalmanBaseSt * self, yaflFloat * h, \
 
 #==============================================================================
 cdef class Bierman(yaflExtendedBase):
+    """EKF with Bierman U-D update (scalar sequential)."""
     def _update(self):
         return yafl_ekf_base_update(&self.c_self.base.base, &self.v_z[0], \
                                     yafl_ekf_bierman_update_scalar)
 
 #------------------------------------------------------------------------------
 cdef class Joseph(yaflExtendedBase):
+    """EKF with Joseph-form U-D update."""
     def _update(self):
         return yafl_ekf_base_update(&self.c_self.base.base, &self.v_z[0], \
                                     yafl_ekf_joseph_update_scalar)
@@ -2912,6 +2921,7 @@ cdef class Joseph(yaflExtendedBase):
 #                        Adaptive filter basic class
 #==============================================================================
 cdef class yaflAdaptiveBase(yaflExtendedBase):
+    """Base class for adaptive EKF (uses chi2 test)."""
     def __init__(self, int dim_x, int dim_z, yaflFloat dt, \
                  fx, jfx, hx, jhx, **kwargs):
 
@@ -2955,7 +2965,7 @@ cdef class DoNotUseThisFilter(yaflAdaptiveBase):
 #                        Robust filter basic class
 #==============================================================================
 cdef class yaflRobustBase(yaflExtendedBase):
-
+    """Base class for robust EKF (uses influence function gz and gdotz)."""
     cdef object _gz
     cdef object _gdotz
 
@@ -3002,10 +3012,8 @@ cdef yaflFloat yafl_py_ekf_rob_gz(yaflPyKalmanBaseSt * self, yaflFloat nu, yaflI
             raise ValueError('Invalid hx_args type (must be dict)!')
 
         ret = gz(nu, i, **hx_args)
-        if type(ret) != float:
-            raise ValueError('gz must return float!')
-
-        return <yaflFloat>ret
+        # explicit cast to float then to yaflFloat
+        return <yaflFloat>float(ret)
 
     except Exception as e:
         print(tb.format_exc())
@@ -3029,10 +3037,7 @@ cdef yaflFloat yafl_py_ekf_rob_gdotz(yaflPyKalmanBaseSt * self, yaflFloat nu, ya
             raise ValueError('Invalid hx_args type (must be dict)!')
 
         ret = gdotz(nu, i, **hx_args)
-        if type(ret) != float:
-            raise ValueError('gdotz must return float!')
-
-        return <yaflFloat>ret
+        return <yaflFloat>float(ret)
 
     except Exception as e:
         print(tb.format_exc())
@@ -3054,7 +3059,7 @@ cdef class RobustJoseph(yaflRobustBase):
 #                   Adaptive robust filter basic class
 #==============================================================================
 cdef class yaflAdaptiveRobustBase(yaflRobustBase):
-
+    """Base class for adaptive robust EKF."""
     def __init__(self, int dim_x, int dim_z, yaflFloat dt, \
                  fx, jfx, hx, jhx, **kwargs):
 
@@ -3105,6 +3110,7 @@ ctypedef struct yaflPySigmaSt:
 
 #------------------------------------------------------------------------------
 cdef class yaflSigmaBase:
+    """Base class for sigma point generators."""
     # Sigma point generator C-self
     cdef yaflPySigmaSt c_self
 
@@ -3148,7 +3154,16 @@ cdef class yaflSigmaBase:
 #                         UD-factorized UKF definitions
 #------------------------------------------------------------------------------
 cdef class yaflUnscentedBase(yaflKalmanBase):
+    """Base class for Unscented Kalman Filters.
 
+    Attributes:
+        Pzx (np.ndarray): Cross-covariance between state and measurement.
+        zp (np.ndarray): Predicted measurement.
+        sigmas_x (np.ndarray): Sigma points in state space.
+        sigmas_z (np.ndarray): Sigma points in measurement space.
+        wc (np.ndarray): Weights for covariance calculation.
+        wm (np.ndarray): Weights for mean calculation.
+    """
     # Kalman filter memory views
     cdef yaflFloat [::1]    v_zp
 
@@ -3344,7 +3359,13 @@ cdef yaflStatusEn yafl_py_sigma_addf(yaflPyKalmanBaseSt * self, yaflFloat * delt
         _delta = np.asarray(<yaflFloat[:nx]> delta) #
         _pivot = np.asarray(<yaflFloat[:nx]> pivot) #
 
-        _delta[:] = _addf(_delta, _pivot, mult)
+        result = _addf(_delta, _pivot, mult)
+        if not isinstance(result, np.ndarray):
+            result = np.asarray(result, dtype=NP_DTYPE)
+        else:
+            if result.dtype != NP_DTYPE:
+                result = result.astype(NP_DTYPE)
+        _delta[:] = result
 
         return YAFL_ST_OK
 
@@ -3380,7 +3401,13 @@ cdef yaflStatusEn yafl_py_ukf_xmf(yaflPyKalmanBaseSt * self, \
         _sigmas = np.asarray(<yaflFloat[:pnum, :nx]> sigmas) #
         _res    = np.asarray(<yaflFloat[:nx]> res)           #
 
-        _res[:] = mean_x(_sigmas, _points._wm)
+        result = mean_x(_sigmas, _points._wm)
+        if not isinstance(result, np.ndarray):
+            result = np.asarray(result, dtype=NP_DTYPE)
+        else:
+            if result.dtype != NP_DTYPE:
+                result = result.astype(NP_DTYPE)
+        _res[:] = result
 
         return YAFL_ST_OK
 
@@ -3409,7 +3436,13 @@ cdef yaflStatusEn yafl_py_ukf_xrf(yaflPyKalmanBaseSt * self, yaflFloat * res, \
         _sigma = np.asarray(<yaflFloat[:nx]> sigma) #
         _pivot = np.asarray(<yaflFloat[:nx]> pivot) #
 
-        _res[:] = residual_x(_sigma, _pivot)
+        result = residual_x(_sigma, _pivot)
+        if not isinstance(result, np.ndarray):
+            result = np.asarray(result, dtype=NP_DTYPE)
+        else:
+            if result.dtype != NP_DTYPE:
+                result = result.astype(NP_DTYPE)
+        _res[:] = result
 
         return YAFL_ST_OK
 
@@ -3445,7 +3478,13 @@ cdef yaflStatusEn yafl_py_ukf_zmf(yaflPyKalmanBaseSt * self, \
         _sigmas = np.asarray(<yaflFloat[:pnum, :nz]> sigmas) #
         _res    = np.asarray(<yaflFloat[:nz]> res)           #
 
-        _res[:] = mean_z(_sigmas, _points._wm)
+        result = mean_z(_sigmas, _points._wm)
+        if not isinstance(result, np.ndarray):
+            result = np.asarray(result, dtype=NP_DTYPE)
+        else:
+            if result.dtype != NP_DTYPE:
+                result = result.astype(NP_DTYPE)
+        _res[:] = result
 
         return YAFL_ST_OK
 
@@ -3456,7 +3495,7 @@ cdef yaflStatusEn yafl_py_ukf_zmf(yaflPyKalmanBaseSt * self, \
 #==============================================================================
 cdef class UnscentedBierman(yaflUnscentedBase):
     """
-    UD-factorized UKF implementation
+    UD-factorized UKF implementation with Bierman sequential update.
     """
     def _update(self):
         return yafl_ukf_base_update(&self.c_self.base.ukf, &self.v_z[0], \
@@ -3464,6 +3503,7 @@ cdef class UnscentedBierman(yaflUnscentedBase):
 
 #==============================================================================
 cdef class UnscentedAdaptiveBierman(yaflUnscentedBase):
+    """Adaptive UKF with Bierman update (uses chi2 test)."""
     def __init__(self, int dim_x, int dim_z, yaflFloat dt, hx, fx, points, \
                  **kwargs):
 
@@ -3492,7 +3532,7 @@ cdef class UnscentedAdaptiveBierman(yaflUnscentedBase):
 #                        Robust filter basic class
 #==============================================================================
 cdef class yaflRobustUKFBase(yaflUnscentedBase):
-
+    """Base class for robust UKF."""
     cdef object _gz
     cdef object _gdotz
 
@@ -3539,10 +3579,7 @@ cdef yaflFloat yafl_py_ukf_rob_gz(yaflPyKalmanBaseSt * self, yaflFloat nu, yaflI
             raise ValueError('Invalid hx_args type (must be dict)!')
 
         ret = gz(nu, i, **hx_args)
-        if type(ret) != float:
-            raise ValueError('gz must return float!')
-
-        return <yaflFloat>ret
+        return <yaflFloat>float(ret)
 
     except Exception as e:
         print(tb.format_exc())
@@ -3566,10 +3603,7 @@ cdef yaflFloat yafl_py_ukf_rob_gdotz(yaflPyKalmanBaseSt * self, yaflFloat nu, ya
             raise ValueError('Invalid hx_args type (must be dict)!')
 
         ret = gdotz(nu, i, **hx_args)
-        if type(ret) != float:
-            raise ValueError('gdotz must return float!')
-
-        return <yaflFloat>ret
+        return <yaflFloat>float(ret)
 
     except Exception as e:
         print(tb.format_exc())
@@ -3585,7 +3619,6 @@ cdef class UnscentedRobustBierman(yaflRobustUKFBase):
 #                         Adaptive robust UKF base
 #==============================================================================
 cdef class yaflAdaptiveRobustUKFBase(yaflRobustUKFBase):
-
     def __init__(self, int dim_x, int dim_z, yaflFloat dt, \
                  hx, fx, points, **kwargs):
 
@@ -3614,7 +3647,7 @@ cdef class UnscentedAdaptiveRobustBierman(yaflAdaptiveRobustUKFBase):
 #           Full UKF, not sequential square root version of UKF
 #==============================================================================
 cdef class Unscented(yaflUnscentedBase):
-
+    """Full UKF (non-sequential) using direct matrix inversion."""
     cdef yaflFloat [::1]    v_Us
     cdef yaflFloat [::1]    v_Ds
 
@@ -3661,7 +3694,7 @@ cdef class Unscented(yaflUnscentedBase):
 #       Full adaptive UKF, not sequential square root version of UKF
 #==============================================================================
 cdef class UnscentedAdaptive(Unscented):
-
+    """Adaptive full UKF (uses chi2 test)."""
     def __init__(self, int dim_x, int dim_z, yaflFloat dt, hx, fx, points, \
                  aplha = 0.000001, **kwargs):
 
@@ -3690,7 +3723,13 @@ cdef class UnscentedAdaptive(Unscented):
 #==============================================================================
 cdef class MerweSigmaPoints(yaflSigmaBase):
     """
-    Van der Merwe sigma point generator implementation
+    Van der Merwe sigma point generator.
+
+    Args:
+        dim_x (int): State dimension.
+        alpha (float): Primary scaling parameter.
+        beta (float): Secondary scaling parameter (optimal for Gaussian = 2).
+        kappa (float): Tertiary scaling parameter (default 0.0).
     """
     def __init__(self, yaflInt dim_x, yaflFloat alpha, yaflFloat beta, \
                  yaflFloat kappa=0.0, **kwargs):
@@ -3734,7 +3773,7 @@ cdef class MerweSigmaPoints(yaflSigmaBase):
 #==============================================================================
 cdef class JulierSigmaPoints(yaflSigmaBase):
     """
-    Van der Merwe sigma point generator implementation
+    Julier sigma point generator (simpler, no beta).
     """
     def __init__(self, yaflInt dim_x, yaflFloat kappa=0.0, **kwargs):
         super().__init__(dim_x, **kwargs)
@@ -3758,6 +3797,26 @@ cdef class JulierSigmaPoints(yaflSigmaBase):
 
 #==============================================================================
 cdef class IMMEstimator:
+    """Interacting Multiple Model (IMM) estimator.
+
+    Combines multiple Kalman filters (EKF/UKF) with model mixing.
+
+    Args:
+        filters (list): List of filter instances (must be compatible).
+        mu (np.ndarray): Initial mode probabilities.
+        M (np.ndarray): Markov transition matrix.
+        dt (float): Time step.
+
+    Attributes:
+        mu (np.ndarray): Current mode probabilities.
+        M (np.ndarray): Markov transition matrix.
+        omega (np.ndarray): Mixing probabilities.
+        cbar (np.ndarray): Normalization factors.
+        x (np.ndarray): Overall state estimate.
+        Up, Dp (np.ndarray): Overall state covariance (UD factors).
+        P (np.ndarray): Full covariance (read-only).
+        W, D (np.ndarray): Workspace for filter mixing.
+    """
     #
     cdef yaflIMMCBSt c_self
 
@@ -3792,14 +3851,18 @@ cdef class IMMEstimator:
 
     #==========================================================================
     def __cinit__(self, filters, mu, M, yaflFloat dt):
-        assert isinstance(filters, list)
-        assert len(filters) > 1
+        if not isinstance(filters, list):
+            raise TypeError("filters must be a list")
+        if len(filters) <= 1:
+            raise ValueError("filters must contain at least two filters")
 
         cdef yaflPyKalmanBaseUn * base
 
         self.c_self.bank = <yaflFilterBankItemSt *>malloc(sizeof(yaflFilterBankItemSt) * len(filters))
+        if self.c_self.bank is NULL:
+            raise MemoryError("Failed to allocate memory for filter bank")
 
-        for i,f in enumerate(filters):
+        for i, f in enumerate(filters):
             if isinstance(f, Bierman):
                 base = (<yaflKalmanBase>f).cbase()
                 self.c_self.bank[i].predict = imm_yafl_ekf_base_predict
@@ -3913,7 +3976,7 @@ cdef class IMMEstimator:
                 self.c_self.bank[i].Xs      = base.ukf.Pzx
 
             else:
-                raise ValueError('List filters must contain only yaflpy filters')
+                raise ValueError("List filters must contain only yaflpy filters (EKF or UKF variants)")
 
             self.c_self.bank[i].filter = &(<yaflKalmanBase>f).cbase().base
 
@@ -3921,7 +3984,7 @@ cdef class IMMEstimator:
 
     #==========================================================================
     def __init__(self, filters, mu, M, yaflFloat dt):
-
+        # Проверка совместимости фильтров
         cdef yaflPyKalmanBaseUn * base = (<yaflKalmanBase>filters[0]).cbase()
 
         nx = base.base.Nx
@@ -3930,23 +3993,26 @@ cdef class IMMEstimator:
 
         for f in filters:
             base = (<yaflKalmanBase>f).cbase()
-            assert base.base.Nx == nx
-            assert base.base.Nz == nz
-            assert (<yaflKalmanBase>f)._hx == hx
+            if base.base.Nx != nx:
+                raise ValueError("All filters must have the same state dimension (Nx)")
+            if base.base.Nz != nz:
+                raise ValueError("All filters must have the same measurement dimension (Nz)")
+            if (<yaflKalmanBase>f)._hx != hx:
+                raise ValueError("All filters must have the same measurement function (hx)")
 
         self._filters = filters
 
-        assert isinstance(mu, np.ndarray)
-        assert NP_DTYPE == mu.dtype
-        assert 1 == len(mu.shape)
+        mu = np.asarray(mu, dtype=NP_DTYPE)
+        if mu.ndim != 1:
+            raise ValueError("mu must be a 1D array")
+        if mu.shape[0] != self.c_self.Nb:
+            raise ValueError("mu length must match number of filters")
 
-        assert isinstance(M, np.ndarray)
-        assert NP_DTYPE == M.dtype
-        assert 2 == len(M.shape)
-
-        assert mu.shape[0] == self.c_self.Nb
-        assert M.shape[0]  == self.c_self.Nb
-        assert M.shape[1]  == self.c_self.Nb
+        M = np.asarray(M, dtype=NP_DTYPE)
+        if M.ndim != 2:
+            raise ValueError("M must be a 2D array")
+        if M.shape[0] != self.c_self.Nb or M.shape[1] != self.c_self.Nb:
+            raise ValueError("M must be a square matrix of size Nb x Nb")
 
         self._mu  = mu.copy()
         self.v_mu = self._mu
@@ -3988,23 +4054,35 @@ cdef class IMMEstimator:
         self.v_D = self._D
         self.c_self.D = &self.v_D[0]
 
-        assert YAFL_ST_OK == yafl_imm_post_init(&self.c_self)
+        status = yafl_imm_post_init(&self.c_self)
+        if status != YAFL_ST_OK:
+            raise RuntimeError("IMM post-initialization failed with status {}".format(status))
 
         self._z  = np.zeros((nz,), dtype=NP_DTYPE)
         self.v_z = self._z
 
         self._dt = dt
 
-
     #==========================================================================
     def __dealloc__(self):
-        free(self.c_self.bank)
+        if self.c_self.bank is not NULL:
+            free(self.c_self.bank)
+            self.c_self.bank = NULL
 
     #==========================================================================
     def predict(self, dt=None, **fx_args):
+        """Perform IMM prediction step.
+
+        Args:
+            dt (float, optional): Time step. If None, use the default dt.
+            **fx_args: Additional arguments passed to each filter's state transition.
+
+        Returns:
+            int: status code.
+        """
         old_dt = self._dt
 
-        if dt:
+        if dt is not None:
             if np.isnan(dt):
                 raise ValueError('Invalid dt value (nan)!')
             self._dt = <yaflFloat>dt
@@ -4022,7 +4100,15 @@ cdef class IMMEstimator:
 
     #==========================================================================
     def update(self, z, **hx_args):
+        """Perform IMM update step.
 
+        Args:
+            z (array_like): Measurement vector.
+            **hx_args: Additional arguments passed to each filter's measurement function.
+
+        Returns:
+            int: status code.
+        """
         self._z[:] = z
 
         for f in self._filters:
